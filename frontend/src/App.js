@@ -257,15 +257,14 @@ const ChatInterface = () => {
   const [currentSession, setCurrentSession] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [documents, setDocuments] = useState([]);
-  const [selectedDocs, setSelectedDocs] = useState([]);
+  const [documentsCount, setDocumentsCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const { apiCall } = useAPI();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSessions();
-    fetchDocuments();
+    fetchDocumentsCount();
   }, []);
 
   const fetchSessions = async () => {
