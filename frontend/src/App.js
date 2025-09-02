@@ -485,10 +485,21 @@ const ChatInterface = () => {
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-500">
-            <div className="text-center">
+            <div className="text-center max-w-lg">
               <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-xl font-medium mb-2">Welcome to AI Assistant</h3>
-              <p className="text-gray-600 mb-6">Start a new conversation to get help with operations, policies, and support.</p>
+              <h3 className="text-xl font-medium mb-2">ASI OS AI Assistant</h3>
+              <p className="text-gray-600 mb-4">Your intelligent operations assistant with access to all company policies and procedures.</p>
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                  <FileText className="w-4 h-4 text-emerald-600" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {documentsCount} company documents ready
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Ask questions and get instant answers from your organizational knowledge base
+                </p>
+              </div>
               <Button onClick={startNewSession} className="bg-emerald-600 hover:bg-emerald-700">
                 <Plus className="w-4 h-4 mr-2" />
                 Start New Conversation
