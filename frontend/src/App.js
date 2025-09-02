@@ -367,30 +367,19 @@ const ChatInterface = () => {
           </Button>
         </div>
 
-        {/* Document Selection */}
+        {/* Knowledge Base Status */}
         <div className="p-4 border-b border-gray-200">
-          <Label className="text-sm font-medium text-gray-700 mb-2 block">Reference Documents</Label>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
-            {documents.map((doc) => (
-              <div key={doc.id} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id={doc.id}
-                  checked={selectedDocs.includes(doc.id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedDocs([...selectedDocs, doc.id]);
-                    } else {
-                      setSelectedDocs(selectedDocs.filter(id => id !== doc.id));
-                    }
-                  }}
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor={doc.id} className="text-xs text-gray-600 truncate flex-1">
-                  {doc.original_name}
-                </Label>
-              </div>
-            ))}
+          <Label className="text-sm font-medium text-gray-700 mb-2 block">Knowledge Base</Label>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+            <div className="flex items-center space-x-2">
+              <FileText className="w-4 h-4 text-emerald-600" />
+              <span className="text-sm text-emerald-700 font-medium">
+                {documentsCount} documents available
+              </span>
+            </div>
+            <p className="text-xs text-emerald-600 mt-1">
+              AI automatically searches all company policies and procedures
+            </p>
           </div>
         </div>
 
