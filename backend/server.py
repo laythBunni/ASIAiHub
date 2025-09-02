@@ -177,6 +177,7 @@ class ChatResponse(BaseModel):
     session_id: str
     response: str
     suggested_ticket: Optional[Dict[str, Any]] = None
+    documents_referenced: int = 0
 
 class TicketCreate(BaseModel):
     subject: str
