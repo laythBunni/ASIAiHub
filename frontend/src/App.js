@@ -469,9 +469,10 @@ const ChatInterface = () => {
       };
       const aiMsg = {
         role: 'assistant',
-        content: data.response,
+        content: data.response, // Now contains structured data
         timestamp: new Date().toISOString(),
-        documents_referenced: data.documents_referenced
+        documents_referenced: data.documents_referenced,
+        response_type: data.response_type
       };
 
       setMessages(prev => [...prev, userMsg, aiMsg]);
