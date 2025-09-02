@@ -276,10 +276,10 @@ const ChatInterface = () => {
     }
   };
 
-  const fetchDocuments = async () => {
+  const fetchDocumentsCount = async () => {
     try {
       const data = await apiCall('GET', '/documents');
-      setDocuments(data);
+      setDocumentsCount(data.length);
     } catch (error) {
       console.error('Error fetching documents:', error);
     }
