@@ -313,25 +313,24 @@ const ChatInterface = () => {
       const data = await apiCall('POST', '/chat/send', {
         session_id: currentSession,
         message: inputMessage,
-        document_ids: selectedDocs
+        document_ids: [] // Empty array - backend automatically uses all documents
       });
 
       // Add messages to UI
       const userMsg = {
         role: 'user',
         content: inputMessage,
-        timestamp: new Date().toISOString(),
-        attachments: selectedDocs
+        timestamp: new Date().toISOString()
       };
       const aiMsg = {
         role: 'assistant',
         content: data.response,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        documents_referenced: data.documents_referenced
       };
 
       setMessages(prev => [...prev, userMsg, aiMsg]);
       setInputMessage('');
-      setSelectedDocs([]);
 
       // Show ticket suggestion if available
       if (data.suggested_ticket) {
