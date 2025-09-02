@@ -519,7 +519,8 @@ async def send_chat_message(request: ChatRequest):
             session_id=request.session_id,
             response=result["response"],
             suggested_ticket=result["suggested_ticket"],
-            documents_referenced=result.get("documents_referenced", 0)
+            documents_referenced=result.get("documents_referenced", 0),
+            response_type=result.get("response_type", "structured")
         )
         
     except Exception as e:
