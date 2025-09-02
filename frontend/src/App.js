@@ -452,24 +452,20 @@ const ChatInterface = () => {
 
             {/* Input Area */}
             <div className="border-t border-gray-200 p-6">
-              {selectedDocs.length > 0 && (
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {selectedDocs.map((docId) => {
-                    const doc = documents.find(d => d.id === docId);
-                    return doc ? (
-                      <Badge key={docId} variant="secondary" className="text-xs">
-                        <FileText className="w-3 h-3 mr-1" />
-                        {doc.original_name}
-                      </Badge>
-                    ) : null;
-                  })}
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                  <span>Ask anything about company policies and procedures</span>
+                  <span className="flex items-center">
+                    <Bot className="w-3 h-3 mr-1" />
+                    Powered by GPT-5
+                  </span>
                 </div>
-              )}
+              </div>
               <div className="flex space-x-3">
                 <Input
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Ask about policies, create tickets, or get guidance..."
+                  placeholder="Ask about leave policies, IT requirements, expense reporting..."
                   className="flex-1"
                   onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                 />
