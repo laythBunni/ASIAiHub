@@ -171,7 +171,7 @@ class DocumentUploadResponse(BaseModel):
 class ChatRequest(BaseModel):
     session_id: str
     message: str
-    document_ids: List[str] = []
+    document_ids: List[str] = []  # Optional - for backward compatibility, but not used
 
 class ChatResponse(BaseModel):
     session_id: str
