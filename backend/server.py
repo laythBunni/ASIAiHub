@@ -275,48 +275,49 @@ async def categorize_ticket_with_ai(subject: str, description: str) -> Dict[str,
         }
 
 async def process_rag_query(message: str, document_ids: List[str], session_id: str) -> Dict[str, Any]:
-    """Process RAG query with uploaded documents"""
+    """Process RAG query with ALL uploaded documents automatically"""
     try:
-        # Get documents from database
-        documents = []
-        if document_ids:
-            for doc_id in document_ids:
-                doc = await db.documents.find_one({"id": doc_id})
-                if doc:
-                    documents.append(doc)
+        # Get ALL documents from database automatically (ignore document_ids for seamless experience)
+        all_documents = await db.documents.find().to_list(1000)
         
         # Initialize chat with GPT-5
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=session_id,
-            system_message="""You are an AI assistant for an operations platform called ASI OS. You help with support tickets, 
-            policy questions, and operational guidance. When answering questions:
-            
-            1. Use the uploaded documents as your primary knowledge source
-            2. Provide clear, actionable answers based on the policies and procedures
-            3. If a question requires creating a support ticket, suggest it
-            4. Reference specific policies or procedures when applicable
-            5. Be concise but comprehensive
-            6. If you don't have information in the uploaded documents, say so clearly
+            system_message="""You are an AI assistant for ASI OS - an enterprise operations platform. You have access to the complete company knowledge base including policies, procedures, and operational guidelines.
+
+            Your role:
+            1. Answer questions using the company's uploaded documents as your primary knowledge source
+            2. Provide accurate, policy-based responses with specific references when possible
+            3. If a question requires creating a support ticket, suggest it with appropriate categorization
+            4. Be helpful, professional, and concise
+            5. If information isn't available in the company documents, clearly state this
+            6. Always prioritize company policies over general knowledge
             
             If you determine a support ticket should be created, include in your response:
-            TICKET_SUGGESTION: {subject: "...", description: "...", department: "...", priority: "..."}"""
+            TICKET_SUGGESTION: {subject: "...", description: "...", department: "...", priority: "..."}
+            
+            Available company documents include HR policies, IT security policies, finance procedures, and operational guidelines."""
         ).with_model("openai", "gpt-5")
         
-        # Prepare context from documents
+        # Prepare context from ALL documents
         context_text = ""
+        documents_used = []
         
-        if documents:
-            # Add document context to message for GPT-5
-            context_text = "\n\nAvailable Document Context:\n"
-            for doc in documents:
+        if all_documents:
+            context_text = "\n\nCompany Knowledge Base:\n"
+            for doc in all_documents:
                 try:
                     # Read file content for context
                     with open(doc['file_path'], 'r', encoding='utf-8') as f:
-                        content = f.read()[:2000]  # Limit content size
-                        context_text += f"\n--- {doc['original_name']} ---\n{content}\n"
+                        content = f.read()[:1500]  # Limit content size per document
+                        context_text += f"\n--- {doc['original_name']} ({doc.get('department', 'General')}) ---\n{content}\n"
+                        documents_used.append(doc['original_name'])
                 except Exception as e:
-                    context_text += f"\n--- {doc['original_name']} ---\n[Could not read file content]\n"
+                    logger.warning(f"Could not read file {doc['file_path']}: {e}")
+                    context_text += f"\n--- {doc['original_name']} ---\n[Document available but could not read content]\n"
+        else:
+            context_text = "\n\nNo company documents are currently available in the knowledge base. Please upload policy documents to enable accurate responses."
         
         user_message = UserMessage(
             text=f"{message}{context_text}"
@@ -329,22 +330,28 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
         if "TICKET_SUGGESTION:" in response:
             try:
                 ticket_part = response.split("TICKET_SUGGESTION:")[1].strip()
-                # Simple parsing for ticket suggestion
                 if "{" in ticket_part:
                     suggested_ticket = {"create_ticket": True, "suggestion": ticket_part}
             except:
                 pass
         
+        # Clean response and add footer if documents were used
+        clean_response = response.replace("TICKET_SUGGESTION:", "").strip()
+        if documents_used:
+            clean_response += f"\n\n*Sources: {', '.join(documents_used[:3])}{'...' if len(documents_used) > 3 else ''}*"
+        
         return {
-            "response": response.replace("TICKET_SUGGESTION:", "").strip(),
-            "suggested_ticket": suggested_ticket
+            "response": clean_response,
+            "suggested_ticket": suggested_ticket,
+            "documents_referenced": len(documents_used)
         }
         
     except Exception as e:
         logger.error(f"Error in RAG processing: {e}")
         return {
             "response": "I apologize, but I encountered an error processing your request. Please try again or contact support.",
-            "suggested_ticket": None
+            "suggested_ticket": None,
+            "documents_referenced": 0
         }
 
 # API Routes
