@@ -349,26 +349,60 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
         
         response = await chat.send_message(user_message)
         
-        # Check if response suggests creating a ticket
-        suggested_ticket = None
-        if "TICKET_SUGGESTION:" in response:
-            try:
-                ticket_part = response.split("TICKET_SUGGESTION:")[1].strip()
-                if "{" in ticket_part:
-                    suggested_ticket = {"create_ticket": True, "suggestion": ticket_part}
-            except:
-                pass
-        
-        # Clean response and add footer if documents were used
-        clean_response = response.replace("TICKET_SUGGESTION:", "").strip()
-        if documents_used:
-            clean_response += f"\n\n*Sources: {', '.join(documents_used[:3])}{'...' if len(documents_used) > 3 else ''}*"
-        
-        return {
-            "response": clean_response,
-            "suggested_ticket": suggested_ticket,
-            "documents_referenced": len(documents_used)
-        }
+        # Parse structured JSON response
+        try:
+            # Try to parse the response as JSON
+            structured_response = json.loads(response)
+            
+            # Validate required fields
+            required_fields = ["summary", "details", "action_required", "contact_info", "related_policies"]
+            if not all(field in structured_response for field in required_fields):
+                raise ValueError("Missing required fields in JSON response")
+            
+            # Check if action suggests creating a ticket
+            suggested_ticket = None
+            if structured_response.get("action_required") and "ticket" in structured_response["action_required"].lower():
+                suggested_ticket = {"create_ticket": True, "suggestion": structured_response["action_required"]}
+            
+            # Add source information
+            if documents_used:
+                structured_response["sources"] = documents_used[:3]
+                if len(documents_used) > 3:
+                    structured_response["sources"].append("...")
+            
+            return {
+                "response": structured_response,
+                "suggested_ticket": suggested_ticket,
+                "documents_referenced": len(documents_used),
+                "response_type": "structured"
+            }
+            
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"Failed to parse structured response: {e}")
+            logger.warning(f"Raw response: {response}")
+            
+            # Fallback to plain text response with basic structure
+            fallback_response = {
+                "summary": response[:200] + "..." if len(response) > 200 else response,
+                "details": {
+                    "requirements": [],
+                    "procedures": [],
+                    "exceptions": []
+                },
+                "action_required": "Please contact support for detailed guidance",
+                "contact_info": "Support team for assistance",
+                "related_policies": []
+            }
+            
+            if documents_used:
+                fallback_response["sources"] = documents_used[:3]
+            
+            return {
+                "response": fallback_response,
+                "suggested_ticket": None,
+                "documents_referenced": len(documents_used),
+                "response_type": "fallback"
+            }
         
     except Exception as e:
         logger.error(f"Error in RAG processing: {e}")
