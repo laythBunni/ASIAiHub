@@ -415,8 +415,17 @@ const ChatInterface = () => {
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 mt-20">
                   <Bot className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium mb-2">Start a conversation</h3>
-                  <p>Ask questions about your policies, create tickets, or get operational guidance.</p>
+                  <h3 className="text-lg font-medium mb-2">Welcome to ASI OS AI Assistant</h3>
+                  <p className="mb-4">Ask anything about company policies, procedures, or operational guidance.</p>
+                  <div className="bg-gray-50 rounded-lg p-4 max-w-md mx-auto">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Try asking:</p>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• "What's our annual leave policy?"</li>
+                      <li>• "How do I reset my password?"</li>
+                      <li>• "What are the expense reporting rules?"</li>
+                      <li>• "How do I request time off?"</li>
+                    </ul>
+                  </div>
                 </div>
               ) : (
                 messages.map((message, index) => (
@@ -427,10 +436,11 @@ const ChatInterface = () => {
                         : 'bg-white border border-gray-200'
                     }`}>
                       <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-                      {message.attachments && message.attachments.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-emerald-500 border-opacity-30">
-                          <div className="text-xs opacity-75">
-                            Referenced {message.attachments.length} document(s)
+                      {message.role === 'assistant' && message.documents_referenced > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <div className="text-xs text-gray-500 flex items-center">
+                            <FileText className="w-3 h-3 mr-1" />
+                            Referenced {message.documents_referenced} company document(s)
                           </div>
                         </div>
                       )}
