@@ -287,18 +287,41 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
             session_id=session_id,
             system_message="""You are an AI assistant for ASI OS - an enterprise operations platform. You have access to the complete company knowledge base including policies, procedures, and operational guidelines.
 
-            Your role:
-            1. Answer questions using the company's uploaded documents as your primary knowledge source
-            2. Provide accurate, policy-based responses with specific references when possible
-            3. If a question requires creating a support ticket, suggest it with appropriate categorization
-            4. Be helpful, professional, and concise
-            5. If information isn't available in the company documents, clearly state this
-            6. Always prioritize company policies over general knowledge
+            CRITICAL: You must ALWAYS respond with a structured JSON format. Never provide plain text responses.
+
+            Response Format (JSON):
+            {
+              "summary": "Brief 1-2 sentence answer to the question",
+              "details": {
+                "requirements": ["list of requirements, rules, or criteria"],
+                "procedures": ["step-by-step procedures or processes"],
+                "exceptions": ["any exceptions, special cases, or conditions"]
+              },
+              "action_required": "What the user needs to do next (if any)",
+              "contact_info": "Department, email, or phone number for help",
+              "related_policies": ["names of related policies or procedures"]
+            }
+
+            Guidelines:
+            1. Use company documents as your primary knowledge source
+            2. If information isn't available, be honest in the summary
+            3. Keep arrays concise but comprehensive
+            4. Always include contact_info when available from documents
+            5. If a support ticket should be created, include this in action_required
+            6. Be professional and actionable
             
-            If you determine a support ticket should be created, include in your response:
-            TICKET_SUGGESTION: {subject: "...", description: "...", department: "...", priority: "..."}
-            
-            Available company documents include HR policies, IT security policies, finance procedures, and operational guidelines."""
+            Example response:
+            {
+              "summary": "Employees are entitled to 25 days of annual leave per year with 2 weeks advance notice required.",
+              "details": {
+                "requirements": ["2 weeks advance notice", "Manager approval required", "Submit via HR portal"],
+                "procedures": ["Submit leave request via HR portal", "Manager approves within 5 business days", "HR team automatically notified"],
+                "exceptions": ["Emergency leave can be approved by direct manager", "Maximum 5 consecutive days without senior management approval"]
+              },
+              "action_required": "Submit your leave request via the HR portal at least 2 weeks in advance",
+              "contact_info": "HR Department: hr@asi-os.com or extension 2150",
+              "related_policies": ["Emergency Leave Policy", "Sick Leave Policy"]
+            }"""
         ).with_model("openai", "gpt-5")
         
         # Prepare context from ALL documents
