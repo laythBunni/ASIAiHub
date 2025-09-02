@@ -31,7 +31,18 @@ import {
   Clock,
   FileUp,
   MessageSquare,
-  TrendingUp
+  TrendingUp,
+  Filter,
+  Search,
+  User,
+  Edit,
+  Eye,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  PlayCircle,
+  PauseCircle,
+  MoreHorizontal
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -108,7 +119,7 @@ const Dashboard = () => {
         </Badge>
       </div>
 
-      {/* Stats Cards */}
+      {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -143,14 +154,63 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-700">Chat Sessions</CardTitle>
-            <MessageSquare className="h-4 w-4 text-purple-600" />
+            <CardTitle className="text-sm font-medium text-red-700">Overdue</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-900">{stats.total_chat_sessions}</div>
-            <p className="text-xs text-purple-600 mt-1">AI conversations</p>
+            <div className="text-2xl font-bold text-red-900">{stats.overdue_tickets}</div>
+            <p className="text-xs text-red-600 mt-1">Past SLA deadline</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts and Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Tickets by Department</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {stats.tickets_by_department?.map((dept) => (
+                <div key={dept._id} className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{dept._id}</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-24 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-emerald-600 h-2 rounded-full" 
+                        style={{width: `${(dept.count / stats.total_tickets) * 100}%`}}
+                      ></div>
+                    </div>
+                    <span className="text-sm text-gray-600">{dept.count}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Tickets by Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {stats.tickets_by_status?.map((status) => (
+                <div key={status._id} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    {status._id === 'open' && <AlertCircle className="w-4 h-4 text-orange-500" />}
+                    {status._id === 'in_progress' && <PlayCircle className="w-4 h-4 text-blue-500" />}
+                    {status._id === 'resolved' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                    {status._id === 'closed' && <XCircle className="w-4 h-4 text-gray-500" />}
+                    <span className="text-sm font-medium capitalize">{status._id.replace('_', ' ')}</span>
+                  </div>
+                  <Badge variant="outline">{status.count}</Badge>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -379,7 +439,7 @@ const ChatInterface = () => {
                         ? 'bg-emerald-600 text-white' 
                         : 'bg-white border border-gray-200'
                     }`}>
-                      <div className="text-sm">{message.content}</div>
+                      <div className="text-sm whitespace-pre-wrap">{message.content}</div>
                       {message.attachments && message.attachments.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-emerald-500 border-opacity-30">
                           <div className="text-xs opacity-75">
@@ -595,29 +655,54 @@ const DocumentManagement = () => {
   );
 };
 
-// Ticket Management Component  
+// Enhanced Ticket Management Component  
 const TicketManagement = () => {
   const [tickets, setTickets] = useState([]);
+  const [selectedTicket, setSelectedTicket] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [ticketComments, setTicketComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [filters, setFilters] = useState({
+    status: '',
+    priority: '',
+    department: ''
+  });
   const [newTicket, setNewTicket] = useState({
     subject: '',
     description: '',
     department: '',
-    priority: 'medium'
+    priority: 'medium',
+    requester_name: 'System User'
   });
   const { apiCall } = useAPI();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchTickets();
-  }, []);
+  }, [filters]);
 
   const fetchTickets = async () => {
     try {
-      const data = await apiCall('GET', '/tickets');
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value);
+      });
+      
+      const endpoint = queryParams.toString() ? `/tickets?${queryParams}` : '/tickets';
+      const data = await apiCall('GET', endpoint);
       setTickets(data);
     } catch (error) {
       console.error('Error fetching tickets:', error);
+    }
+  };
+
+  const fetchTicketComments = async (ticketId) => {
+    try {
+      const data = await apiCall('GET', `/tickets/${ticketId}/comments`);
+      setTicketComments(data);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
     }
   };
 
@@ -629,31 +714,93 @@ const TicketManagement = () => {
         description: "Ticket created successfully",
       });
       setShowCreateModal(false);
-      setNewTicket({ subject: '', description: '', department: '', priority: 'medium' });
+      setNewTicket({ 
+        subject: '', 
+        description: '', 
+        department: '', 
+        priority: 'medium',
+        requester_name: 'System User'
+      });
       fetchTickets();
     } catch (error) {
       console.error('Error creating ticket:', error);
     }
   };
 
+  const updateTicketStatus = async (ticketId, status) => {
+    try {
+      await apiCall('PUT', `/tickets/${ticketId}`, { status });
+      toast({
+        title: "Success",
+        description: `Ticket status updated to ${status}`,
+      });
+      fetchTickets();
+      if (selectedTicket && selectedTicket.id === ticketId) {
+        const updatedTicket = await apiCall('GET', `/tickets/${ticketId}`);
+        setSelectedTicket(updatedTicket);
+      }
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+    }
+  };
+
+  const addComment = async () => {
+    if (!newComment.trim() || !selectedTicket) return;
+
+    try {
+      await apiCall('POST', `/tickets/${selectedTicket.id}/comments`, {
+        content: newComment,
+        comment_type: 'public',
+        author_name: 'Support Agent'
+      });
+      
+      setNewComment('');
+      fetchTicketComments(selectedTicket.id);
+      toast({
+        title: "Success",
+        description: "Comment added successfully",
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
+  };
+
+  const openTicketDetail = (ticket) => {
+    setSelectedTicket(ticket);
+    fetchTicketComments(ticket.id);
+    setShowDetailModal(true);
+  };
+
   const getStatusColor = (status) => {
     const colors = {
-      open: 'bg-orange-100 text-orange-700',
-      in_progress: 'bg-blue-100 text-blue-700',
-      resolved: 'bg-green-100 text-green-700',
-      closed: 'bg-gray-100 text-gray-700'
+      open: 'bg-orange-100 text-orange-700 border-orange-200',
+      in_progress: 'bg-blue-100 text-blue-700 border-blue-200',
+      waiting_customer: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      resolved: 'bg-green-100 text-green-700 border-green-200',
+      closed: 'bg-gray-100 text-gray-700 border-gray-200'
     };
     return colors[status] || colors.open;
   };
 
   const getPriorityColor = (priority) => {
     const colors = {
-      low: 'bg-gray-100 text-gray-700',
-      medium: 'bg-yellow-100 text-yellow-700',
-      high: 'bg-orange-100 text-orange-700',
-      urgent: 'bg-red-100 text-red-700'
+      low: 'bg-gray-100 text-gray-700 border-gray-200',
+      medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      high: 'bg-orange-100 text-orange-700 border-orange-200',
+      urgent: 'bg-red-100 text-red-700 border-red-200'
     };
     return colors[priority] || colors.medium;
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'open': return <AlertCircle className="w-4 h-4" />;
+      case 'in_progress': return <PlayCircle className="w-4 h-4" />;
+      case 'waiting_customer': return <PauseCircle className="w-4 h-4" />;
+      case 'resolved': return <CheckCircle2 className="w-4 h-4" />;
+      case 'closed': return <XCircle className="w-4 h-4" />;
+      default: return <AlertCircle className="w-4 h-4" />;
+    }
   };
 
   return (
@@ -663,92 +810,78 @@ const TicketManagement = () => {
           <h1 className="text-3xl font-bold text-gray-900">Support Tickets</h1>
           <p className="text-gray-600 mt-2">Manage and track support requests</p>
         </div>
-        <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-          <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Ticket
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Create New Ticket</DialogTitle>
-              <DialogDescription>
-                Create a new support request with automatic AI categorization
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="subject">Subject</Label>
-                <Input
-                  id="subject"
-                  value={newTicket.subject}
-                  onChange={(e) => setNewTicket({...newTicket, subject: e.target.value})}
-                  placeholder="Brief description of the issue"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={newTicket.description}
-                  onChange={(e) => setNewTicket({...newTicket, description: e.target.value})}
-                  placeholder="Detailed description of the issue"
-                  rows={4}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="department">Department</Label>
-                  <Select value={newTicket.department} onValueChange={(value) => setNewTicket({...newTicket, department: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="User & Access Management">User & Access Management</SelectItem>
-                      <SelectItem value="Contracts & Change Log">Contracts & Change Log</SelectItem>
-                      <SelectItem value="Finance & Purchasing">Finance & Purchasing</SelectItem>
-                      <SelectItem value="Project & Performance">Project & Performance</SelectItem>
-                      <SelectItem value="Leave & People Management">Leave & People Management</SelectItem>
-                      <SelectItem value="System & IT Support">System & IT Support</SelectItem>
-                      <SelectItem value="Knowledge Base Requests">Knowledge Base Requests</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="priority">Priority</Label>
-                  <Select value={newTicket.priority} onValueChange={(value) => setNewTicket({...newTicket, priority: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowCreateModal(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={createTicket} className="bg-emerald-600 hover:bg-emerald-700">
-                  Create Ticket
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setShowCreateModal(true)} className="bg-emerald-600 hover:bg-emerald-700">
+          <Plus className="w-4 h-4 mr-2" />
+          Create Ticket
+        </Button>
       </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="w-5 h-5" />
+            Filters
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>Status</Label>
+              <Select value={filters.status} onValueChange={(value) => setFilters({...filters, status: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="waiting_customer">Waiting Customer</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Priority</Label>
+              <Select value={filters.priority} onValueChange={(value) => setFilters({...filters, priority: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All priorities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All priorities</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Department</Label>
+              <Select value={filters.department} onValueChange={(value) => setFilters({...filters, department: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All departments</SelectItem>
+                  <SelectItem value="User & Access Management">User & Access Management</SelectItem>
+                  <SelectItem value="System & IT Support">System & IT Support</SelectItem>
+                  <SelectItem value="Finance & Purchasing">Finance & Purchasing</SelectItem>
+                  <SelectItem value="Leave & People Management">Leave & People Management</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Tickets List */}
       <Card>
         <CardHeader>
           <CardTitle>All Tickets</CardTitle>
           <CardDescription>
-            {tickets.length} ticket(s) total
+            {tickets.length} ticket(s) found
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -760,7 +893,7 @@ const TicketManagement = () => {
           ) : (
             <div className="space-y-4">
               {tickets.map((ticket) => (
-                <div key={ticket.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                <div key={ticket.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
@@ -769,23 +902,47 @@ const TicketManagement = () => {
                           {ticket.ticket_number}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">{ticket.description}</p>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{ticket.description}</p>
                       <div className="flex items-center space-x-4 text-xs text-gray-500">
                         <span className="flex items-center">
                           <Calendar className="w-3 h-3 mr-1" />
                           {new Date(ticket.created_at).toLocaleDateString()}
+                        </span>
+                        <span className="flex items-center">
+                          <User className="w-3 h-3 mr-1" />
+                          {ticket.requester_name}
                         </span>
                         <span>{ticket.department}</span>
                         {ticket.category && <span>• {ticket.category}</span>}
                       </div>
                     </div>
                     <div className="flex flex-col items-end space-y-2">
-                      <Badge className={getStatusColor(ticket.status)}>
-                        {ticket.status.replace('_', ' ')}
-                      </Badge>
-                      <Badge className={getPriorityColor(ticket.priority)}>
-                        {ticket.priority}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={getStatusColor(ticket.status)}>
+                          {getStatusIcon(ticket.status)}
+                          <span className="ml-1 capitalize">{ticket.status.replace('_', ' ')}</span>
+                        </Badge>
+                        <Badge className={getPriorityColor(ticket.priority)}>
+                          {ticket.priority}
+                        </Badge>
+                      </div>
+                      <div className="flex space-x-1">
+                        <Button size="sm" variant="outline" onClick={() => openTicketDetail(ticket)}>
+                          <Eye className="w-3 h-3" />
+                        </Button>
+                        <Select onValueChange={(value) => updateTicketStatus(ticket.id, value)}>
+                          <SelectTrigger className="w-8 h-8 p-0">
+                            <MoreHorizontal className="w-3 h-3" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="open">Set Open</SelectItem>
+                            <SelectItem value="in_progress">Set In Progress</SelectItem>
+                            <SelectItem value="waiting_customer">Set Waiting Customer</SelectItem>
+                            <SelectItem value="resolved">Set Resolved</SelectItem>
+                            <SelectItem value="closed">Set Closed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -794,6 +951,176 @@ const TicketManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Create Ticket Modal */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Create New Ticket</DialogTitle>
+            <DialogDescription>
+              Create a new support request with automatic AI categorization
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="subject">Subject</Label>
+              <Input
+                id="subject"
+                value={newTicket.subject}
+                onChange={(e) => setNewTicket({...newTicket, subject: e.target.value})}
+                placeholder="Brief description of the issue"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={newTicket.description}
+                onChange={(e) => setNewTicket({...newTicket, description: e.target.value})}
+                placeholder="Detailed description of the issue"
+                rows={4}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="department">Department</Label>
+                <Select value={newTicket.department} onValueChange={(value) => setNewTicket({...newTicket, department: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="User & Access Management">User & Access Management</SelectItem>
+                    <SelectItem value="Contracts & Change Log">Contracts & Change Log</SelectItem>
+                    <SelectItem value="Finance & Purchasing">Finance & Purchasing</SelectItem>
+                    <SelectItem value="Project & Performance">Project & Performance</SelectItem>
+                    <SelectItem value="Leave & People Management">Leave & People Management</SelectItem>
+                    <SelectItem value="System & IT Support">System & IT Support</SelectItem>
+                    <SelectItem value="Knowledge Base Requests">Knowledge Base Requests</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="priority">Priority</Label>
+                <Select value={newTicket.priority} onValueChange={(value) => setNewTicket({...newTicket, priority: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="requester">Requester Name</Label>
+              <Input
+                id="requester"
+                value={newTicket.requester_name}
+                onChange={(e) => setNewTicket({...newTicket, requester_name: e.target.value})}
+                placeholder="Name of person requesting support"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={createTicket} className="bg-emerald-600 hover:bg-emerald-700">
+                Create Ticket
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ticket Detail Modal */}
+      <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          {selectedTicket && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  <span>{selectedTicket.subject}</span>
+                  <Badge variant="outline">{selectedTicket.ticket_number}</Badge>
+                </DialogTitle>
+                <DialogDescription>
+                  Created {new Date(selectedTicket.created_at).toLocaleDateString()} by {selectedTicket.requester_name}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-6">
+                {/* Ticket Details */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Status</Label>
+                    <Badge className={`${getStatusColor(selectedTicket.status)} mt-1`}>
+                      {getStatusIcon(selectedTicket.status)}
+                      <span className="ml-1 capitalize">{selectedTicket.status.replace('_', ' ')}</span>
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Priority</Label>
+                    <Badge className={`${getPriorityColor(selectedTicket.priority)} mt-1`}>
+                      {selectedTicket.priority}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Department</Label>
+                    <p className="text-sm">{selectedTicket.department}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Category</Label>
+                    <p className="text-sm">{selectedTicket.category || 'Not categorized'}</p>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <Label className="text-sm font-medium">Description</Label>
+                  <p className="text-sm text-gray-600 mt-1 bg-gray-50 p-3 rounded">{selectedTicket.description}</p>
+                </div>
+
+                {/* Comments */}
+                <div>
+                  <Label className="text-sm font-medium mb-3 block">Comments</Label>
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {ticketComments.map((comment) => (
+                      <div key={comment.id} className="bg-gray-50 p-3 rounded">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-medium text-sm">{comment.author_name}</span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(comment.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700">{comment.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Add Comment */}
+                <div>
+                  <Label className="text-sm font-medium">Add Comment</Label>
+                  <div className="flex space-x-2 mt-1">
+                    <Textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Add a comment..."
+                      rows={3}
+                      className="flex-1"
+                    />
+                    <Button onClick={addComment} disabled={!newComment.trim()}>
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
