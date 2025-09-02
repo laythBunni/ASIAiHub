@@ -48,6 +48,151 @@ import {
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Structured Response Component
+const StructuredResponse = ({ response, documentsReferenced }) => {
+  // Handle both structured object and fallback string responses
+  if (typeof response === 'string') {
+    return (
+      <div className="text-sm whitespace-pre-wrap">
+        {response}
+        {documentsReferenced > 0 && (
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <div className="text-xs text-gray-500 flex items-center">
+              <FileText className="w-3 h-3 mr-1" />
+              Referenced {documentsReferenced} company document(s)
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="pb-3 border-b border-gray-200">
+        <h4 className="font-medium text-gray-900 mb-2 flex items-center">
+          <CheckCircle className="w-4 h-4 mr-2 text-emerald-600" />
+          Summary
+        </h4>
+        <p className="text-sm text-gray-700">{response.summary}</p>
+      </div>
+
+      {/* Details Section */}
+      {(response.details?.requirements?.length > 0 || 
+        response.details?.procedures?.length > 0 || 
+        response.details?.exceptions?.length > 0) && (
+        <div className="space-y-3">
+          {response.details.requirements?.length > 0 && (
+            <div>
+              <h5 className="font-medium text-gray-800 mb-2 flex items-center text-sm">
+                <AlertCircle className="w-3 h-3 mr-1 text-orange-500" />
+                Requirements
+              </h5>
+              <ul className="text-sm text-gray-600 space-y-1">
+                {response.details.requirements.map((req, idx) => (
+                  <li key={idx} className="flex items-start">
+                    <span className="text-emerald-500 mr-2">•</span>
+                    {req}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {response.details.procedures?.length > 0 && (
+            <div>
+              <h5 className="font-medium text-gray-800 mb-2 flex items-center text-sm">
+                <PlayCircle className="w-3 h-3 mr-1 text-blue-500" />
+                Procedures
+              </h5>
+              <ol className="text-sm text-gray-600 space-y-1">
+                {response.details.procedures.map((proc, idx) => (
+                  <li key={idx} className="flex items-start">
+                    <span className="text-blue-500 mr-2 font-medium">{idx + 1}.</span>
+                    {proc}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {response.details.exceptions?.length > 0 && (
+            <div>
+              <h5 className="font-medium text-gray-800 mb-2 flex items-center text-sm">
+                <AlertTriangle className="w-3 h-3 mr-1 text-yellow-500" />
+                Exceptions
+              </h5>
+              <ul className="text-sm text-gray-600 space-y-1">
+                {response.details.exceptions.map((exc, idx) => (
+                  <li key={idx} className="flex items-start">
+                    <span className="text-yellow-500 mr-2">!</span>
+                    {exc}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Action Required */}
+      {response.action_required && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+          <h5 className="font-medium text-emerald-800 mb-1 flex items-center text-sm">
+            <TrendingUp className="w-3 h-3 mr-1" />
+            Action Required
+          </h5>
+          <p className="text-sm text-emerald-700">{response.action_required}</p>
+        </div>
+      )}
+
+      {/* Contact Info */}
+      {response.contact_info && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <h5 className="font-medium text-blue-800 mb-1 flex items-center text-sm">
+            <User className="w-3 h-3 mr-1" />
+            Contact Information
+          </h5>
+          <p className="text-sm text-blue-700">{response.contact_info}</p>
+        </div>
+      )}
+
+      {/* Related Policies */}
+      {response.related_policies?.length > 0 && (
+        <div>
+          <h5 className="font-medium text-gray-800 mb-2 flex items-center text-sm">
+            <FileText className="w-3 h-3 mr-1 text-gray-500" />
+            Related Policies
+          </h5>
+          <div className="flex flex-wrap gap-2">
+            {response.related_policies.map((policy, idx) => (
+              <Badge key={idx} variant="outline" className="text-xs">
+                {policy}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sources */}
+      {documentsReferenced > 0 && (
+        <div className="pt-3 border-t border-gray-100">
+          <div className="text-xs text-gray-500 flex items-center">
+            <FileText className="w-3 h-3 mr-1" />
+            Referenced {documentsReferenced} company document(s)
+            {response.sources && (
+              <span className="ml-2">
+                ({response.sources.join(', ')})
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Custom hook for API calls
 const useAPI = () => {
   const { toast } = useToast();
