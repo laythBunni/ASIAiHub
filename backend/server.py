@@ -175,9 +175,10 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     session_id: str
-    response: str
+    response: Dict[str, Any]  # Now returns structured response
     suggested_ticket: Optional[Dict[str, Any]] = None
     documents_referenced: int = 0
+    response_type: str = "structured"
 
 class TicketCreate(BaseModel):
     subject: str
