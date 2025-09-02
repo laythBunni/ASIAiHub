@@ -430,19 +430,15 @@ const ChatInterface = () => {
               ) : (
                 messages.map((message, index) => (
                   <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-3xl rounded-lg p-4 ${
+                    <div className={`max-w-4xl rounded-lg p-4 ${
                       message.role === 'user' 
                         ? 'bg-emerald-600 text-white' 
                         : 'bg-white border border-gray-200'
                     }`}>
-                      <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-                      {message.role === 'assistant' && message.documents_referenced > 0 && (
-                        <div className="mt-2 pt-2 border-t border-gray-200">
-                          <div className="text-xs text-gray-500 flex items-center">
-                            <FileText className="w-3 h-3 mr-1" />
-                            Referenced {message.documents_referenced} company document(s)
-                          </div>
-                        </div>
+                      {message.role === 'user' ? (
+                        <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                      ) : (
+                        <StructuredResponse response={message.content} documentsReferenced={message.documents_referenced} />
                       )}
                     </div>
                   </div>
