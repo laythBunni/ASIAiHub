@@ -121,7 +121,10 @@ class ASIOSAPITester:
         success, response = self.run_test("RAG Chat Send", "POST", "/chat/send", 200, chat_data)
         
         if success:
-            print(f"   AI Response: {response.get('response', 'No response')[:100]}...")
+            ai_response = response.get('response', 'No response')
+            if isinstance(ai_response, dict):
+                ai_response = str(ai_response)
+            print(f"   AI Response: {ai_response[:100]}...")
             # Wait a bit for GPT-5 processing
             time.sleep(2)
         
