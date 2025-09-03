@@ -902,7 +902,7 @@ const DocumentManagement = () => {
               </button>
             );
           })}
-        </TabsList>
+        </div>
 
         {DEPARTMENTS.map((dept) => {
           const Icon = dept.icon;
