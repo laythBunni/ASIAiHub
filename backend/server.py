@@ -1949,6 +1949,7 @@ async def get_current_user_info(current_user: BetaUser = Depends(get_current_use
     """Get current user information"""
     user_response = current_user.copy()
     user_response.personal_code = "***"
+    user_response.access_token = None  # Don't expose token
     return user_response
 
 @api_router.get("/auth/settings")
