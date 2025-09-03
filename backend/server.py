@@ -219,6 +219,53 @@ class FinanceSOPUpdate(BaseModel):
     notes: Optional[str] = None
 
 # Utility Functions
+async def process_document_with_rag(document_data: Dict[str, Any]) -> None:
+    """Process document with RAG system in background"""
+    try:
+        # Get RAG system instance
+        rag = get_rag_system(EMERGENT_LLM_KEY)
+        
+        # Update processing status
+        await db.documents.update_one(
+            {"id": document_data["id"]},
+            {"$set": {"processing_status": "processing"}}
+        )
+        
+        # Process and store document
+        success = await rag.process_and_store_document(document_data)
+        
+        if success:
+            # Get collection stats for chunks count
+            stats = rag.get_collection_stats()
+            
+            # Update document as processed
+            await db.documents.update_one(
+                {"id": document_data["id"]},
+                {
+                    "$set": {
+                        "processed": True,
+                        "processing_status": "completed",
+                        "chunks_count": stats.get("total_chunks", 0) // stats.get("unique_documents", 1)
+                    }
+                }
+            )
+            logger.info(f"Successfully processed document {document_data['original_name']}")
+        else:
+            # Mark as failed
+            await db.documents.update_one(
+                {"id": document_data["id"]},
+                {"$set": {"processing_status": "failed"}}
+            )
+            logger.error(f"Failed to process document {document_data['original_name']}")
+            
+    except Exception as e:
+        logger.error(f"Error in background document processing: {e}")
+        # Mark as failed
+        await db.documents.update_one(
+            {"id": document_data["id"]},
+            {"$set": {"processing_status": "failed"}}
+        )
+
 def calculate_sla_due(priority: TicketPriority, created_at: datetime) -> datetime:
     """Calculate SLA due date based on priority"""
     sla_hours = {
