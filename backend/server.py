@@ -1472,6 +1472,260 @@ async def get_department_categories(department: SupportDepartment):
     """Get categories for a specific department"""
     return BOOST_CATEGORIES.get(department, {})
 
+# BOOST Ticket Attachments
+class BoostAttachment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    ticket_id: str
+    original_name: str
+    file_name: str
+    file_path: str
+    file_size: int
+    mime_type: str
+    uploaded_by: str
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+@api_router.post("/boost/tickets/{ticket_id}/attachments")
+async def upload_ticket_attachment(
+    ticket_id: str,
+    file: UploadFile = File(...),
+    uploaded_by: str = Form(...),
+):
+    """Upload file attachment to ticket"""
+    try:
+        # Validate file size (10MB limit)
+        file_size = 0
+        content = await file.read()
+        file_size = len(content)
+        
+        if file_size > 10 * 1024 * 1024:  # 10MB
+            raise HTTPException(status_code=413, detail="File too large. Maximum size is 10MB.")
+        
+        # Validate file type
+        allowed_types = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain',
+            'image/jpeg',
+            'image/png',
+            'image/jpg'
+        ]
+        
+        if file.content_type not in allowed_types:
+            raise HTTPException(status_code=400, detail="File type not allowed")
+        
+        # Generate unique filename
+        file_extension = Path(file.filename).suffix
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        
+        # Create uploads directory if it doesn't exist
+        upload_dir = Path("uploads/attachments")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save file
+        file_path = upload_dir / unique_filename
+        async with aiofiles.open(file_path, 'wb') as f:
+            await f.write(content)
+        
+        # Create attachment record
+        attachment = BoostAttachment(
+            ticket_id=ticket_id,
+            original_name=file.filename,
+            file_name=unique_filename,
+            file_path=str(file_path),
+            file_size=file_size,
+            mime_type=file.content_type,
+            uploaded_by=uploaded_by
+        )
+        
+        # Save to database
+        await db.boost_attachments.insert_one(attachment.dict())
+        
+        # Update ticket updated_at timestamp
+        await db.boost_tickets.update_one(
+            {"id": ticket_id},
+            {"$set": {"updated_at": datetime.now(timezone.utc)}}
+        )
+        
+        return attachment.dict()
+        
+    except Exception as e:
+        logging.error(f"Error uploading attachment: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+@api_router.get("/boost/tickets/{ticket_id}/attachments")
+async def get_ticket_attachments(ticket_id: str):
+    """Get all attachments for a ticket"""
+    try:
+        attachments = await db.boost_attachments.find(
+            {"ticket_id": ticket_id}
+        ).to_list(length=None)
+        
+        for attachment in attachments:
+            attachment['_id'] = str(attachment['_id'])
+            
+        return attachments
+    except Exception as e:
+        logging.error(f"Error fetching attachments: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch attachments")
+
+@api_router.get("/boost/tickets/{ticket_id}/attachments/{attachment_id}")
+async def download_attachment(ticket_id: str, attachment_id: str):
+    """Download a specific attachment"""
+    try:
+        attachment = await db.boost_attachments.find_one(
+            {"id": attachment_id, "ticket_id": ticket_id}
+        )
+        
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Attachment not found")
+        
+        file_path = Path(attachment['file_path'])
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="File not found on disk")
+        
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            path=file_path,
+            filename=attachment['original_name'],
+            media_type=attachment['mime_type']
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error downloading attachment: {str(e)}")
+        raise HTTPException(status_code=500, detail="Download failed")
+
+@api_router.delete("/boost/tickets/{ticket_id}/attachments/{attachment_id}")
+async def delete_attachment(ticket_id: str, attachment_id: str):
+    """Delete a specific attachment"""
+    try:
+        attachment = await db.boost_attachments.find_one(
+            {"id": attachment_id, "ticket_id": ticket_id}
+        )
+        
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Attachment not found")
+        
+        # Delete file from disk
+        file_path = Path(attachment['file_path'])
+        if file_path.exists():
+            file_path.unlink()
+        
+        # Delete from database
+        await db.boost_attachments.delete_one(
+            {"id": attachment_id, "ticket_id": ticket_id}
+        )
+        
+        return {"message": "Attachment deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error deleting attachment: {str(e)}")
+        raise HTTPException(status_code=500, detail="Delete failed")
+
+# BOOST Audit Trail
+@api_router.get("/boost/tickets/{ticket_id}/audit")
+async def get_ticket_audit_trail(ticket_id: str):
+    """Get comprehensive audit trail for a ticket"""
+    try:
+        # Get ticket details
+        ticket = await db.boost_tickets.find_one({"id": ticket_id})
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        # Get comments
+        comments = await db.boost_comments.find({"ticket_id": ticket_id}).to_list(length=None)
+        
+        # Get attachments
+        attachments = await db.boost_attachments.find({"ticket_id": ticket_id}).to_list(length=None)
+        
+        # Build comprehensive audit trail
+        trail = []
+        
+        # Ticket creation
+        trail.append({
+            "id": str(uuid.uuid4()),
+            "action": "created",
+            "description": f"Ticket created by {ticket['requester_name']}",
+            "user_name": ticket['requester_name'],
+            "timestamp": ticket['created_at'],
+            "details": f"Priority: {ticket['priority'].upper()}, Department: {ticket['support_department']}, Category: {ticket['category']}"
+        })
+        
+        # Assignment
+        if ticket.get('owner_name'):
+            trail.append({
+                "id": str(uuid.uuid4()),
+                "action": "assigned",
+                "description": f"Assigned to {ticket['owner_name']}",
+                "user_name": "System",
+                "timestamp": ticket['updated_at'],
+                "details": f"Owner: {ticket['owner_name']} ({ticket['support_department']})"
+            })
+        
+        # Status changes
+        if ticket['status'] != 'open':
+            trail.append({
+                "id": str(uuid.uuid4()),
+                "action": "status_changed", 
+                "description": f"Status changed to {ticket['status'].replace('_', ' ')}",
+                "user_name": ticket.get('owner_name', 'System'),
+                "timestamp": ticket['updated_at'],
+                "details": f"New status: {ticket['status'].upper().replace('_', ' ')}"
+            })
+        
+        # Comments
+        for comment in comments:
+            trail.append({
+                "id": str(uuid.uuid4()),
+                "action": "comment_added",
+                "description": "Internal comment added" if comment['is_internal'] else "Comment added",
+                "user_name": comment['author_name'],
+                "timestamp": comment['created_at'],
+                "details": comment['body'][:100] + ('...' if len(comment['body']) > 100 else '')
+            })
+        
+        # Attachments
+        for attachment in attachments:
+            trail.append({
+                "id": str(uuid.uuid4()),
+                "action": "attachment_added",
+                "description": f"File attached: {attachment['original_name']}",
+                "user_name": attachment['uploaded_by'],
+                "timestamp": attachment['uploaded_at'],
+                "details": f"File: {attachment['original_name']} ({attachment['file_size']} bytes)"
+            })
+        
+        # SLA breach check
+        if ticket.get('due_at'):
+            due_date = ticket['due_at']
+            if isinstance(due_date, str):
+                due_date = datetime.fromisoformat(due_date.replace('Z', '+00:00'))
+            
+            if due_date < datetime.now(timezone.utc) and ticket['status'] not in ['resolved', 'closed']:
+                trail.append({
+                    "id": str(uuid.uuid4()),
+                    "action": "sla_breach",
+                    "description": "SLA deadline exceeded",
+                    "user_name": "System",
+                    "timestamp": due_date,
+                    "details": f"Due date: {due_date.isoformat()}"
+                })
+        
+        # Sort by timestamp (newest first)
+        trail.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        return trail
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error fetching audit trail: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch audit trail")
+
 # Include the router in the main app
 app.include_router(api_router)
 
