@@ -1070,12 +1070,44 @@ const BoostSupport = () => {
     }
   };
 
-  // Filter tickets by column
+  // Enhanced role-based permissions
+  const canViewAllTickets = () => {
+    return ['Admin', 'Manager'].includes(currentUser.boost_role);
+  };
+
+  const canViewDepartmentTickets = () => {
+    return ['Agent', 'Manager', 'Admin'].includes(currentUser.boost_role);
+  };
+
+  const canCloseTickets = () => {
+    return ['Manager', 'Admin'].includes(currentUser.boost_role);
+  };
+
+  // Filter tickets by column with enhanced permissions
   const getToDoTickets = () => {
-    return tickets.filter(ticket => 
-      ticket.owner_id === currentUser.id && 
-      ['open', 'in_progress', 'waiting_customer'].includes(ticket.status)
-    );
+    let filteredTickets = [];
+    
+    if (currentUser.boost_role === 'User') {
+      // End users: only tickets where they are mentioned or need to respond
+      filteredTickets = tickets.filter(ticket => 
+        (ticket.requester_id === currentUser.id && ticket.status === 'waiting_customer') ||
+        (ticket.owner_id === currentUser.id)
+      );
+    } else if (currentUser.boost_role === 'Agent') {
+      // Agents: assigned tickets in their department
+      filteredTickets = tickets.filter(ticket => 
+        ticket.owner_id === currentUser.id && 
+        ['open', 'in_progress', 'waiting_customer'].includes(ticket.status)
+      );
+    } else {
+      // Managers/Admins: all assigned tickets
+      filteredTickets = tickets.filter(ticket => 
+        ticket.owner_id === currentUser.id && 
+        ['open', 'in_progress', 'waiting_customer'].includes(ticket.status)
+      );
+    }
+    
+    return filteredTickets;
   };
 
   const getCreatedByYouTickets = () => {
@@ -1083,7 +1115,19 @@ const BoostSupport = () => {
   };
 
   const getAllTickets = () => {
-    return tickets; // Admin view
+    if (currentUser.boost_role === 'Admin' || currentUser.boost_role === 'Manager') {
+      return tickets; // Full visibility
+    } else if (currentUser.boost_role === 'Agent') {
+      // Agents: only tickets in their department
+      return tickets.filter(ticket => 
+        ticket.support_department === currentUser.department ||
+        ticket.requester_id === currentUser.id ||
+        ticket.owner_id === currentUser.id
+      );
+    } else {
+      // End users: only their own tickets
+      return tickets.filter(ticket => ticket.requester_id === currentUser.id);
+    }
   };
 
   const getStatusColor = (status) => {
