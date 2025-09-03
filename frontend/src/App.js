@@ -1230,7 +1230,7 @@ const BoostSupport = () => {
                 <SelectValue placeholder="All business units" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All business units</SelectItem>
+                <SelectItem value="all">All business units</SelectItem>
                 {businessUnits.map(unit => (
                   <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
                 ))}
