@@ -4141,10 +4141,21 @@ const SystemAdmin = () => {
                         </td>
                         <td className="p-3">
                           <div className="flex space-x-1">
-                            <Button size="sm" variant="outline">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => editUser(user)}
+                              title="Edit user details and permissions"
+                            >
                               <Edit className="w-3 h-3" />
                             </Button>
-                            <Button size="sm" variant="outline" className="text-red-600">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => deleteUser(user.id)}
+                              title="Delete user permanently"
+                            >
                               <Trash2 className="w-3 h-3" />
                             </Button>
                           </div>
