@@ -2718,6 +2718,151 @@ const BoostAdmin = () => {
     fetchBusinessUnits();
   }, []);
 
+  const createTestUsers = async () => {
+    const testUsers = [
+      {
+        name: 'Admin User',
+        email: 'admin@company.test',
+        boost_role: 'Admin',
+        department: 'OS Support'
+      },
+      {
+        name: 'Finance Manager',
+        email: 'manager@company.test',
+        boost_role: 'Manager',
+        department: 'Finance'
+      },
+      {
+        name: 'Finance Agent',
+        email: 'finance.agent@company.test',
+        boost_role: 'Agent',
+        department: 'Finance'
+      },
+      {
+        name: 'HR Agent',
+        email: 'hr.agent@company.test',
+        boost_role: 'Agent',
+        department: 'HR/P&T'
+      },
+      {
+        name: 'IT Agent',
+        email: 'it.agent@company.test',
+        boost_role: 'Agent',
+        department: 'IT'
+      },
+      {
+        name: 'DevOps Agent',
+        email: 'devops.agent@company.test',
+        boost_role: 'Agent',
+        department: 'DevOps'
+      },
+      {
+        name: 'End User One',
+        email: 'user.one@company.test',
+        boost_role: 'User',
+        department: null
+      },
+      {
+        name: 'End User Two',
+        email: 'user.two@company.test',
+        boost_role: 'User',
+        department: null
+      }
+    ];
+
+    try {
+      let created = 0;
+      for (const user of testUsers) {
+        try {
+          await apiCall('POST', '/boost/users', user);
+          created++;
+        } catch (error) {
+          // User might already exist, skip
+        }
+      }
+      
+      toast({
+        title: "Success",
+        description: `Created ${created} test user accounts`,
+      });
+      
+      fetchUsers();
+    } catch (error) {
+      console.error('Error creating test users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create test users",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const createTestBusinessUnits = async () => {
+    const testUnits = [
+      {
+        name: 'Africa Division',
+        code: 'AFR001',
+        type: 'Geography',
+        status: 'Active',
+        description: 'African regional operations'
+      },
+      {
+        name: 'Asia Pacific',
+        code: 'APAC001',
+        type: 'Geography', 
+        status: 'Active',
+        description: 'Asia Pacific regional operations'
+      },
+      {
+        name: 'IT Department',
+        code: 'IT-DEPT',
+        type: 'Technical',
+        status: 'Active',
+        description: 'Information Technology department'
+      },
+      {
+        name: 'Finance Team',
+        code: 'FIN-TEAM',
+        type: 'Business Support',
+        status: 'Active',
+        description: 'Financial operations and accounting'
+      },
+      {
+        name: 'London Office',
+        code: 'LON-OFF',
+        type: 'Geography',
+        status: 'Active',
+        description: 'London headquarters office'
+      }
+    ];
+
+    try {
+      let created = 0;
+      for (const unit of testUnits) {
+        try {
+          await apiCall('POST', '/boost/business-units', unit);
+          created++;
+        } catch (error) {
+          // Unit might already exist, skip
+        }
+      }
+      
+      toast({
+        title: "Success",
+        description: `Created ${created} test business units`,
+      });
+      
+      fetchBusinessUnits();
+    } catch (error) {
+      console.error('Error creating test business units:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create test business units",
+        variant: "destructive"
+      });
+    }
+  };
+
   const fetchUsers = async () => {
     try {
       const data = await apiCall('GET', '/boost/users');
