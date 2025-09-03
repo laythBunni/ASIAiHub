@@ -1153,11 +1153,14 @@ const BoostSupport = () => {
             <Eye className="w-3 h-3 mr-1" />
             View
           </Button>
-          <Button size="sm" variant="outline">
+          <Button size="sm" variant="outline" onClick={() => openTicketDetail(ticket)}>
             <MessageSquare className="w-3 h-3 mr-1" />
             Comment
           </Button>
-          <Button size="sm" variant="outline">
+          <Button size="sm" variant="outline" onClick={() => {
+            // TODO: Implement file upload functionality
+            alert('File upload functionality will be implemented in Phase 2');
+          }}>
             <Upload className="w-3 h-3 mr-1" />
             Attach
           </Button>
