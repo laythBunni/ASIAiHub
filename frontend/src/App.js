@@ -1315,7 +1315,7 @@ const BoostSupport = () => {
                 </div>
               ) : (
                 getAllTickets().slice(0, 10).map(ticket => (
-                  <TicketRow key={ticket.id} ticket={ticket} showQuickActions={false} />
+                  <TicketRow key={ticket.id} ticket={ticket} showQuickActions={true} />
                 ))
               )}
               {getAllTickets().length > 10 && (
