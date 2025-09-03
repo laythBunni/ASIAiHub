@@ -3070,6 +3070,103 @@ const BoostAdmin = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="testing" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Test Data Management</CardTitle>
+              <CardDescription>Create dummy accounts and business units for testing BOOST functionality</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Test Users Section */}
+              <div>
+                <h3 className="text-lg font-medium mb-3">Test User Accounts</h3>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-800 mb-3">
+                    Creates 8 test accounts with different roles and departments for comprehensive testing:
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <strong className="text-blue-900">Admin & Management:</strong>
+                      <ul className="ml-4 mt-1 space-y-1">
+                        <li>• admin@company.test (Admin)</li>
+                        <li>• manager@company.test (Manager)</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <strong className="text-blue-900">Department Agents:</strong>
+                      <ul className="ml-4 mt-1 space-y-1">
+                        <li>• finance.agent@company.test</li>
+                        <li>• hr.agent@company.test</li>
+                        <li>• it.agent@company.test</li>
+                        <li>• devops.agent@company.test</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <strong className="text-blue-900">End Users:</strong>
+                      <ul className="ml-4 mt-1 space-y-1">
+                        <li>• user.one@company.test</li>
+                        <li>• user.two@company.test</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  onClick={createTestUsers}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Create Test User Accounts
+                </Button>
+              </div>
+
+              {/* Test Business Units Section */}
+              <div>
+                <h3 className="text-lg font-medium mb-3">Test Business Units</h3>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-purple-800 mb-3">
+                    Creates 5 business units across different types for testing organizational structure:
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <strong className="text-purple-900">Geography:</strong>
+                      <ul className="ml-4 mt-1 space-y-1">
+                        <li>🌍 Africa Division (AFR001)</li>
+                        <li>🌏 Asia Pacific (APAC001)</li>
+                        <li>🏢 London Office (LON-OFF)</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <strong className="text-purple-900">Departments:</strong>
+                      <ul className="ml-4 mt-1 space-y-1">
+                        <li>⚙️ IT Department (IT-DEPT)</li>
+                        <li>💼 Finance Team (FIN-TEAM)</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  onClick={createTestBusinessUnits}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Building2 className="w-4 h-4 mr-2" />
+                  Create Test Business Units
+                </Button>
+              </div>
+
+              {/* Testing Instructions */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Testing Instructions</h4>
+                <div className="text-sm text-gray-700 space-y-2">
+                  <p><strong>1. Role-based Testing:</strong> Use different user accounts to test role-based permissions and ticket visibility.</p>
+                  <p><strong>2. Department Testing:</strong> Assign agents to different departments to test department-specific ticket access.</p>
+                  <p><strong>3. Assignment Testing:</strong> Use Manager/Admin accounts to test ticket assignment to various agents.</p>
+                  <p><strong>4. Business Unit Testing:</strong> Create tickets with different business units to test organizational routing.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* New User Modal */}
