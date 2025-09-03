@@ -378,7 +378,7 @@ const Dashboard = () => {
                 <span>Ask AI Assistant</span>
               </Button>
             </Link>
-            <Link to="/tickets">
+            <Link to="/boost">
               <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50">
                 <Ticket className="w-6 h-6 text-emerald-600" />
                 <span>View Tickets</span>
