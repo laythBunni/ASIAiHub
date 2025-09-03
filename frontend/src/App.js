@@ -1597,7 +1597,7 @@ const BoostNewTicketModal = ({ isOpen, onClose, onSubmit, businessUnits, categor
                 <SelectValue placeholder="Select business unit" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {businessUnits.map(unit => (
                   <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
                 ))}
@@ -2636,7 +2636,7 @@ const BoostUserModal = ({ isOpen, onClose, user, businessUnits, onSave }) => {
                 <SelectValue placeholder="Select business unit" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {businessUnits.map(unit => (
                   <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
                 ))}
@@ -2650,7 +2650,7 @@ const BoostUserModal = ({ isOpen, onClose, user, businessUnits, onSave }) => {
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 <SelectItem value="OS Support">OS Support</SelectItem>
                 <SelectItem value="Finance">Finance</SelectItem>
                 <SelectItem value="HR/P&T">HR/P&T</SelectItem>
