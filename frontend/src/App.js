@@ -1341,39 +1341,58 @@ const BoostSupport = () => {
           </CardContent>
         </Card>
 
-        {/* Column 3: All tickets (Admin) */}
-        {(currentUser.boost_role === 'Manager' || currentUser.boost_role === 'Admin') && (
-          <Card className="h-fit">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Shield className="w-5 h-5 text-emerald-600" />
-                All tickets (Admin)
-              </CardTitle>
-              <CardDescription>
-                {getAllTickets().length} total ticket(s) in system
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {getAllTickets().length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Ticket className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-sm">No tickets in system</p>
-                </div>
+        {/* Column 3: Role-based ticket view */}
+        <Card className="h-fit">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              {currentUser.boost_role === 'Admin' || currentUser.boost_role === 'Manager' ? (
+                <>
+                  <Shield className="w-5 h-5 text-emerald-600" />
+                  All tickets ({currentUser.boost_role})
+                </>
+              ) : currentUser.boost_role === 'Agent' ? (
+                <>
+                  <Building2 className="w-5 h-5 text-purple-600" />
+                  Department tickets
+                </>
               ) : (
-                getAllTickets().slice(0, 10).map(ticket => (
-                  <TicketRow key={ticket.id} ticket={ticket} showQuickActions={true} />
-                ))
+                <>
+                  <Eye className="w-5 h-5 text-gray-600" />
+                  Your tickets
+                </>
               )}
-              {getAllTickets().length > 10 && (
-                <div className="text-center pt-2">
-                  <Button variant="outline" size="sm">
-                    View all {getAllTickets().length} tickets
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+            </CardTitle>
+            <CardDescription>
+              {currentUser.boost_role === 'Admin' || currentUser.boost_role === 'Manager' 
+                ? `${getAllTickets().length} total ticket(s) in system`
+                : currentUser.boost_role === 'Agent'
+                ? `${getAllTickets().length} ticket(s) in ${currentUser.department || 'your department'}`
+                : `${getAllTickets().length} ticket(s) you can view`
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {getAllTickets().length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Ticket className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">
+                  {currentUser.boost_role === 'User' ? 'No tickets found' : 'No tickets in view'}
+                </p>
+              </div>
+            ) : (
+              getAllTickets().slice(0, 10).map(ticket => (
+                <TicketRow key={ticket.id} ticket={ticket} showQuickActions={true} />
+              ))
+            )}
+            {getAllTickets().length > 10 && (
+              <div className="text-center pt-2">
+                <Button variant="outline" size="sm">
+                  View all {getAllTickets().length} tickets
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* New Ticket Modal */}
