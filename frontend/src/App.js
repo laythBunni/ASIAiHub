@@ -283,10 +283,39 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const data = await apiCall('GET', '/dashboard/stats');
-        setStats(data);
+        // Fetch real statistics from existing endpoints
+        const [tickets, documents, ragStats] = await Promise.all([
+          apiCall('GET', '/boost/tickets').catch(() => []),
+          apiCall('GET', '/documents?show_all=true').catch(() => []),
+          apiCall('GET', '/documents/rag-stats').catch(() => ({ total_documents: 0, processed_documents: 0 }))
+        ]);
+
+        // Calculate real statistics
+        const totalTickets = tickets.length || 0;
+        const openTickets = tickets.filter(t => t.status === 'open').length || 0;
+        const totalDocuments = documents.length || 0;
+        const approvedDocuments = documents.filter(d => d.approval_status === 'approved').length || 0;
+        const overdueTickets = tickets.filter(t => 
+          t.due_at && new Date(t.due_at) < new Date() && !['resolved', 'closed'].includes(t.status)
+        ).length || 0;
+
+        setStats({
+          totalTickets,
+          openTickets,
+          totalDocuments: ragStats.total_documents || totalDocuments,
+          overdue: overdueTickets,
+          processed_documents: ragStats.processed_documents || approvedDocuments
+        });
       } catch (error) {
         console.error('Error fetching stats:', error);
+        // Set default stats if API calls fail
+        setStats({
+          totalTickets: 0,
+          openTickets: 0,
+          totalDocuments: 0,
+          overdue: 0,
+          processed_documents: 0
+        });
       }
     };
     fetchStats();
