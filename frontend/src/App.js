@@ -4140,10 +4140,8 @@ const SystemAdmin = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setShowPermissionModal(true);
-                            }}
+                            onClick={() => manageUserPermissions(user)}
+                            title="Manage user permissions"
                           >
                             <Settings className="w-3 h-3 mr-1" />
                             Manage
