@@ -165,36 +165,36 @@ const StructuredResponse = ({ response, documentsReferenced }) => {
       )}
 
       {/* Action Required */}
-      {response.action_required && (
+      {structuredData.action_required && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
           <h5 className="font-medium text-emerald-800 mb-1 flex items-center text-sm">
             <TrendingUp className="w-3 h-3 mr-1" />
             Action Required
           </h5>
-          <p className="text-sm text-emerald-700">{response.action_required}</p>
+          <p className="text-sm text-emerald-700">{structuredData.action_required}</p>
         </div>
       )}
 
       {/* Contact Info */}
-      {response.contact_info && (
+      {structuredData.contact_info && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <h5 className="font-medium text-blue-800 mb-1 flex items-center text-sm">
             <User className="w-3 h-3 mr-1" />
             Contact Information
           </h5>
-          <p className="text-sm text-blue-700">{response.contact_info}</p>
+          <p className="text-sm text-blue-700">{structuredData.contact_info}</p>
         </div>
       )}
 
       {/* Related Policies */}
-      {response.related_policies?.length > 0 && (
+      {structuredData.related_policies?.length > 0 && (
         <div>
           <h5 className="font-medium text-gray-800 mb-2 flex items-center text-sm">
             <FileText className="w-3 h-3 mr-1 text-gray-500" />
             Related Policies
           </h5>
           <div className="flex flex-wrap gap-2">
-            {response.related_policies.map((policy, idx) => (
+            {structuredData.related_policies.map((policy, idx) => (
               <Badge key={idx} variant="outline" className="text-xs">
                 {policy}
               </Badge>
