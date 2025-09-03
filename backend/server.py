@@ -14,6 +14,11 @@ import aiofiles
 import json
 from enum import Enum
 import asyncio
+import secrets
+import hashlib
+import re
+from fastapi import Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Import emergent integrations
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
