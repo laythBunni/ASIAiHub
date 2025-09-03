@@ -4494,8 +4494,26 @@ const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissi
         // Pass both user data and permissions
         onSave({ user: newUser, permissions: localPermissions });
       } else {
-        // Updating existing user permissions
-        onSave(localPermissions);
+        // Updating existing user - update both user details and permissions
+        if (!userForm.name.trim() || !userForm.email.trim()) {
+          toast({
+            title: "Validation Error",
+            description: "Name and email are required",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Update user details first
+        await apiCall('PUT', `/boost/users/${user.id}`, userForm);
+        
+        toast({
+          title: "Success",
+          description: "User updated successfully with permissions",
+        });
+
+        // Pass both user data and permissions for existing user updates
+        onSave({ user: userForm, permissions: localPermissions, isUpdate: true });
       }
     } catch (error) {
       console.error('Error saving user/permissions:', error);
