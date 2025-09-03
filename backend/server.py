@@ -1919,18 +1919,22 @@ async def login_user(request: LoginRequest):
         if user.personal_code != hashed_code:
             raise HTTPException(status_code=401, detail="Invalid email or personal code")
         
-        # Update last login
-        await db.beta_users.update_one(
-            {"id": user.id},
-            {"$set": {"last_login": datetime.now(timezone.utc)}}
-        )
-        
         # Generate access token
         access_token = generate_access_token(user.id, user.email)
+        
+        # Update last login and token
+        await db.beta_users.update_one(
+            {"id": user.id},
+            {"$set": {
+                "last_login": datetime.now(timezone.utc),
+                "access_token": access_token
+            }}
+        )
         
         # Return response without password hash
         user_response = user.copy()
         user_response.personal_code = "***"
+        user_response.access_token = None  # Don't expose token in user object
         
         return LoginResponse(access_token=access_token, user=user_response)
         
