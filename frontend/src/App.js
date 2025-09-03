@@ -42,11 +42,33 @@ import {
   XCircle,
   PlayCircle,
   PauseCircle,
-  MoreHorizontal
+  MoreHorizontal,
+  Trash2,
+  Check,
+  X,
+  Shield,
+  Building2,
+  PiggyBank,
+  Briefcase,
+  Scale,
+  Code2,
+  Target,
+  FolderOpen
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Department configuration
+const DEPARTMENTS = [
+  { id: 'Finance', name: 'Finance', icon: PiggyBank, color: 'bg-green-100 text-green-700 border-green-200' },
+  { id: 'People and Talent', name: 'People and Talent', icon: Users, color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  { id: 'Information Technology', name: 'Information Technology', icon: Code2, color: 'bg-purple-100 text-purple-700 border-purple-200' },
+  { id: 'Legal, Ethics and Compliance', name: 'Legal, Ethics and Compliance', icon: Scale, color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+  { id: 'Business Development', name: 'Business Development', icon: TrendingUp, color: 'bg-orange-100 text-orange-700 border-orange-200' },
+  { id: 'Project Management', name: 'Project Management', icon: Target, color: 'bg-pink-100 text-pink-700 border-pink-200' },
+  { id: 'Other', name: 'Other', icon: FolderOpen, color: 'bg-gray-100 text-gray-700 border-gray-200' }
+];
 
 // Structured Response Component
 const StructuredResponse = ({ response, documentsReferenced }) => {
@@ -283,8 +305,8 @@ const Dashboard = () => {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">ASI OS Dashboard</h1>
-          <p className="text-gray-600 mt-2">AI-Powered Operations Platform</p>
+          <h1 className="text-3xl font-bold text-gray-900">ASI AiHub Dashboard</h1>
+          <p className="text-gray-600 mt-2">AI-Powered Knowledge Management Platform</p>
         </div>
         <Badge variant="outline" className="text-emerald-600 border-emerald-200">
           <Bot className="w-4 h-4 mr-1" />
@@ -339,55 +361,6 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Charts and Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Tickets by Department</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {stats.tickets_by_department?.map((dept) => (
-                <div key={dept._id} className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{dept._id}</span>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-emerald-600 h-2 rounded-full" 
-                        style={{width: `${(dept.count / stats.total_tickets) * 100}%`}}
-                      ></div>
-                    </div>
-                    <span className="text-sm text-gray-600">{dept.count}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Tickets by Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {stats.tickets_by_status?.map((status) => (
-                <div key={status._id} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    {status._id === 'open' && <AlertCircle className="w-4 h-4 text-orange-500" />}
-                    {status._id === 'in_progress' && <PlayCircle className="w-4 h-4 text-blue-500" />}
-                    {status._id === 'resolved' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                    {status._id === 'closed' && <XCircle className="w-4 h-4 text-gray-500" />}
-                    <span className="text-sm font-medium capitalize">{status._id.replace('_', ' ')}</span>
-                  </div>
-                  <Badge variant="outline">{status.count}</Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Quick Actions */}
       <Card>
         <CardHeader>
@@ -395,14 +368,14 @@ const Dashboard = () => {
             <TrendingUp className="w-5 h-5 text-emerald-600" />
             Quick Actions
           </CardTitle>
-          <CardDescription>Common operations and workflows</CardDescription>
+          <CardDescription>Access key features and workflows</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link to="/chat">
               <Button className="w-full h-20 flex flex-col gap-2 bg-emerald-600 hover:bg-emerald-700">
                 <MessageCircle className="w-6 h-6" />
-                <span>Start AI Chat</span>
+                <span>Ask AI Assistant</span>
               </Button>
             </Link>
             <Link to="/tickets">
@@ -414,7 +387,7 @@ const Dashboard = () => {
             <Link to="/documents">
               <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50">
                 <FileText className="w-6 h-6 text-emerald-600" />
-                <span>Manage Documents</span>
+                <span>Manage Knowledge Base</span>
               </Button>
             </Link>
           </div>
@@ -493,6 +466,26 @@ const ChatInterface = () => {
     fetchMessages(session.id);
   };
 
+  const deleteSession = async (sessionId) => {
+    try {
+      await apiCall('DELETE', `/chat/sessions/${sessionId}`);
+      toast({
+        title: "Success",
+        description: "Conversation deleted successfully",
+      });
+      
+      // If current session was deleted, clear it
+      if (currentSession === sessionId) {
+        setCurrentSession(null);
+        setMessages([]);
+      }
+      
+      fetchSessions();
+    } catch (error) {
+      console.error('Error deleting session:', error);
+    }
+  };
+
   const sendMessage = async () => {
     if (!inputMessage.trim() || !currentSession) return;
 
@@ -563,11 +556,11 @@ const ChatInterface = () => {
             <div className="flex items-center space-x-2">
               <FileText className="w-4 h-4 text-emerald-600" />
               <span className="text-sm text-emerald-700 font-medium">
-                {documentsCount} documents available
+                {documentsCount} approved documents
               </span>
             </div>
             <p className="text-xs text-emerald-600 mt-1">
-              AI automatically searches all company policies and procedures
+              AI searches all approved company policies automatically
             </p>
           </div>
         </div>
@@ -577,19 +570,28 @@ const ChatInterface = () => {
           <Label className="text-sm font-medium text-gray-700 mb-3 block">Recent Conversations</Label>
           <div className="space-y-2">
             {sessions.map((session) => (
-              <Button
-                key={session.id}
-                variant={currentSession === session.id ? "default" : "ghost"}
-                className="w-full justify-start text-left p-3 h-auto"
-                onClick={() => selectSession(session)}
-              >
-                <div className="truncate">
-                  <div className="font-medium text-sm truncate">{session.title}</div>
-                  <div className="text-xs text-gray-500">
-                    {session.messages_count} messages
+              <div key={session.id} className="group relative">
+                <Button
+                  variant={currentSession === session.id ? "default" : "ghost"}
+                  className="w-full justify-start text-left p-3 h-auto pr-8"
+                  onClick={() => selectSession(session)}
+                >
+                  <div className="truncate">
+                    <div className="font-medium text-sm truncate">{session.title}</div>
+                    <div className="text-xs text-gray-500">
+                      {session.messages_count} messages
+                    </div>
                   </div>
-                </div>
-              </Button>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 h-6 w-6 p-0"
+                  onClick={() => deleteSession(session.id)}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
             ))}
           </div>
         </div>
@@ -604,7 +606,7 @@ const ChatInterface = () => {
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 mt-20">
                   <Bot className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium mb-2">Welcome to ASI OS AI Assistant</h3>
+                  <h3 className="text-lg font-medium mb-2">Welcome to ASI AiHub AI Assistant</h3>
                   <p className="mb-4">Ask anything about company policies, procedures, or operational guidance.</p>
                   <div className="bg-gray-50 rounded-lg p-4 max-w-md mx-auto">
                     <p className="text-sm font-medium text-gray-700 mb-2">Try asking:</p>
@@ -672,13 +674,13 @@ const ChatInterface = () => {
           <div className="flex-1 flex items-center justify-center text-gray-500">
             <div className="text-center max-w-lg">
               <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-xl font-medium mb-2">ASI OS AI Assistant</h3>
-              <p className="text-gray-600 mb-4">Your intelligent operations assistant with access to all company policies and procedures.</p>
+              <h3 className="text-xl font-medium mb-2">ASI AiHub AI Assistant</h3>
+              <p className="text-gray-600 mb-4">Your intelligent knowledge assistant with access to all approved company policies and procedures.</p>
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <FileText className="w-4 h-4 text-emerald-600" />
                   <span className="text-sm font-medium text-gray-700">
-                    {documentsCount} company documents ready
+                    {documentsCount} approved documents ready
                   </span>
                 </div>
                 <p className="text-xs text-gray-600">
@@ -697,27 +699,31 @@ const ChatInterface = () => {
   );
 };
 
-// Document Management Component
+// Enhanced Document Management Component
 const DocumentManagement = () => {
   const [documents, setDocuments] = useState([]);
+  const [activeTab, setActiveTab] = useState('Finance');
   const [uploading, setUploading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); // For demo purposes
   const { apiCall } = useAPI();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchDocuments();
-  }, []);
+  }, [activeTab]);
 
   const fetchDocuments = async () => {
     try {
-      const data = await apiCall('GET', '/documents');
-      setDocuments(data);
+      const endpoint = isAdmin ? '/documents/admin' : `/documents?department=${activeTab}&show_all=${isAdmin}`;
+      const data = await apiCall('GET', endpoint);
+      const filteredDocs = isAdmin ? data : data.filter(doc => doc.department === activeTab);
+      setDocuments(filteredDocs);
     } catch (error) {
       console.error('Error fetching documents:', error);
     }
   };
 
-  const handleFileUpload = async (event) => {
+  const handleFileUpload = async (event, department) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -725,12 +731,13 @@ const DocumentManagement = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('department', department);
 
       const data = await apiCall('POST', '/documents/upload', formData, true);
       
       toast({
         title: "Success",
-        description: `${data.filename} uploaded successfully`,
+        description: `${data.filename} uploaded and pending approval`,
       });
       
       fetchDocuments();
@@ -741,110 +748,242 @@ const DocumentManagement = () => {
     }
   };
 
+  const approveDocument = async (documentId) => {
+    try {
+      await apiCall('PUT', `/documents/${documentId}/approve`);
+      toast({
+        title: "Success",
+        description: "Document approved and added to knowledge base",
+      });
+      fetchDocuments();
+    } catch (error) {
+      console.error('Error approving document:', error);
+    }
+  };
+
+  const rejectDocument = async (documentId) => {
+    try {
+      await apiCall('PUT', `/documents/${documentId}/reject`, { notes: "Not approved for knowledge base" });
+      toast({
+        title: "Success",
+        description: "Document rejected",
+      });
+      fetchDocuments();
+    } catch (error) {
+      console.error('Error rejecting document:', error);
+    }
+  };
+
+  const deleteDocument = async (documentId) => {
+    try {
+      await apiCall('DELETE', `/documents/${documentId}`);
+      toast({
+        title: "Success",
+        description: "Document deleted successfully",
+      });
+      fetchDocuments();
+    } catch (error) {
+      console.error('Error deleting document:', error);
+    }
+  };
+
+  const getStatusBadge = (document) => {
+    const status = document.approval_status;
+    const colors = {
+      'pending_approval': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'approved': 'bg-green-100 text-green-800 border-green-200',
+      'rejected': 'bg-red-100 text-red-800 border-red-200'
+    };
+    
+    return (
+      <Badge className={colors[status] || colors['pending_approval']}>
+        {status.replace('_', ' ')}
+      </Badge>
+    );
+  };
+
+  const getDepartmentIcon = (departmentId) => {
+    const dept = DEPARTMENTS.find(d => d.id === departmentId);
+    return dept ? dept.icon : FolderOpen;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Document Management</h1>
-          <p className="text-gray-600 mt-2">Upload and manage policy documents for AI assistance</p>
+          <h1 className="text-3xl font-bold text-gray-900">Knowledge Base Management</h1>
+          <p className="text-gray-600 mt-2">Organize and manage approved documents by department</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant={isAdmin ? "default" : "outline"}
+            onClick={() => setIsAdmin(!isAdmin)}
+            className="bg-emerald-600 hover:bg-emerald-700"
+          >
+            <Shield className="w-4 h-4 mr-2" />
+            {isAdmin ? "Admin View" : "Switch to Admin"}
+          </Button>
         </div>
       </div>
 
-      {/* Upload Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5 text-emerald-600" />
-            Upload Documents
-          </CardTitle>
-          <CardDescription>
-            Upload PDF, DOCX, or TXT files to enhance the AI knowledge base
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-emerald-400 transition-colors">
-            <FileUp className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-lg font-medium text-gray-700 mb-2">
-              {uploading ? 'Uploading...' : 'Choose files to upload'}
-            </p>
-            <p className="text-sm text-gray-500 mb-4">
-              Supports PDF, DOCX, and TXT files
-            </p>
-            <input
-              type="file"
-              accept=".pdf,.docx,.txt"
-              onChange={handleFileUpload}
-              disabled={uploading}
-              className="hidden"
-              id="file-upload"
-            />
-            <Label htmlFor="file-upload">
-              <Button asChild className="bg-emerald-600 hover:bg-emerald-700" disabled={uploading}>
-                <span>
-                  {uploading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4 mr-2" />
-                      Select Files
-                    </>
-                  )}
-                </span>
-              </Button>
-            </Label>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Department Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-7">
+          {DEPARTMENTS.map((dept) => {
+            const Icon = dept.icon;
+            return (
+              <TabsTrigger key={dept.id} value={dept.id} className="flex items-center space-x-1">
+                <Icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{dept.name}</span>
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
 
-      {/* Documents List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Uploaded Documents</CardTitle>
-          <CardDescription>
-            {documents.length} document(s) available for AI assistance
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {documents.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <p>No documents uploaded yet</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {documents.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center space-x-3">
-                    <FileText className="w-8 h-8 text-emerald-600" />
-                    <div>
-                      <h3 className="font-medium text-gray-900">{doc.original_name}</h3>
-                      <p className="text-sm text-gray-500">
-                        Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
-                      </p>
+        {DEPARTMENTS.map((dept) => {
+          const Icon = dept.icon;
+          const deptDocuments = documents.filter(doc => doc.department === dept.id);
+          
+          return (
+            <TabsContent key={dept.id} value={dept.id} className="space-y-4">
+              {/* Upload Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className={`flex items-center gap-2 ${dept.color}`}>
+                    <Icon className="w-5 h-5" />
+                    {dept.name} - Upload Documents
+                  </CardTitle>
+                  <CardDescription>
+                    Upload documents for {dept.name}. {isAdmin ? "Admin approval required before adding to knowledge base." : "Documents must be approved before being searchable."}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors">
+                    <FileUp className="w-10 h-10 mx-auto mb-3 text-gray-400" />
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      {uploading ? 'Uploading...' : `Upload ${dept.name} Documents`}
+                    </p>
+                    <p className="text-xs text-gray-500 mb-3">
+                      Supports PDF, DOCX, and TXT files
+                    </p>
+                    <input
+                      type="file"
+                      accept=".pdf,.docx,.txt"
+                      onChange={(e) => handleFileUpload(e, dept.id)}
+                      disabled={uploading}
+                      className="hidden"
+                      id={`file-upload-${dept.id}`}
+                    />
+                    <Label htmlFor={`file-upload-${dept.id}`}>
+                      <Button asChild className="bg-emerald-600 hover:bg-emerald-700" disabled={uploading}>
+                        <span>
+                          {uploading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 mr-2" />
+                              Select Files
+                            </>
+                          )}
+                        </span>
+                      </Button>
+                    </Label>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Documents List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{dept.name} Documents</CardTitle>
+                  <CardDescription>
+                    {deptDocuments.length} document(s) {isAdmin ? "in this department" : "approved for knowledge base"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {deptDocuments.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Icon className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                      <p>No documents in {dept.name} yet</p>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="outline">
-                      {(doc.file_size / 1024).toFixed(1)} KB
-                    </Badge>
-                    {doc.department && (
-                      <Badge variant="secondary">{doc.department}</Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  ) : (
+                    <div className="space-y-3">
+                      {deptDocuments.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                          <div className="flex items-center space-x-3">
+                            <FileText className="w-8 h-8 text-emerald-600" />
+                            <div>
+                              <h3 className="font-medium text-gray-900">{doc.original_name}</h3>
+                              <p className="text-sm text-gray-500">
+                                Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
+                                {doc.uploaded_by && ` by ${doc.uploaded_by}`}
+                              </p>
+                              {doc.notes && (
+                                <p className="text-xs text-gray-400 mt-1">{doc.notes}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <Badge variant="outline">
+                              {(doc.file_size / 1024).toFixed(1)} KB
+                            </Badge>
+                            {getStatusBadge(doc)}
+                            {doc.processed && (
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                                {doc.chunks_count} chunks
+                              </Badge>
+                            )}
+                            {isAdmin && (
+                              <div className="flex space-x-1">
+                                {doc.approval_status === 'pending_approval' && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => approveDocument(doc.id)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Check className="w-4 h-4 text-green-600" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => rejectDocument(doc.id)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <X className="w-4 h-4 text-red-600" />
+                                    </Button>
+                                  </>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => deleteDocument(doc.id)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-600" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          );
+        })}
+      </Tabs>
     </div>
   );
 };
 
-// Enhanced Ticket Management Component  
+// Enhanced Ticket Management Component (keeping existing implementation)
 const TicketManagement = () => {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -1054,10 +1193,9 @@ const TicketManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All departments</SelectItem>
-                  <SelectItem value="User & Access Management">User & Access Management</SelectItem>
-                  <SelectItem value="System & IT Support">System & IT Support</SelectItem>
-                  <SelectItem value="Finance & Purchasing">Finance & Purchasing</SelectItem>
-                  <SelectItem value="Leave & People Management">Leave & People Management</SelectItem>
+                  {DEPARTMENTS.map(dept => (
+                    <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -1178,13 +1316,9 @@ const TicketManagement = () => {
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="User & Access Management">User & Access Management</SelectItem>
-                    <SelectItem value="Contracts & Change Log">Contracts & Change Log</SelectItem>
-                    <SelectItem value="Finance & Purchasing">Finance & Purchasing</SelectItem>
-                    <SelectItem value="Project & Performance">Project & Performance</SelectItem>
-                    <SelectItem value="Leave & People Management">Leave & People Management</SelectItem>
-                    <SelectItem value="System & IT Support">System & IT Support</SelectItem>
-                    <SelectItem value="Knowledge Base Requests">Knowledge Base Requests</SelectItem>
+                    {DEPARTMENTS.map(dept => (
+                      <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -1320,9 +1454,9 @@ const Navigation = () => {
   
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
-    { path: '/chat', label: 'AI Chat', icon: MessageCircle },
+    { path: '/chat', label: 'AI Assistant', icon: MessageCircle },
     { path: '/tickets', label: 'Tickets', icon: Ticket },
-    { path: '/documents', label: 'Documents', icon: FileText },
+    { path: '/documents', label: 'Knowledge Base', icon: FileText },
   ];
 
   return (
@@ -1334,7 +1468,7 @@ const Navigation = () => {
               <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
                 <Bot className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">ASI OS</span>
+              <span className="text-xl font-bold text-gray-900">ASI AiHub</span>
             </Link>
           </div>
           
