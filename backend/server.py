@@ -339,6 +339,51 @@ class FinanceSOPUpdate(BaseModel):
     results_communicated: Optional[bool] = None
     notes: Optional[str] = None
 
+# BOOST Ticketing Request/Response Models
+class BoostTicketCreate(BaseModel):
+    subject: str
+    description: str
+    support_department: SupportDepartment
+    category: str
+    subcategory: str
+    classification: TicketClassification
+    priority: TicketPriority
+    justification: str = ""
+    requester_name: str = "System User"
+    requester_email: str = "user@company.com"
+    business_unit_id: Optional[str] = None
+    channel: TicketChannel = TicketChannel.HUB
+
+class BoostTicketUpdate(BaseModel):
+    status: Optional[TicketStatus] = None
+    priority: Optional[TicketPriority] = None
+    owner_id: Optional[str] = None
+    owner_name: Optional[str] = None
+    resolution_notes: Optional[str] = None
+    resolution_type: Optional[ResolutionType] = None
+
+class BoostCommentCreate(BaseModel):
+    body: str
+    is_internal: bool = False
+    author_name: str = "System User"
+
+class BusinessUnitCreate(BaseModel):
+    name: str
+    code: str = ""
+
+class BoostUserCreate(BaseModel):
+    name: str
+    email: str
+    boost_role: BoostRole = BoostRole.USER
+    business_unit_id: Optional[str] = None
+    department: Optional[SupportDepartment] = None
+
+class BoostUserUpdate(BaseModel):
+    boost_role: Optional[BoostRole] = None
+    business_unit_id: Optional[str] = None
+    department: Optional[SupportDepartment] = None
+    active: Optional[bool] = None
+
 # Utility Functions
 async def process_document_with_rag(document_data: Dict[str, Any]) -> None:
     """Process document with RAG system in background"""
