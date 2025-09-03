@@ -282,140 +282,33 @@ async def categorize_ticket_with_ai(subject: str, description: str) -> Dict[str,
         }
 
 async def process_rag_query(message: str, document_ids: List[str], session_id: str) -> Dict[str, Any]:
-    """Process RAG query with ALL uploaded documents automatically"""
+    """Process RAG query using advanced semantic search"""
     try:
-        # Get ALL documents from database automatically (ignore document_ids for seamless experience)
-        all_documents = await db.documents.find().to_list(1000)
+        # Get RAG system instance
+        rag = get_rag_system(EMERGENT_LLM_KEY)
         
-        # Initialize chat with GPT-5
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=session_id,
-            system_message="""You are an AI assistant for ASI OS - an enterprise operations platform. You have access to the complete company knowledge base including policies, procedures, and operational guidelines.
-
-            CRITICAL: You must ALWAYS respond with a structured JSON format. Never provide plain text responses.
-
-            Response Format (JSON):
-            {
-              "summary": "Brief 1-2 sentence answer to the question",
-              "details": {
-                "requirements": ["list of requirements, rules, or criteria"],
-                "procedures": ["step-by-step procedures or processes"],
-                "exceptions": ["any exceptions, special cases, or conditions"]
-              },
-              "action_required": "What the user needs to do next (if any)",
-              "contact_info": "Department, email, or phone number for help",
-              "related_policies": ["names of related policies or procedures"]
-            }
-
-            Guidelines:
-            1. Use company documents as your primary knowledge source
-            2. If information isn't available, be honest in the summary
-            3. Keep arrays concise but comprehensive
-            4. Always include contact_info when available from documents
-            5. If a support ticket should be created, include this in action_required
-            6. Be professional and actionable
-            
-            Example response:
-            {
-              "summary": "Employees are entitled to 25 days of annual leave per year with 2 weeks advance notice required.",
-              "details": {
-                "requirements": ["2 weeks advance notice", "Manager approval required", "Submit via HR portal"],
-                "procedures": ["Submit leave request via HR portal", "Manager approves within 5 business days", "HR team automatically notified"],
-                "exceptions": ["Emergency leave can be approved by direct manager", "Maximum 5 consecutive days without senior management approval"]
-              },
-              "action_required": "Submit your leave request via the HR portal at least 2 weeks in advance",
-              "contact_info": "HR Department: hr@asi-os.com or extension 2150",
-              "related_policies": ["Emergency Leave Policy", "Sick Leave Policy"]
-            }"""
-        ).with_model("openai", "gpt-5")
+        # Use the advanced RAG system for semantic search and response generation
+        result = await rag.generate_rag_response(message, session_id)
         
-        # Prepare context from ALL documents
-        context_text = ""
-        documents_used = []
+        return result
         
-        if all_documents:
-            context_text = "\n\nCompany Knowledge Base:\n"
-            for doc in all_documents:
-                try:
-                    # Read file content for context
-                    with open(doc['file_path'], 'r', encoding='utf-8') as f:
-                        content = f.read()[:1500]  # Limit content size per document
-                        context_text += f"\n--- {doc['original_name']} ({doc.get('department', 'General')}) ---\n{content}\n"
-                        documents_used.append(doc['original_name'])
-                except Exception as e:
-                    logger.warning(f"Could not read file {doc['file_path']}: {e}")
-                    context_text += f"\n--- {doc['original_name']} ---\n[Document available but could not read content]\n"
-        else:
-            context_text = "\n\nNo company documents are currently available in the knowledge base. Please upload policy documents to enable accurate responses."
-        
-        user_message = UserMessage(
-            text=f"{message}{context_text}"
-        )
-        
-        response = await chat.send_message(user_message)
-        
-        # Parse structured JSON response
-        try:
-            # Try to parse the response as JSON
-            structured_response = json.loads(response)
-            
-            # Validate required fields
-            required_fields = ["summary", "details", "action_required", "contact_info", "related_policies"]
-            if not all(field in structured_response for field in required_fields):
-                raise ValueError("Missing required fields in JSON response")
-            
-            # Check if action suggests creating a ticket
-            suggested_ticket = None
-            if structured_response.get("action_required") and "ticket" in structured_response["action_required"].lower():
-                suggested_ticket = {"create_ticket": True, "suggestion": structured_response["action_required"]}
-            
-            # Add source information
-            if documents_used:
-                structured_response["sources"] = documents_used[:3]
-                if len(documents_used) > 3:
-                    structured_response["sources"].append("...")
-            
-            return {
-                "response": structured_response,
-                "suggested_ticket": suggested_ticket,
-                "documents_referenced": len(documents_used),
-                "response_type": "structured"
-            }
-            
-        except (json.JSONDecodeError, ValueError) as e:
-            logger.warning(f"Failed to parse structured response: {e}")
-            logger.warning(f"Raw response: {response}")
-            
-            # Fallback to plain text response with basic structure
-            fallback_response = {
-                "summary": response[:200] + "..." if len(response) > 200 else response,
+    except Exception as e:
+        logger.error(f"Error in RAG processing: {e}")
+        return {
+            "response": {
+                "summary": "I apologize, but I encountered an error processing your request. Please try again or contact support.",
                 "details": {
                     "requirements": [],
                     "procedures": [],
                     "exceptions": []
                 },
-                "action_required": "Please contact support for detailed guidance",
-                "contact_info": "Support team for assistance",
+                "action_required": "Please try again or contact IT support if the issue persists",
+                "contact_info": "IT Support: ithelp@asi-os.com or extension 3000",
                 "related_policies": []
-            }
-            
-            if documents_used:
-                fallback_response["sources"] = documents_used[:3]
-            
-            return {
-                "response": fallback_response,
-                "suggested_ticket": None,
-                "documents_referenced": len(documents_used),
-                "response_type": "fallback"
-            }
-        
-    except Exception as e:
-        logger.error(f"Error in RAG processing: {e}")
-        return {
-            "response": "I apologize, but I encountered an error processing your request. Please try again or contact support.",
+            },
             "suggested_ticket": None,
-            "documents_referenced": 0
+            "documents_referenced": 0,
+            "response_type": "error"
         }
 
 # API Routes
