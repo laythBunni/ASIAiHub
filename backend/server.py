@@ -65,6 +65,40 @@ class Department(str, Enum):
     PROJECT_MANAGEMENT = "Project Management"
     OTHER = "Other"
 
+# BOOST Ticketing System Enums
+class SupportDepartment(str, Enum):
+    OS_SUPPORT = "OS Support"
+    FINANCE = "Finance"
+    HR_PT = "HR/P&T"
+    IT = "IT"
+    DEVOPS = "DevOps"
+
+class TicketClassification(str, Enum):
+    INCIDENT = "Incident"
+    BUG = "Bug"
+    SERVICE_REQUEST = "ServiceRequest"
+    CHANGE_REQUEST = "ChangeRequest"
+    IMPLEMENTATION = "Implementation"
+    HOW_TO_QUERY = "HowToQuery"
+
+class TicketChannel(str, Enum):
+    HUB = "Hub"
+    EMAIL = "Email"
+    TEAMS = "Teams"
+    PHONE = "Phone"
+    MANUAL = "Manual"
+
+class ResolutionType(str, Enum):
+    SOP_FOLLOWED = "SOPFollowed"
+    CUSTOM_ACTION = "CustomAction"
+    ESCALATION_DECISION = "EscalationDecision"
+
+class BoostRole(str, Enum):
+    ADMIN = "Admin"
+    MANAGER = "Manager"
+    AGENT = "Agent"
+    USER = "User"
+
 class UserRole(str, Enum):
     ADMIN = "admin"
     MANAGER = "manager"
