@@ -1982,7 +1982,7 @@ const TicketManagement = () => {
                   <SelectValue placeholder="All departments" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All departments</SelectItem>
+                  <SelectItem value="all">All departments</SelectItem>
                   {DEPARTMENTS.map(dept => (
                     <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
                   ))}
