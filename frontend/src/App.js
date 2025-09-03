@@ -3084,15 +3084,40 @@ const BoostUserModal = ({ isOpen, onClose, user, businessUnits, onSave }) => {
 
 // BOOST Unit Modal Component
 const BoostUnitModal = ({ isOpen, onClose, unit, onSave }) => {
-  const [formData, setFormData] = useState({ name: '', code: '' });
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    code: '', 
+    type: 'Business Support',
+    status: 'Active',
+    description: ''
+  });
   const { apiCall } = useAPI();
   const { toast } = useToast();
 
+  const businessUnitTypes = [
+    'Geography',
+    'Business Support', 
+    'Technical',
+    'Other'
+  ];
+
   useEffect(() => {
     if (unit) {
-      setFormData({ name: unit.name, code: unit.code });
+      setFormData({ 
+        name: unit.name, 
+        code: unit.code || '',
+        type: unit.type || 'Business Support',
+        status: unit.status || 'Active',
+        description: unit.description || ''
+      });
     } else {
-      setFormData({ name: '', code: '' });
+      setFormData({ 
+        name: '', 
+        code: '', 
+        type: 'Business Support',
+        status: 'Active',
+        description: ''
+      });
     }
   }, [unit]);
 
@@ -3108,36 +3133,105 @@ const BoostUnitModal = ({ isOpen, onClose, unit, onSave }) => {
       onSave();
     } catch (error) {
       console.error('Error saving business unit:', error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to save business unit",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'Geography': return '🌍';
+      case 'Technical': return '⚙️';
+      case 'Business Support': return '💼';
+      case 'Other': return '📁';
+      default: return '📁';
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{unit ? 'Edit Business Unit' : 'Add New Business Unit'}</DialogTitle>
+          <DialogDescription>
+            {unit ? 'Update business unit information' : 'Create a new business unit to organize requesters and route tickets'}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Name</Label>
+            <Label>Name *</Label>
             <Input
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
-              placeholder="Business unit name"
+              placeholder="e.g., Africa Division, IT Department, London Office"
             />
           </div>
+          
           <div>
             <Label>Code</Label>
             <Input
               value={formData.code}
               onChange={(e) => setFormData({...formData, code: e.target.value})}
-              placeholder="Unit code (optional)"
+              placeholder="e.g., AFR001, IT-LON, BIZ-SUP"
             />
           </div>
-          <div className="flex justify-end space-x-2">
+
+          <div>
+            <Label>Type *</Label>
+            <Select value={formData.type} onValueChange={(value) => setFormData({...formData, type: value})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {businessUnitTypes.map(type => (
+                  <SelectItem key={type} value={type}>
+                    <span className="flex items-center">
+                      <span className="mr-2">{getTypeIcon(type)}</span>
+                      {type}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">
+              Geography: Regional offices • Technical: IT/Engineering • Business Support: HR/Finance • Other: Miscellaneous
+            </p>
+          </div>
+
+          <div>
+            <Label>Status</Label>
+            <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Active">✅ Active</SelectItem>
+                <SelectItem value="Inactive">⏸️ Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Description</Label>
+            <Textarea
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              placeholder="Brief description of this business unit's purpose..."
+              rows={3}
+            />
+          </div>
+          
+          <div className="flex justify-end space-x-2 pt-4">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700">
-              {unit ? 'Update' : 'Create'}
+            <Button 
+              onClick={handleSubmit} 
+              className="bg-emerald-600 hover:bg-emerald-700"
+              disabled={!formData.name.trim()}
+            >
+              {unit ? 'Update Unit' : 'Create Unit'}
             </Button>
           </div>
         </div>
