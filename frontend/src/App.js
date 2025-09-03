@@ -1800,8 +1800,85 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
   };
 
   const fetchAttachments = async () => {
-    // Mock attachments for now
-    setAttachments([]);
+    if (!ticket) return;
+    try {
+      // Try to fetch attachments from backend
+      const attachments = await apiCall('GET', `/boost/tickets/${ticket.id}/attachments`);
+      setAttachments(attachments || []);
+    } catch (error) {
+      console.error('Error fetching attachments:', error);
+      setAttachments([]);
+    }
+  };
+
+  const handleFileUpload = async (files) => {
+    if (!ticket || files.length === 0) return;
+
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+          toast({
+            title: "File too large",
+            description: `${file.name} exceeds 10MB limit`,
+            variant: "destructive"
+          });
+          return null;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('ticket_id', ticket.id);
+        formData.append('uploaded_by', currentUser.name);
+
+        try {
+          const response = await fetch(`${API}/boost/tickets/${ticket.id}/attachments`, {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Upload failed: ${response.statusText}`);
+          }
+
+          return await response.json();
+        } catch (error) {
+          toast({
+            title: "Upload failed",
+            description: `Failed to upload ${file.name}: ${error.message}`,
+            variant: "destructive"
+          });
+          return null;
+        }
+      });
+
+      const results = await Promise.all(uploadPromises);
+      const successful = results.filter(r => r !== null);
+      
+      if (successful.length > 0) {
+        toast({
+          title: "Upload successful",
+          description: `${successful.length} file(s) uploaded successfully`,
+        });
+        
+        // Add audit trail entry
+        await apiCall('POST', `/boost/tickets/${ticket.id}/comments`, {
+          body: `${successful.length} file(s) attached: ${successful.map(f => f.original_name).join(', ')}`,
+          is_internal: false,
+          author_name: currentUser.name
+        });
+        
+        fetchAttachments();
+        fetchComments();
+        fetchAuditTrail();
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast({
+        title: "Upload error",
+        description: "Failed to process file uploads",
+        variant: "destructive"
+      });
+    }
   };
 
   const fetchAvailableAgents = async () => {
