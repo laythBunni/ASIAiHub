@@ -655,6 +655,48 @@ async def get_chat_messages(session_id: str):
     messages = await db.chat_messages.find({"session_id": session_id}).sort("timestamp", 1).to_list(1000)
     return [ChatMessage(**message) for message in messages]
 
+@api_router.delete("/chat/sessions/{session_id}")
+async def delete_chat_session(session_id: str):
+    """Delete a chat session and all its messages"""
+    try:
+        # Delete all messages for this session
+        messages_result = await db.chat_messages.delete_many({"session_id": session_id})
+        
+        # Delete the session
+        session_result = await db.chat_sessions.delete_one({"id": session_id})
+        
+        if session_result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Chat session not found")
+        
+        return {
+            "message": "Chat session deleted successfully",
+            "messages_deleted": messages_result.deleted_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error deleting chat session: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete chat session")
+
+@api_router.delete("/chat/sessions")
+async def delete_all_chat_sessions():
+    """Delete all chat sessions and messages"""
+    try:
+        # Delete all messages
+        messages_result = await db.chat_messages.delete_many({})
+        
+        # Delete all sessions
+        sessions_result = await db.chat_sessions.delete_many({})
+        
+        return {
+            "message": "All chat sessions deleted successfully",
+            "sessions_deleted": sessions_result.deleted_count,
+            "messages_deleted": messages_result.deleted_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error deleting all chat sessions: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete chat sessions")
+
 # Enhanced Ticket Routes
 @api_router.post("/tickets", response_model=Ticket)
 async def create_ticket(ticket_data: TicketCreate):
