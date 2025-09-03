@@ -62,6 +62,337 @@ import {
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Authentication Context
+const AuthContext = createContext();
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(localStorage.getItem('auth_token'));
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const storedToken = localStorage.getItem('auth_token');
+      if (storedToken) {
+        try {
+          const response = await axios.get(`${API}/auth/me`, {
+            headers: { Authorization: `Bearer ${storedToken}` }
+          });
+          setUser(response.data);
+          setToken(storedToken);
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          localStorage.removeItem('auth_token');
+          setToken(null);
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
+  const login = async (email, personalCode) => {
+    try {
+      const response = await axios.post(`${API}/auth/login`, {
+        email,
+        personal_code: personalCode
+      });
+      
+      const { access_token, user: userData } = response.data;
+      localStorage.setItem('auth_token', access_token);
+      setToken(access_token);
+      setUser(userData);
+      return { success: true };
+    } catch (error) {
+      console.error('Login failed:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Login failed' 
+      };
+    }
+  };
+
+  const register = async (email, registrationCode, personalCode, department) => {
+    try {
+      const response = await axios.post(`${API}/auth/register`, {
+        email,
+        registration_code: registrationCode,
+        personal_code: personalCode,
+        department
+      });
+      
+      const { access_token, user: userData } = response.data;
+      localStorage.setItem('auth_token', access_token);
+      setToken(access_token);
+      setUser(userData);
+      return { success: true };
+    } catch (error) {
+      console.error('Registration failed:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Registration failed' 
+      };
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('auth_token');
+    setToken(null);
+    setUser(null);
+  };
+
+  const value = {
+    user,
+    token,
+    loading,
+    login,
+    register,
+    logout,
+    isAuthenticated: !!user
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// Authentication Forms Component
+const AuthenticationForm = () => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    email: '',
+    personalCode: '',
+    registrationCode: '',
+    department: ''
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login, register } = useAuth();
+  const { toast } = useToast();
+
+  const departments = [
+    'Finance',
+    'People and Talent', 
+    'Information Technology',
+    'Legal, Ethics and Compliance',
+    'Business Development',
+    'Project Management',
+    'Management',
+    'Other'
+  ];
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      let result;
+      if (isLogin) {
+        result = await login(formData.email, formData.personalCode);
+      } else {
+        result = await register(
+          formData.email, 
+          formData.registrationCode, 
+          formData.personalCode, 
+          formData.department
+        );
+      }
+
+      if (result.success) {
+        toast({
+          title: isLogin ? "Login successful" : "Registration successful",
+          description: "Welcome to ASI AiHub!",
+        });
+      } else {
+        setError(result.error);
+      }
+    } catch (error) {
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <div className="w-12 h-12 bg-emerald-600 rounded-lg flex items-center justify-center">
+            <Bot className="w-8 h-8 text-white" />
+          </div>
+        </div>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          ASI AiHub
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          {isLogin ? 'Sign in to your account' : 'Create your beta account'}
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <div className="rounded-md bg-red-50 p-4">
+                <div className="flex">
+                  <AlertCircle className="h-5 w-5 text-red-400" />
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">
+                      {error}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                placeholder="your.email@adamsmithinternational.com"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="personalCode">Personal Code</Label>
+              <Input
+                id="personalCode"
+                name="personalCode"
+                type="password"
+                autoComplete="current-password"
+                required
+                placeholder="Enter your personal access code"
+                value={formData.personalCode}
+                onChange={handleInputChange}
+                className="mt-1"
+              />
+            </div>
+
+            {!isLogin && (
+              <>
+                <div>
+                  <Label htmlFor="registrationCode">Registration Code</Label>
+                  <Input
+                    id="registrationCode"
+                    name="registrationCode"
+                    type="text"
+                    required
+                    placeholder="Enter beta registration code"
+                    value={formData.registrationCode}
+                    onChange={handleInputChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="department">Department (Optional)</Label>
+                  <Select onValueChange={(value) => setFormData({...formData, department: value})}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select your department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept} value={dept}>
+                          {dept}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            <div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : null}
+                {isLogin ? 'Sign in' : 'Create account'}
+              </Button>
+            </div>
+          </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">
+                  {isLogin ? "Don't have an account?" : "Already have an account?"}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setError('');
+                  setFormData({
+                    email: '',
+                    personalCode: '',
+                    registrationCode: '',
+                    department: ''
+                  });
+                }}
+              >
+                {isLogin ? 'Create new account' : 'Sign in instead'}
+              </Button>
+            </div>
+          </div>
+
+          {!isLogin && (
+            <div className="mt-6 text-xs text-gray-500">
+              <p>Beta Requirements:</p>
+              <ul className="mt-1 list-disc list-inside space-y-1">
+                <li>Must use @adamsmithinternational.com email</li>
+                <li>Need beta registration code from admin</li>
+                <li>Personal code must be at least 6 characters</li>
+                <li>Limited to 20 beta users</li>
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Department configuration
 const DEPARTMENTS = [
   { id: 'Finance', name: 'Finance', icon: PiggyBank, color: 'bg-green-100 text-green-700 border-green-200' },
