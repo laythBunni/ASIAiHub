@@ -437,13 +437,10 @@ async def upload_document(
         # Save to database
         await db.documents.insert_one(document.dict())
         
-        # Process document with RAG system in background
-        asyncio.create_task(process_document_with_rag(document.dict()))
-        
         return DocumentUploadResponse(
             id=document.id,
             filename=document.original_name,
-            message="Document uploaded successfully and processing for search"
+            message="Document uploaded successfully and pending approval"
         )
         
     except Exception as e:
