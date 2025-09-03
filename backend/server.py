@@ -459,9 +459,10 @@ def calculate_boost_sla_due(priority: TicketPriority, created_at: datetime) -> d
 
 def auto_prefix_subject(department: SupportDepartment, category: str, subject: str) -> str:
     """Auto-prefix subject with department and category"""
-    if subject.startswith(f"{department}: {category}"):
+    dept_name = department.value  # Get the actual string value from enum
+    if subject.startswith(f"{dept_name}: {category}"):
         return subject
-    return f"{department}: {category} – {subject}"
+    return f"{dept_name}: {category} – {subject}"
 
 # BOOST Categorization Data
 BOOST_CATEGORIES = {
