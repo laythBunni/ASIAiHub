@@ -2932,10 +2932,30 @@ const BoostAdmin = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">BOOST Admin</h1>
           <p className="text-gray-600 mt-2">Manage users and business units</p>
+        </div>
+        <div className="flex flex-col space-y-2">
+          <Button 
+            onClick={createTestUsers}
+            variant="outline"
+            size="sm"
+            className="border-blue-200 text-blue-600 hover:bg-blue-50"
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Create Test Users
+          </Button>
+          <Button 
+            onClick={createTestBusinessUnits}
+            variant="outline"
+            size="sm"
+            className="border-purple-200 text-purple-600 hover:bg-purple-50"
+          >
+            <Building2 className="w-4 h-4 mr-2" />
+            Create Test Units
+          </Button>
         </div>
       </div>
 
