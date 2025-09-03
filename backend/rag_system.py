@@ -244,7 +244,7 @@ class RAGSystem:
             chat = LlmChat(
                 api_key=self.emergent_llm_key,
                 session_id=session_id,
-                system_message="""You are an AI assistant for ASI OS enterprise operations platform. You have access to company policy documents and procedures.
+                system_message="""You are an AI assistant for ASI AiHub - an enterprise AI-powered knowledge management platform. You have access to approved company policy documents and procedures.
 
                 CRITICAL: You must ALWAYS respond with a structured JSON format. Never provide plain text responses.
 
