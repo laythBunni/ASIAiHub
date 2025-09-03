@@ -3504,6 +3504,815 @@ const BoostUnitModal = ({ isOpen, onClose, unit, onSave }) => {
   );
 };
 
+// System Admin Dashboard Component
+const SystemAdmin = () => {
+  const [activeTab, setActiveTab] = useState('users');
+  const [users, setUsers] = useState([]);
+  const [businessUnits, setBusinessUnits] = useState([]);
+  const [permissions, setPermissions] = useState({});
+  const [systemStats, setSystemStats] = useState({});
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [showBusinessUnitModal, setShowBusinessUnitModal] = useState(false);
+  const [editingUnit, setEditingUnit] = useState(null);
+  
+  const { apiCall } = useAPI();
+  const { toast } = useToast();
+
+  // Permission categories and their specific permissions
+  const permissionCategories = {
+    'Dashboard': [
+      'view_dashboard',
+      'view_statistics',
+      'export_reports'
+    ],
+    'AI Assistant': [
+      'use_ai_chat',
+      'view_chat_history',
+      'delete_conversations'
+    ],
+    'BOOST Support': [
+      'create_tickets',
+      'view_own_tickets',
+      'view_department_tickets',
+      'view_all_tickets',
+      'assign_tickets',
+      'close_tickets',
+      'delete_tickets'
+    ],
+    'Knowledge Base': [
+      'view_documents',
+      'upload_documents',
+      'approve_documents',
+      'manage_documents',
+      'admin_documents'
+    ],
+    'Administration': [
+      'manage_users',
+      'manage_business_units',
+      'manage_permissions',
+      'system_settings',
+      'view_audit_logs'
+    ]
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchBusinessUnits();
+    fetchSystemStats();
+    fetchPermissions();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const boostUsers = await apiCall('GET', '/boost/users');
+      setUsers(boostUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchBusinessUnits = async () => {
+    try {
+      const units = await apiCall('GET', '/boost/business-units');
+      setBusinessUnits(units);
+    } catch (error) {
+      console.error('Error fetching business units:', error);
+    }
+  };
+
+  const fetchSystemStats = async () => {
+    try {
+      // Get various statistics from different endpoints
+      const [tickets, documents, ragStats] = await Promise.all([
+        apiCall('GET', '/boost/tickets'),
+        apiCall('GET', '/documents?show_all=true'),
+        apiCall('GET', '/documents/rag-stats')
+      ]);
+
+      setSystemStats({
+        totalTickets: tickets.length,
+        openTickets: tickets.filter(t => t.status === 'open').length,
+        totalDocuments: documents.length,
+        approvedDocuments: documents.filter(d => d.approval_status === 'approved').length,
+        totalUsers: users.length,
+        totalBusinessUnits: businessUnits.length,
+        ragStats: ragStats
+      });
+    } catch (error) {
+      console.error('Error fetching system stats:', error);
+    }
+  };
+
+  const fetchPermissions = async () => {
+    // For now, create default permissions structure
+    const defaultPermissions = {};
+    users.forEach(user => {
+      defaultPermissions[user.id] = getDefaultPermissions(user.boost_role);
+    });
+    setPermissions(defaultPermissions);
+  };
+
+  const getDefaultPermissions = (role) => {
+    const allPermissions = Object.values(permissionCategories).flat();
+    
+    switch (role) {
+      case 'Admin':
+        return Object.fromEntries(allPermissions.map(p => [p, true]));
+      case 'Manager':
+        return {
+          view_dashboard: true,
+          view_statistics: true,
+          export_reports: true,
+          use_ai_chat: true,
+          view_chat_history: true,
+          delete_conversations: true,
+          create_tickets: true,
+          view_own_tickets: true,
+          view_department_tickets: true,
+          view_all_tickets: true,
+          assign_tickets: true,
+          close_tickets: true,
+          view_documents: true,
+          upload_documents: true,
+          approve_documents: true,
+          manage_documents: true,
+          manage_users: false,
+          manage_business_units: false,
+          manage_permissions: false,
+          system_settings: false,
+          view_audit_logs: true
+        };
+      case 'Agent':
+        return {
+          view_dashboard: true,
+          view_statistics: false,
+          export_reports: false,
+          use_ai_chat: true,
+          view_chat_history: true,
+          delete_conversations: false,
+          create_tickets: true,
+          view_own_tickets: true,
+          view_department_tickets: true,
+          view_all_tickets: false,
+          assign_tickets: false,
+          close_tickets: false,
+          delete_tickets: false,
+          view_documents: true,
+          upload_documents: true,
+          approve_documents: false,
+          manage_documents: false,
+          admin_documents: false
+        };
+      case 'User':
+        return {
+          view_dashboard: true,
+          view_statistics: false,
+          use_ai_chat: true,
+          view_chat_history: true,
+          create_tickets: true,
+          view_own_tickets: true,
+          view_documents: true,
+          upload_documents: true
+        };
+      default:
+        return Object.fromEntries(allPermissions.map(p => [p, false]));
+    }
+  };
+
+  const updateUserPermissions = async (userId, newPermissions) => {
+    try {
+      setPermissions(prev => ({
+        ...prev,
+        [userId]: newPermissions
+      }));
+      
+      toast({
+        title: "Success",
+        description: "User permissions updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating permissions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update permissions",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const createBusinessUnit = async (unitData) => {
+    try {
+      await apiCall('POST', '/boost/business-units', unitData);
+      toast({
+        title: "Success",
+        description: "Business unit created successfully",
+      });
+      fetchBusinessUnits();
+      setShowBusinessUnitModal(false);
+    } catch (error) {
+      console.error('Error creating business unit:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create business unit",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateBusinessUnit = async (unitId, unitData) => {
+    try {
+      await apiCall('PUT', `/boost/business-units/${unitId}`, unitData);
+      toast({
+        title: "Success", 
+        description: "Business unit updated successfully",
+      });
+      fetchBusinessUnits();
+      setShowBusinessUnitModal(false);
+      setEditingUnit(null);
+    } catch (error) {
+      console.error('Error updating business unit:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update business unit",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteBusinessUnit = async (unitId) => {
+    if (!confirm('Are you sure you want to delete this business unit?')) return;
+    
+    try {
+      await apiCall('DELETE', `/boost/business-units/${unitId}`);
+      toast({
+        title: "Success",
+        description: "Business unit deleted successfully",
+      });
+      fetchBusinessUnits();
+    } catch (error) {
+      console.error('Error deleting business unit:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete business unit",
+        variant: "destructive"
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">System Administration</h1>
+          <p className="text-gray-600 mt-2">Manage users, permissions, and system configuration</p>
+        </div>
+        <Button 
+          onClick={fetchSystemStats}
+          variant="outline"
+          className="border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh Stats
+        </Button>
+      </div>
+
+      {/* System Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Ticket className="w-8 h-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Tickets</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.totalTickets || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <AlertCircle className="w-8 h-8 text-orange-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Open Tickets</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.openTickets || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <FileText className="w-8 h-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Documents</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.totalDocuments || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Users className="w-8 h-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Active Users</p>
+                <p className="text-2xl font-bold text-gray-900">{users.length || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="users">Users & Permissions</TabsTrigger>
+          <TabsTrigger value="business">Business Units</TabsTrigger>
+          <TabsTrigger value="system">System Settings</TabsTrigger>
+          <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+        </TabsList>
+
+        {/* Users & Permissions Tab */}
+        <TabsContent value="users" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>User Management & Permissions</CardTitle>
+                <Button 
+                  onClick={() => {
+                    setSelectedUser(null);
+                    setShowPermissionModal(true);
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add User
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3">User</th>
+                      <th className="text-left p-3">Role</th>
+                      <th className="text-left p-3">Department</th>
+                      <th className="text-left p-3">Business Unit</th>
+                      <th className="text-left p-3">Permissions</th>
+                      <th className="text-left p-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map(user => (
+                      <tr key={user.id} className="border-b hover:bg-gray-50">
+                        <td className="p-3">
+                          <div>
+                            <div className="font-medium">{user.name}</div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <Badge className={`${
+                            user.boost_role === 'Admin' ? 'bg-red-100 text-red-700' :
+                            user.boost_role === 'Manager' ? 'bg-orange-100 text-orange-700' :
+                            user.boost_role === 'Agent' ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {user.boost_role}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-gray-600">{user.department || 'None'}</td>
+                        <td className="p-3 text-gray-600">{user.business_unit_name || 'None'}</td>
+                        <td className="p-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowPermissionModal(true);
+                            }}
+                          >
+                            <Settings className="w-3 h-3 mr-1" />
+                            Manage
+                          </Button>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex space-x-1">
+                            <Button size="sm" variant="outline">
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-red-600">
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Business Units Tab */}
+        <TabsContent value="business" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Business Units Management</CardTitle>
+                <Button 
+                  onClick={() => {
+                    setEditingUnit(null);
+                    setShowBusinessUnitModal(true);
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Business Unit
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {businessUnits.map(unit => (
+                  <Card key={unit.id} className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">
+                          {unit.type === 'Geography' ? '🌍' :
+                           unit.type === 'Technical' ? '⚙️' :
+                           unit.type === 'Business Support' ? '💼' : '📁'}
+                        </span>
+                        <div>
+                          <h3 className="font-medium">{unit.name}</h3>
+                          <p className="text-sm text-gray-500">{unit.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            setEditingUnit(unit);
+                            setShowBusinessUnitModal(true);
+                          }}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => deleteBusinessUnit(unit.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p><strong>Code:</strong> {unit.code || 'None'}</p>
+                      <p><strong>Status:</strong> 
+                        <Badge variant="outline" className="ml-1">
+                          {unit.status || 'Active'}
+                        </Badge>
+                      </p>
+                      <p className="text-gray-500 mt-2">{unit.description}</p>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* System Settings Tab */}
+        <TabsContent value="system" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>System Configuration</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-3">General Settings</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span>Allow user registration</span>
+                      <input type="checkbox" className="toggle" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Require document approval</span>
+                      <input type="checkbox" className="toggle" defaultChecked />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Enable audit logging</span>
+                      <input type="checkbox" className="toggle" defaultChecked />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-medium mb-3">AI Settings</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Default AI Model</Label>
+                      <Select defaultValue="gpt-5">
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="gpt-5">GPT-5</SelectItem>
+                          <SelectItem value="claude-4">Claude Sonnet 4</SelectItem>
+                          <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Audit Logs Tab */}
+        <TabsContent value="audit" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>System Audit Logs</CardTitle>
+              <CardDescription>Track all system activities and changes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-gray-500">
+                <Clock className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                <p>Audit logging system will be implemented here</p>
+                <p className="text-sm">Track user actions, permission changes, and system events</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Permission Management Modal */}
+      <PermissionModal
+        isOpen={showPermissionModal}
+        onClose={() => {
+          setShowPermissionModal(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        permissionCategories={permissionCategories}
+        permissions={permissions[selectedUser?.id] || {}}
+        onSave={(newPermissions) => {
+          if (selectedUser) {
+            updateUserPermissions(selectedUser.id, newPermissions);
+          }
+          setShowPermissionModal(false);
+          setSelectedUser(null);
+        }}
+      />
+
+      {/* Business Unit Modal */}
+      <BusinessUnitManagementModal
+        isOpen={showBusinessUnitModal}
+        onClose={() => {
+          setShowBusinessUnitModal(false);
+          setEditingUnit(null);
+        }}
+        unit={editingUnit}
+        onSave={(unitData) => {
+          if (editingUnit) {
+            updateBusinessUnit(editingUnit.id, unitData);
+          } else {
+            createBusinessUnit(unitData);
+          }
+        }}
+      />
+    </div>
+  );
+};
+
+// Permission Management Modal Component
+const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissions, onSave }) => {
+  const [localPermissions, setLocalPermissions] = useState(permissions);
+
+  useEffect(() => {
+    setLocalPermissions(permissions);
+  }, [permissions]);
+
+  const handlePermissionChange = (permission, value) => {
+    setLocalPermissions(prev => ({
+      ...prev,
+      [permission]: value
+    }));
+  };
+
+  const handleSave = () => {
+    onSave(localPermissions);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {user ? `Manage Permissions - ${user.name}` : 'Create New User'}
+          </DialogTitle>
+          <DialogDescription>
+            {user ? 
+              `Configure specific permissions for ${user.name} (${user.boost_role})` :
+              'Set up a new user account with appropriate permissions'
+            }
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {Object.entries(permissionCategories).map(([category, categoryPermissions]) => (
+            <div key={category}>
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                {category === 'Dashboard' && <BarChart3 className="w-4 h-4 mr-2" />}
+                {category === 'AI Assistant' && <MessageCircle className="w-4 h-4 mr-2" />}
+                {category === 'BOOST Support' && <Ticket className="w-4 h-4 mr-2" />}
+                {category === 'Knowledge Base' && <FileText className="w-4 h-4 mr-2" />}
+                {category === 'Administration' && <Shield className="w-4 h-4 mr-2" />}
+                {category}
+              </h3>
+              <div className="grid grid-cols-1 gap-3 pl-6">
+                {categoryPermissions.map(permission => (
+                  <div key={permission} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">
+                      {permission.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={localPermissions[permission] || false}
+                      onChange={(e) => handlePermissionChange(permission, e.target.checked)}
+                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
+            Save Permissions
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Business Unit Management Modal Component  
+const BusinessUnitManagementModal = ({ isOpen, onClose, unit, onSave }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    code: '',
+    type: 'Business Support',
+    status: 'Active',
+    description: ''
+  });
+
+  const businessUnitTypes = [
+    'Geography',
+    'Business Support',
+    'Technical', 
+    'Other'
+  ];
+
+  useEffect(() => {
+    if (unit) {
+      setFormData({
+        name: unit.name || '',
+        code: unit.code || '',
+        type: unit.type || 'Business Support',
+        status: unit.status || 'Active',
+        description: unit.description || ''
+      });
+    } else {
+      setFormData({
+        name: '',
+        code: '',
+        type: 'Business Support',
+        status: 'Active',
+        description: ''
+      });
+    }
+  }, [unit]);
+
+  const handleSubmit = () => {
+    if (!formData.name.trim()) {
+      alert('Business unit name is required');
+      return;
+    }
+    onSave(formData);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>
+            {unit ? 'Edit Business Unit' : 'Create Business Unit'}  
+          </DialogTitle>
+          <DialogDescription>
+            {unit ? 
+              'Update business unit information and organizational structure' :
+              'Create a new business unit to organize users and route tickets effectively'
+            }
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div>
+            <Label>Name *</Label>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              placeholder="e.g., London Office, IT Department, Finance Team"
+            />
+          </div>
+
+          <div>
+            <Label>Code</Label>
+            <Input
+              value={formData.code}
+              onChange={(e) => setFormData({...formData, code: e.target.value})}
+              placeholder="e.g., LON-001, IT-DEPT, FIN-TEAM"
+            />
+          </div>
+
+          <div>
+            <Label>Type *</Label>
+            <Select value={formData.type} onValueChange={(value) => setFormData({...formData, type: value})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {businessUnitTypes.map(type => (
+                  <SelectItem key={type} value={type}>
+                    <span className="flex items-center">
+                      <span className="mr-2">
+                        {type === 'Geography' ? '🌍' :
+                         type === 'Technical' ? '⚙️' :
+                         type === 'Business Support' ? '💼' : '📁'}
+                      </span>
+                      {type}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Status</Label>
+            <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Active">✅ Active</SelectItem>
+                <SelectItem value="Inactive">⏸️ Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Description</Label>
+            <Textarea
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              placeholder="Brief description of this business unit's purpose and scope..."
+              rows={3}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button 
+            onClick={handleSubmit}
+            className="bg-emerald-600 hover:bg-emerald-700"
+            disabled={!formData.name.trim()}
+          >
+            {unit ? 'Update Unit' : 'Create Unit'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Main App Component
 function App() {
   return (
