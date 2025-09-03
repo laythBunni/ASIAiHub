@@ -2017,7 +2017,12 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
       case 'created': return <Plus className="w-4 h-4 text-green-600" />;
       case 'assigned': return <User className="w-4 h-4 text-blue-600" />;
       case 'status_changed': return <RefreshCw className="w-4 h-4 text-orange-600" />;
+      case 'priority_changed': return <AlertTriangle className="w-4 h-4 text-purple-600" />;
       case 'comment_added': return <MessageSquare className="w-4 h-4 text-gray-600" />;
+      case 'attachment_added': return <Upload className="w-4 h-4 text-emerald-600" />;
+      case 'sla_breach': return <AlertCircle className="w-4 h-4 text-red-600" />;
+      case 'resolved': return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'closed': return <Target className="w-4 h-4 text-gray-600" />;
       default: return <Clock className="w-4 h-4 text-gray-600" />;
     }
   };
