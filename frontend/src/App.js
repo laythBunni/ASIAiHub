@@ -1039,7 +1039,7 @@ const BoostSupport = () => {
     try {
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) queryParams.append(key, value);
+        if (value && value !== 'all' && value !== 'none') queryParams.append(key, value);
       });
       
       const endpoint = queryParams.toString() ? `/boost/tickets?${queryParams}` : '/boost/tickets';
@@ -1804,7 +1804,7 @@ const TicketManagement = () => {
     try {
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) queryParams.append(key, value);
+        if (value && value !== 'all' && value !== 'none') queryParams.append(key, value);
       });
       
       const endpoint = queryParams.toString() ? `/tickets?${queryParams}` : '/tickets';
