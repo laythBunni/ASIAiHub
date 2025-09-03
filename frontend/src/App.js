@@ -1012,6 +1012,17 @@ const DocumentManagement = () => {
                                 {doc.chunks_count} chunks
                               </Badge>
                             )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                window.open(`${API}/documents/${doc.id}/download`, '_blank');
+                              }}
+                              className="h-8 w-8 p-0"
+                              title="Download document"
+                            >
+                              <Download className="w-4 h-4 text-blue-600" />
+                            </Button>
                             {isAdmin && (
                               <div className="flex space-x-1">
                                 {doc.approval_status === 'pending_approval' && (
