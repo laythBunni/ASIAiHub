@@ -86,6 +86,11 @@ class User(BaseModel):
     active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class DocumentStatus(str, Enum):
+    PENDING_APPROVAL = "pending_approval"
+    APPROVED = "approved" 
+    REJECTED = "rejected"
+
 class Document(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     filename: str
@@ -99,6 +104,11 @@ class Document(BaseModel):
     processed: bool = False
     chunks_count: int = 0
     processing_status: str = "pending"  # pending, processing, completed, failed
+    approval_status: DocumentStatus = DocumentStatus.PENDING_APPROVAL
+    approved_by: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    uploaded_by: str = "system_user"
+    notes: str = ""
 
 class ChatMessage(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
