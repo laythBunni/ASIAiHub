@@ -399,6 +399,91 @@ async def reprocess_all_documents():
         logger.error(f"Error reprocessing documents: {e}")
         raise HTTPException(status_code=500, detail="Failed to reprocess documents")
 
+@api_router.put("/documents/{document_id}/approve")
+async def approve_document(document_id: str, approved_by: str = "admin"):
+    """Approve a document for inclusion in knowledge base"""
+    try:
+        # Update document approval status
+        result = await db.documents.update_one(
+            {"id": document_id},
+            {
+                "$set": {
+                    "approval_status": DocumentStatus.APPROVED,
+                    "approved_by": approved_by,
+                    "approved_at": datetime.now(timezone.utc)
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Get updated document and process with RAG
+        document = await db.documents.find_one({"id": document_id})
+        if document:
+            asyncio.create_task(process_document_with_rag(document))
+        
+        return {"message": "Document approved and processing for knowledge base"}
+        
+    except Exception as e:
+        logger.error(f"Error approving document: {e}")
+        raise HTTPException(status_code=500, detail="Failed to approve document")
+
+@api_router.put("/documents/{document_id}/reject")
+async def reject_document(document_id: str, notes: str = "", rejected_by: str = "admin"):
+    """Reject a document"""
+    try:
+        result = await db.documents.update_one(
+            {"id": document_id},
+            {
+                "$set": {
+                    "approval_status": DocumentStatus.REJECTED,
+                    "approved_by": rejected_by,
+                    "approved_at": datetime.now(timezone.utc),
+                    "notes": notes
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        return {"message": "Document rejected"}
+        
+    except Exception as e:
+        logger.error(f"Error rejecting document: {e}")
+        raise HTTPException(status_code=500, detail="Failed to reject document")
+
+@api_router.delete("/documents/{document_id}")
+async def delete_document(document_id: str):
+    """Delete a document and remove from knowledge base"""
+    try:
+        # Get document info
+        document = await db.documents.find_one({"id": document_id})
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Remove from vector database
+        rag = get_rag_system(EMERGENT_LLM_KEY)
+        rag.remove_document_chunks(document_id)
+        
+        # Delete file from disk
+        try:
+            import os
+            if os.path.exists(document['file_path']):
+                os.remove(document['file_path'])
+        except Exception as e:
+            logger.warning(f"Could not delete file {document['file_path']}: {e}")
+        
+        # Remove from database
+        await db.documents.delete_one({"id": document_id})
+        
+        return {"message": "Document deleted successfully"}
+        
+    except Exception as e:
+        logger.error(f"Error deleting document: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete document")
+
 # Document Management Routes
 @api_router.post("/documents/upload", response_model=DocumentUploadResponse)
 async def upload_document(
