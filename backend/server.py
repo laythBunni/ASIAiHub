@@ -1768,6 +1768,7 @@ class BetaUser(BaseModel):
     is_active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_login: Optional[datetime] = None
+    access_token: Optional[str] = None
 
 class BetaSettings(BaseModel):
     registration_code: str
