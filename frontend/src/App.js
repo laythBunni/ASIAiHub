@@ -888,10 +888,14 @@ const DocumentManagement = () => {
           {DEPARTMENTS.map((dept) => {
             const Icon = dept.icon;
             return (
-              <TabsTrigger 
-                key={dept.id} 
-                value={dept.id} 
-                className={`flex items-center justify-center space-x-1 px-2 py-2 rounded-md border-2 border-transparent data-[state=active]:${dept.color} hover:bg-gray-50 transition-all duration-200`}
+              <button
+                key={dept.id}
+                onClick={() => setActiveTab(dept.id)}
+                className={`flex items-center space-x-2 px-4 py-3 rounded-lg border-2 transition-all duration-200 min-w-[140px] justify-center ${
+                  activeTab === dept.id 
+                    ? dept.color + ' border-current shadow-md' 
+                    : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                }`}
               >
                 <Icon className="w-4 h-4" />
                 <span className="text-xs font-medium">{dept.name}</span>
