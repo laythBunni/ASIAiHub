@@ -723,6 +723,33 @@ async def delete_document(document_id: str):
         logger.error(f"Error deleting document: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete document")
 
+@api_router.get("/documents/{document_id}/download")
+async def download_document(document_id: str):
+    """Download a document file"""
+    try:
+        # Get document info
+        document = await db.documents.find_one({"id": document_id})
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Check if file exists
+        file_path = Path(document['file_path'])
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="File not found on disk")
+        
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            path=file_path,
+            filename=document['original_name'],
+            media_type='application/octet-stream'
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error downloading document: {e}")
+        raise HTTPException(status_code=500, detail="Download failed")
+
 # Document Management Routes
 @api_router.post("/documents/upload", response_model=DocumentUploadResponse)
 async def upload_document(
