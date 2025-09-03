@@ -1316,15 +1316,18 @@ async def create_boost_ticket(ticket_data: BoostTicketCreate):
             if unit:
                 business_unit_name = unit["name"]
         
-        ticket = BoostTicket(
-            **ticket_data.dict(),
-            subject=prefixed_subject,
-            created_at=created_at,
-            updated_at=created_at,
-            due_at=due_at,
-            business_unit_name=business_unit_name,
-            requester_id="default_user"  # For MVP
-        )
+        # Create ticket data dict and update with calculated values
+        ticket_dict = ticket_data.dict()
+        ticket_dict.update({
+            "subject": prefixed_subject,
+            "created_at": created_at,
+            "updated_at": created_at,
+            "due_at": due_at,
+            "business_unit_name": business_unit_name,
+            "requester_id": "default_user"  # For MVP
+        })
+        
+        ticket = BoostTicket(**ticket_dict)
         
         await db.boost_tickets.insert_one(ticket.dict())
         return ticket
