@@ -714,6 +714,33 @@ def main():
     tester.test_add_boost_comment(boost_ticket_id if boost_ticket_success else None)
     tester.test_get_boost_comments(boost_ticket_id if boost_ticket_success else None)
     
+    # Test Beta Authentication System
+    print("\n🔐 Testing Beta Authentication System...")
+    
+    # Setup beta settings first
+    print("\n⚙️  Setting up Beta Configuration...")
+    tester.test_setup_beta_settings()
+    tester.test_mongodb_collections()
+    tester.test_email_domain_validation()
+    
+    # Test user registration
+    print("\n📝 Testing User Registration...")
+    reg_success, access_token, user_data = tester.test_auth_register_valid()
+    tester.test_auth_register_invalid_domain()
+    tester.test_auth_register_invalid_code()
+    tester.test_auth_register_duplicate_user()
+    
+    # Test user login
+    print("\n🔑 Testing User Login...")
+    login_success, login_token = tester.test_auth_login_valid()
+    tester.test_auth_login_invalid_email()
+    tester.test_auth_login_invalid_code()
+    
+    # Test authenticated endpoints
+    print("\n👤 Testing Authenticated Endpoints...")
+    tester.test_auth_me_with_token(login_token if login_success else access_token)
+    tester.test_auth_me_without_token()
+    
     # Clean up test data (optional - delete created test records)
     print("\n🧹 Cleaning up test data...")
     tester.test_delete_boost_user(boost_user_id if user_success else None)
