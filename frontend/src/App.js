@@ -1696,8 +1696,29 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
             </div>
           </div>
 
-          {/* Right: Comments */}
+          {/* Right: Attachments and Comments */}
           <div className="space-y-4">
+            {/* Attachments Section */}
+            <div>
+              <Label className="text-sm font-medium">Attachments</Label>
+              <div className="mt-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm text-gray-500 mb-2">Drop files here or click to upload</p>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    alert('File upload functionality will be fully implemented in Phase 2');
+                  }}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Choose Files
+                </Button>
+                <p className="text-xs text-gray-400 mt-2">Supports: PDF, DOC, DOCX, TXT, JPG, PNG (Max 10MB)</p>
+              </div>
+              {/* TODO: Show existing attachments here when implemented */}
+            </div>
+
             <div>
               <Label className="text-sm font-medium">Comments</Label>
               <div className="space-y-2 max-h-60 overflow-y-auto mt-2">
