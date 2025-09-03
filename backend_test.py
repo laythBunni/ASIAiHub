@@ -200,6 +200,191 @@ class ASIOSAPITester:
         
         return self.run_test("Update Finance SOP", "PUT", f"/finance-sop/{sop_id}", 200, update_data)
 
+    # BOOST Support Ticketing System Tests
+    
+    def test_boost_categories(self):
+        """Test getting BOOST categories"""
+        return self.run_test("BOOST Categories", "GET", "/boost/categories", 200)
+    
+    def test_boost_department_categories(self):
+        """Test getting categories for specific department"""
+        return self.run_test("BOOST Finance Categories", "GET", "/boost/categories/Finance", 200)
+    
+    def test_create_business_unit(self):
+        """Test creating a business unit"""
+        unit_data = {
+            "name": "Engineering Division",
+            "code": "ENG001"
+        }
+        
+        success, response = self.run_test("Create Business Unit", "POST", "/boost/business-units", 200, unit_data)
+        
+        if success:
+            print(f"   Business Unit ID: {response.get('id')}")
+            print(f"   Business Unit Name: {response.get('name')}")
+            return success, response.get('id')
+        
+        return success, None
+    
+    def test_get_business_units(self):
+        """Test getting all business units"""
+        return self.run_test("Get Business Units", "GET", "/boost/business-units", 200)
+    
+    def test_update_business_unit(self, unit_id):
+        """Test updating a business unit"""
+        if not unit_id:
+            print("⚠️  Skipping business unit update test - no unit ID available")
+            return True, {}
+        
+        update_data = {
+            "name": "Engineering Division - Updated",
+            "code": "ENG001-UPD"
+        }
+        
+        return self.run_test("Update Business Unit", "PUT", f"/boost/business-units/{unit_id}", 200, update_data)
+    
+    def test_create_boost_user(self, business_unit_id=None):
+        """Test creating a BOOST user"""
+        user_data = {
+            "name": "John Smith",
+            "email": "john.smith@company.com",
+            "boost_role": "Agent",
+            "business_unit_id": business_unit_id,
+            "department": "IT"
+        }
+        
+        success, response = self.run_test("Create BOOST User", "POST", "/boost/users", 200, user_data)
+        
+        if success:
+            print(f"   User ID: {response.get('id')}")
+            print(f"   User Name: {response.get('name')}")
+            print(f"   User Role: {response.get('boost_role')}")
+            return success, response.get('id')
+        
+        return success, None
+    
+    def test_get_boost_users(self):
+        """Test getting all BOOST users"""
+        return self.run_test("Get BOOST Users", "GET", "/boost/users", 200)
+    
+    def test_update_boost_user(self, user_id):
+        """Test updating a BOOST user"""
+        if not user_id:
+            print("⚠️  Skipping BOOST user update test - no user ID available")
+            return True, {}
+        
+        update_data = {
+            "boost_role": "Manager",
+            "department": "DevOps"
+        }
+        
+        return self.run_test("Update BOOST User", "PUT", f"/boost/users/{user_id}", 200, update_data)
+    
+    def test_create_boost_ticket(self, business_unit_id=None):
+        """Test creating a BOOST ticket"""
+        ticket_data = {
+            "subject": "Email configuration issue on new laptop",
+            "description": "Unable to configure corporate email on newly issued laptop. Getting authentication errors when setting up Outlook with company credentials.",
+            "support_department": "IT",
+            "category": "Access",
+            "subcategory": "Email",
+            "classification": "Incident",
+            "priority": "high",
+            "justification": "User cannot access email for daily work",
+            "requester_name": "Jane Doe",
+            "requester_email": "jane.doe@company.com",
+            "business_unit_id": business_unit_id,
+            "channel": "Hub"
+        }
+        
+        success, response = self.run_test("Create BOOST Ticket", "POST", "/boost/tickets", 200, ticket_data)
+        
+        if success:
+            print(f"   Ticket ID: {response.get('id')}")
+            print(f"   Ticket Number: {response.get('ticket_number')}")
+            print(f"   Subject: {response.get('subject')}")
+            print(f"   Status: {response.get('status')}")
+            print(f"   Priority: {response.get('priority')}")
+            return success, response.get('id')
+        
+        return success, None
+    
+    def test_get_boost_tickets(self):
+        """Test getting all BOOST tickets"""
+        return self.run_test("Get BOOST Tickets", "GET", "/boost/tickets", 200)
+    
+    def test_get_boost_tickets_filtered(self):
+        """Test getting BOOST tickets with filters"""
+        return self.run_test("Get BOOST Tickets (High Priority)", "GET", "/boost/tickets?priority=high", 200)
+    
+    def test_get_boost_ticket_by_id(self, ticket_id):
+        """Test getting a specific BOOST ticket"""
+        if not ticket_id:
+            print("⚠️  Skipping BOOST ticket by ID test - no ticket ID available")
+            return True, {}
+        
+        return self.run_test("Get BOOST Ticket by ID", "GET", f"/boost/tickets/{ticket_id}", 200)
+    
+    def test_update_boost_ticket(self, ticket_id):
+        """Test updating a BOOST ticket"""
+        if not ticket_id:
+            print("⚠️  Skipping BOOST ticket update test - no ticket ID available")
+            return True, {}
+        
+        update_data = {
+            "status": "in_progress",
+            "owner_id": "agent001",
+            "owner_name": "Support Agent",
+            "resolution_notes": "Investigating email configuration issue"
+        }
+        
+        return self.run_test("Update BOOST Ticket", "PUT", f"/boost/tickets/{ticket_id}", 200, update_data)
+    
+    def test_add_boost_comment(self, ticket_id):
+        """Test adding a comment to a BOOST ticket"""
+        if not ticket_id:
+            print("⚠️  Skipping BOOST comment test - no ticket ID available")
+            return True, {}
+        
+        comment_data = {
+            "body": "I have reviewed the ticket and will start investigating the email configuration issue. Please provide your laptop model and current Outlook version.",
+            "is_internal": False,
+            "author_name": "Support Agent"
+        }
+        
+        success, response = self.run_test("Add BOOST Comment", "POST", f"/boost/tickets/{ticket_id}/comments", 200, comment_data)
+        
+        if success:
+            print(f"   Comment ID: {response.get('id')}")
+            print(f"   Comment Body: {response.get('body')[:50]}...")
+            return success, response.get('id')
+        
+        return success, None
+    
+    def test_get_boost_comments(self, ticket_id):
+        """Test getting comments for a BOOST ticket"""
+        if not ticket_id:
+            print("⚠️  Skipping get BOOST comments test - no ticket ID available")
+            return True, {}
+        
+        return self.run_test("Get BOOST Comments", "GET", f"/boost/tickets/{ticket_id}/comments", 200)
+    
+    def test_delete_boost_user(self, user_id):
+        """Test deleting a BOOST user"""
+        if not user_id:
+            print("⚠️  Skipping BOOST user deletion test - no user ID available")
+            return True, {}
+        
+        return self.run_test("Delete BOOST User", "DELETE", f"/boost/users/{user_id}", 200)
+    
+    def test_delete_business_unit(self, unit_id):
+        """Test deleting a business unit"""
+        if not unit_id:
+            print("⚠️  Skipping business unit deletion test - no unit ID available")
+            return True, {}
+        
+        return self.run_test("Delete Business Unit", "DELETE", f"/boost/business-units/{unit_id}", 200)
+
 def main():
     print("🚀 Starting ASI OS API Testing...")
     print("=" * 60)
