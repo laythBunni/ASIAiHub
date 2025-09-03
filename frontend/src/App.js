@@ -4650,6 +4650,40 @@ const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissi
               )}
             </CardHeader>
             <CardContent>
+              {/* Select All Controls */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-md font-medium text-gray-900">Quick Actions</h3>
+                  <div className="flex space-x-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const allPermissions = Object.values(permissionCategories).flat();
+                        const allSelected = Object.fromEntries(allPermissions.map(p => [p, true]));
+                        setLocalPermissions(allSelected);
+                      }}
+                      className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const allPermissions = Object.values(permissionCategories).flat();
+                        const noneSelected = Object.fromEntries(allPermissions.map(p => [p, false]));
+                        setLocalPermissions(noneSelected);
+                      }}
+                    >
+                      Deselect All
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               {Object.entries(permissionCategories).map(([category, categoryPermissions]) => (
                 <div key={category} className="mb-6">
                   <h3 className="text-md font-medium mb-3 flex items-center border-b pb-2">
