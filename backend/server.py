@@ -97,6 +97,8 @@ class Document(BaseModel):
     department: Optional[Department] = None
     tags: List[str] = []
     processed: bool = False
+    chunks_count: int = 0
+    processing_status: str = "pending"  # pending, processing, completed, failed
 
 class ChatMessage(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
