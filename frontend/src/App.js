@@ -862,7 +862,9 @@ const DocumentManagement = () => {
 
         {DEPARTMENTS.map((dept) => {
           const Icon = dept.icon;
-          const deptDocuments = documents.filter(doc => doc.department === dept.id);
+          const deptDocuments = isAdmin 
+            ? documents.filter(doc => doc.department === dept.id)
+            : documents; // For regular users, documents are already filtered by department
           
           return (
             <TabsContent key={dept.id} value={dept.id} className="space-y-4">
