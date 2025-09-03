@@ -705,7 +705,7 @@ const ChatInterface = () => {
           <div className="flex-1 flex items-center justify-center text-gray-500">
             <div className="text-center max-w-lg">
               <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-xl font-medium mb-2">ASI AiHub AI Assistant</h3>
+              <h3 className="text-xl font-medium mb-2">ASI AiHub Ashur</h3>
               <p className="text-gray-600 mb-4">Your intelligent knowledge assistant with access to all approved company policies and procedures.</p>
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <div className="flex items-center justify-center space-x-2 mb-2">
