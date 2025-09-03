@@ -489,11 +489,11 @@ async def send_chat_message(request: ChatRequest):
         )
         await db.chat_messages.insert_one(user_message.dict())
         
-        # Save AI response
+        # Save AI response (convert structured response to JSON string for storage)
         ai_message = ChatMessage(
             session_id=request.session_id,
             role="assistant",
-            content=result["response"]
+            content=json.dumps(result["response"]) if isinstance(result["response"], dict) else result["response"]
         )
         await db.chat_messages.insert_one(ai_message.dict())
         
