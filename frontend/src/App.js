@@ -3518,6 +3518,7 @@ function App() {
             <Route path="/boost/admin" element={<BoostAdmin />} />
             <Route path="/tickets" element={<TicketManagement />} />
             <Route path="/documents" element={<DocumentManagement />} />
+            <Route path="/admin" element={<SystemAdmin />} />
           </Routes>
         </main>
         <Toaster />
