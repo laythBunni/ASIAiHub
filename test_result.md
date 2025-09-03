@@ -135,9 +135,9 @@ backend:
 frontend:
   - task: "BOOST Support Main Interface"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js (BoostSupport component)"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: false
     status_history:
@@ -147,12 +147,15 @@ frontend:
       - working: true
         agent: "testing"
         comment: "BOOST Support main interface fully tested and working. ✅ 3-column layout displays correctly with 'Your tickets – To do', 'Your tickets – Created by you', and 'All tickets (Admin)' columns. ✅ Filtering system working (search, status, department, business unit filters). ✅ API integration successful - backend calls to /api/boost/tickets, /api/boost/business-units, /api/boost/categories working. ✅ Ticket data displays with proper status badges, priorities, and formatting. ✅ Mobile responsive design working. Fixed critical React SelectItem empty value error that was preventing page rendering. Minor: New Ticket button selector issue - button exists but different selector needed."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL AUTHENTICATION INTEGRATION ERROR: BoostSupport component fails to load with JavaScript error 'Cannot read properties of null (reading boost_role)' at line 3131:43. The component is trying to access currentUser.boost_role but the new authentication system provides currentUser.role instead. This prevents the entire BOOST Support page from rendering. Error occurs in permission checking functions like canViewAllTickets(), canViewDepartmentTickets(), canCloseTickets() which all reference currentUser.boost_role. Need to update these functions to use currentUser.role or add boost_role mapping in auth context."
 
   - task: "BOOST Admin Interface"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js (BoostAdmin component)"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: false
     status_history:
@@ -162,6 +165,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "BOOST Admin interface fully tested and working. ✅ Successfully navigates to /boost/admin route. ✅ Users tab and Business Units tab both functional. ✅ Add User button found and working. ✅ User management table displays with proper columns (Name, Email, BOOST Role, Business Unit, Department, Actions). ✅ Interface loads correctly with proper styling and layout. Minor: Add Unit button not found in current view but core functionality working."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL AUTHENTICATION INTEGRATION ERROR: BoostAdmin component fails to load with the same JavaScript error 'Cannot read properties of null (reading boost_role)'. The component inherits the same authentication issue as BoostSupport - it's trying to access currentUser.boost_role which doesn't exist in the new auth system. This prevents the BOOST Admin page (/boost/admin) from rendering. Same fix needed: update component to use currentUser.role or add boost_role mapping."
 
   - task: "App Navigation Integration"
     implemented: true
