@@ -444,6 +444,62 @@ def calculate_sla_due(priority: TicketPriority, created_at: datetime) -> datetim
     hours = sla_hours.get(priority, 72)
     return created_at + timedelta(hours=hours)
 
+def calculate_boost_sla_due(priority: TicketPriority, created_at: datetime) -> datetime:
+    """Calculate BOOST SLA due date based on priority"""
+    # BOOST SLA: Critical 1h, High 4h, Medium 1 business day, Low 2 business days
+    sla_hours = {
+        TicketPriority.URGENT: 1,      # Critical
+        TicketPriority.HIGH: 4,        # High
+        TicketPriority.MEDIUM: 24,     # Medium (1 business day)
+        TicketPriority.LOW: 48         # Low (2 business days)
+    }
+    
+    hours = sla_hours.get(priority, 24)
+    return created_at + timedelta(hours=hours)
+
+def auto_prefix_subject(department: SupportDepartment, category: str, subject: str) -> str:
+    """Auto-prefix subject with department and category"""
+    if subject.startswith(f"{department}: {category}"):
+        return subject
+    return f"{department}: {category} – {subject}"
+
+# BOOST Categorization Data
+BOOST_CATEGORIES = {
+    SupportDepartment.FINANCE: {
+        "Purchase Orders": ["Creation", "Amendment", "Approval"],
+        "Invoices": ["AP", "Associate", "Supplier"],
+        "Sage Sync": ["Failures", "Duplicates"],
+        "Expenses": ["Claims", "Approvals", "Policies"],
+        "Supplier Management": ["Setup", "Changes", "Issues"]
+    },
+    SupportDepartment.HR_PT: {
+        "Contracts": ["Core", "Non-Core", "AC", "Subcontractor"],
+        "Amendments": ["Extension", "Secondment", "Variation"],
+        "Change Log": ["Role", "Salary", "Probation", "Line Manager"],
+        "Leave": ["Requests", "Reversals", "Balances"],
+        "Onboarding": ["New Starter", "Documentation", "Access"]
+    },
+    SupportDepartment.IT: {
+        "Access": ["Login", "MFA", "Email"],
+        "Device Compliance": ["Intune", "Encryption", "Company Portal"],
+        "Software/OS": ["Updates", "Patches", "Installation"],
+        "Integrations": ["SharePoint", "Teams", "Third Party"],
+        "Infrastructure": ["Network", "Servers", "Security"]
+    },
+    SupportDepartment.OS_SUPPORT: {
+        "General Support": ["How-to", "Training", "Documentation"],
+        "Process Issues": ["Workflow", "Approval", "System"],
+        "Data Issues": ["Reporting", "Export", "Import"],
+        "User Management": ["Access", "Permissions", "Roles"]
+    },
+    SupportDepartment.DEVOPS: {
+        "Deployment": ["Production", "Staging", "Testing"],
+        "Infrastructure": ["Monitoring", "Scaling", "Performance"],
+        "CI/CD": ["Pipeline", "Build", "Release"],
+        "Security": ["Vulnerabilities", "Compliance", "Access"]
+    }
+}
+
 async def categorize_ticket_with_ai(subject: str, description: str) -> Dict[str, str]:
     """Use AI to categorize tickets automatically"""
     try:
