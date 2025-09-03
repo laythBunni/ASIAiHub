@@ -2131,7 +2131,7 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
                     disabled={
                       quickStatus === ticket.status && 
                       quickPriority === ticket.priority && 
-                      quickAssignee === (ticket.owner_id || '')
+                      quickAssignee === (ticket.owner_id || 'unassigned')
                     }
                   >
                     <Save className="w-4 h-4 mr-2" />
