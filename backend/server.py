@@ -371,7 +371,7 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
 # API Routes
 @api_router.get("/")
 async def root():
-    return {"message": "ASI OS - AI-Powered Operations Platform API"}
+    return {"message": "ASI AiHub - AI-Powered Knowledge Management Platform API"}
 
 @api_router.post("/documents/reprocess-all")
 async def reprocess_all_documents():
