@@ -4726,6 +4726,147 @@ const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissi
   );
 };
 
+// User Edit Modal Component (separate from permissions)
+const UserEditModal = ({ isOpen, onClose, user, businessUnits = [], onSave }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    boost_role: 'User',
+    department: '',
+    business_unit_id: ''
+  });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        boost_role: user.boost_role || 'User',
+        department: user.department || '',
+        business_unit_id: user.business_unit_id || ''
+      });
+    } else {
+      setFormData({
+        name: '',
+        email: '',
+        boost_role: 'User',
+        department: '',
+        business_unit_id: ''
+      });
+    }
+  }, [user]);
+
+  const handleSubmit = async () => {
+    if (!formData.name.trim() || !formData.email.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Name and email are required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    onSave(formData);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>
+            {user ? `Edit User - ${user.name}` : 'Create New User'}
+          </DialogTitle>
+          <DialogDescription>
+            Update user credentials and basic information
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Name *</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                placeholder="Full name"
+              />
+            </div>
+            <div>
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                placeholder="user@company.com"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Role</Label>
+              <Select value={formData.boost_role} onValueChange={(value) => setFormData({...formData, boost_role: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="User">User</SelectItem>
+                  <SelectItem value="Agent">Agent</SelectItem>
+                  <SelectItem value="Manager">Manager</SelectItem>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>BOOST Department</Label>
+              <Select value={formData.department || ""} onValueChange={(value) => setFormData({...formData, department: value === "none" ? null : value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select BOOST department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="OS Support">OS Support</SelectItem>
+                  <SelectItem value="Finance">Finance</SelectItem>
+                  <SelectItem value="HR/P&T">HR/P&T</SelectItem>
+                  <SelectItem value="IT">IT</SelectItem>
+                  <SelectItem value="DevOps">DevOps</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label>Business Unit</Label>
+            <Select value={formData.business_unit_id} onValueChange={(value) => setFormData({...formData, business_unit_id: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select business unit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {businessUnits.map(unit => (
+                  <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button 
+            onClick={handleSubmit}
+            className="bg-emerald-600 hover:bg-emerald-700"
+            disabled={!formData.name.trim() || !formData.email.trim()}
+          >
+            {user ? 'Update User' : 'Create User'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Business Unit Management Modal Component  
 const BusinessUnitManagementModal = ({ isOpen, onClose, unit, onSave }) => {
   const [formData, setFormData] = useState({
