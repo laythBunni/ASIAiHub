@@ -1800,10 +1800,10 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
         updates.priority = quickPriority;
         changeDescription.push(`Priority: ${quickPriority}`);
       }
-      if (quickAssignee !== (ticket.owner_id || '')) {
-        updates.owner_id = quickAssignee;
+      if (quickAssignee !== (ticket.owner_id || 'unassigned')) {
+        updates.owner_id = quickAssignee === 'unassigned' ? null : quickAssignee;
         const agent = availableAgents.find(a => a.id === quickAssignee);
-        updates.owner_name = agent ? agent.name : '';
+        updates.owner_name = agent ? agent.name : null;
         changeDescription.push(`Assignee: ${agent?.name || 'Unassigned'}`);
       }
 
