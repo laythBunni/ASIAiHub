@@ -1879,15 +1879,17 @@ async def register_user(request: RegistrationRequest):
             role="Manager" if request.email == "layth.bunni@adamsmithinternational.com" else "User"
         )
         
-        # Save to database
-        await db.beta_users.insert_one(new_user.dict())
-        
         # Generate access token
         access_token = generate_access_token(new_user.id, new_user.email)
+        new_user.access_token = access_token
+        
+        # Save to database
+        await db.beta_users.insert_one(new_user.dict())
         
         # Return response without password hash
         user_response = new_user.copy()
         user_response.personal_code = "***"
+        user_response.access_token = None  # Don't expose token in user object
         
         return LoginResponse(access_token=access_token, user=user_response)
         
