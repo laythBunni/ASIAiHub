@@ -420,6 +420,35 @@ async def get_documents():
     documents = await db.documents.find().to_list(1000)
     return [Document(**doc) for doc in documents]
 
+@api_router.get("/documents/rag-stats")
+async def get_rag_stats():
+    """Get RAG system statistics"""
+    try:
+        rag = get_rag_system(EMERGENT_LLM_KEY)
+        stats = rag.get_collection_stats()
+        
+        # Get processing status from database
+        processing_stats = await db.documents.aggregate([
+            {"$group": {"_id": "$processing_status", "count": {"$sum": 1}}}
+        ]).to_list(None)
+        
+        processing_counts = {item["_id"]: item["count"] for item in processing_stats}
+        
+        return {
+            "vector_database": stats,
+            "processing_status": processing_counts,
+            "total_documents": await db.documents.count_documents({}),
+            "processed_documents": await db.documents.count_documents({"processed": True})
+        }
+    except Exception as e:
+        logger.error(f"Error getting RAG stats: {e}")
+        return {
+            "vector_database": {"total_chunks": 0, "unique_documents": 0},
+            "processing_status": {},
+            "total_documents": 0,
+            "processed_documents": 0
+        }
+
 # Chat Routes
 @api_router.post("/chat/send", response_model=ChatResponse)
 async def send_chat_message(request: ChatRequest):
