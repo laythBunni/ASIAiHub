@@ -399,6 +399,32 @@ async def reprocess_all_documents():
         logger.error(f"Error reprocessing documents: {e}")
         raise HTTPException(status_code=500, detail="Failed to reprocess documents")
 
+@api_router.post("/documents/fix-departments")
+async def fix_document_departments():
+    """Fix existing documents with old department names"""
+    try:
+        # Update all existing documents to Finance department and approved status
+        result = await db.documents.update_many(
+            {},  # All documents
+            {
+                "$set": {
+                    "department": "Finance",
+                    "approval_status": "approved",
+                    "approved_by": "system_migration",
+                    "approved_at": datetime.now(timezone.utc)
+                }
+            }
+        )
+        
+        return {
+            "message": f"Updated {result.modified_count} documents to Finance department",
+            "modified_count": result.modified_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fixing departments: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fix departments")
+
 @api_router.put("/documents/{document_id}/approve")
 async def approve_document(document_id: str, approved_by: str = "admin"):
     """Approve a document for inclusion in knowledge base"""
