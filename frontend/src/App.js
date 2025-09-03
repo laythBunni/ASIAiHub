@@ -4616,7 +4616,7 @@ const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissi
                 <div key={category} className="mb-6">
                   <h3 className="text-md font-medium mb-3 flex items-center border-b pb-2">
                     {category === 'Dashboard' && <BarChart3 className="w-4 h-4 mr-2" />}
-                    {category === 'AI Assistant' && <MessageCircle className="w-4 h-4 mr-2" />}
+                    {category === 'Ashur' && <MessageCircle className="w-4 h-4 mr-2" />}
                     {category === 'BOOST Support' && <Ticket className="w-4 h-4 mr-2" />}
                     {category === 'Knowledge Base' && <FileText className="w-4 h-4 mr-2" />}
                     {category === 'Administration' && <Shield className="w-4 h-4 mr-2" />}
