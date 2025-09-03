@@ -461,7 +461,22 @@ const ChatInterface = () => {
   const fetchMessages = async (sessionId) => {
     try {
       const data = await apiCall('GET', `/chat/sessions/${sessionId}/messages`);
-      setMessages(data);
+      // Parse message content if it's JSON string (for structured responses)
+      const parsedMessages = data.map(message => {
+        if (message.role === 'assistant' && typeof message.content === 'string') {
+          try {
+            // Try to parse as JSON
+            const parsedContent = JSON.parse(message.content);
+            if (parsedContent && typeof parsedContent === 'object') {
+              return { ...message, content: parsedContent };
+            }
+          } catch (e) {
+            // If parsing fails, keep original content
+          }
+        }
+        return message;
+      });
+      setMessages(parsedMessages);
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
