@@ -2844,7 +2844,7 @@ const Navigation = () => {
   
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
-    { path: '/chat', label: 'AI Assistant', icon: MessageCircle },
+    { path: '/chat', label: 'Ashur', icon: MessageCircle },
     { path: '/boost', label: 'BOOST Support', icon: Ticket },
     { path: '/tickets', label: 'Legacy Tickets', icon: Settings },
     { path: '/documents', label: 'Knowledge Base', icon: FileText },
