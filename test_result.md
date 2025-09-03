@@ -192,9 +192,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Beta Authentication API"
+    - "BOOST Support Main Interface"
+    - "BOOST Admin Interface"
     - "Beta Authentication Frontend"
-  stuck_tasks: []
+  stuck_tasks:
+    - "BOOST Support Main Interface"
+    - "BOOST Admin Interface"
   test_all: false
   test_priority: "high_first"
 
