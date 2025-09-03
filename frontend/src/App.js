@@ -5419,24 +5419,57 @@ const BusinessUnitManagementModal = ({ isOpen, onClose, unit, onSave }) => {
 // Main App Component
 function App() {
   return (
-    <div className="App min-h-screen bg-gray-50">
-      <BrowserRouter>
-        <Navigation />
-        <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/chat" element={<ChatInterface />} />
-            <Route path="/boost" element={<BoostSupport />} />
-            <Route path="/boost/admin" element={<BoostAdmin />} />
-            <Route path="/tickets" element={<TicketManagement />} />
-            <Route path="/documents" element={<DocumentManagement />} />
-            <Route path="/admin" element={<SystemAdmin />} />
-          </Routes>
-        </main>
-        <Toaster />
-      </BrowserRouter>
-    </div>
+    <AuthProvider>
+      <div className="App min-h-screen bg-gray-50">
+        <BrowserRouter>
+          <AuthenticatedApp />
+        </BrowserRouter>
+      </div>
+    </AuthProvider>
   );
 }
+
+// Protected App Component
+const AuthenticatedApp = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-emerald-600" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <AuthenticationForm />
+        <Toaster />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Navigation />
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/chat" element={<ChatInterface />} />
+          <Route path="/boost" element={<BoostSupport />} />
+          <Route path="/boost/admin" element={<BoostAdmin />} />
+          <Route path="/tickets" element={<TicketManagement />} />
+          <Route path="/documents" element={<DocumentManagement />} />
+          <Route path="/admin" element={<SystemAdmin />} />
+        </Routes>
+      </main>
+      <Toaster />
+    </>
+  );
+};
 
 export default App;
