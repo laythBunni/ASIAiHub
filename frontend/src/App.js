@@ -62,11 +62,11 @@ const API = `${BACKEND_URL}/api`;
 // Department configuration
 const DEPARTMENTS = [
   { id: 'Finance', name: 'Finance', icon: PiggyBank, color: 'bg-green-100 text-green-700 border-green-200' },
-  { id: 'People and Talent', name: 'People and Talent', icon: Users, color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  { id: 'Information Technology', name: 'Information Technology', icon: Code2, color: 'bg-purple-100 text-purple-700 border-purple-200' },
-  { id: 'Legal, Ethics and Compliance', name: 'Legal, Ethics and Compliance', icon: Scale, color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
-  { id: 'Business Development', name: 'Business Development', icon: TrendingUp, color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  { id: 'Project Management', name: 'Project Management', icon: Target, color: 'bg-pink-100 text-pink-700 border-pink-200' },
+  { id: 'People and Talent', name: 'People & Talent', icon: Users, color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  { id: 'Information Technology', name: 'IT', icon: Code2, color: 'bg-purple-100 text-purple-700 border-purple-200' },
+  { id: 'Legal, Ethics and Compliance', name: 'LEC', icon: Scale, color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+  { id: 'Business Development', name: 'Business Dev', icon: TrendingUp, color: 'bg-orange-100 text-orange-700 border-orange-200' },
+  { id: 'Project Management', name: 'Projects', icon: Target, color: 'bg-pink-100 text-pink-700 border-pink-200' },
   { id: 'Other', name: 'Other', icon: FolderOpen, color: 'bg-gray-100 text-gray-700 border-gray-200' }
 ];
 
