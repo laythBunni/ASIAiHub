@@ -732,6 +732,7 @@ const DocumentManagement = () => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('department', department);
+      formData.append('tags', '');
 
       const data = await apiCall('POST', '/documents/upload', formData, true);
       
@@ -740,9 +741,18 @@ const DocumentManagement = () => {
         description: `${data.filename} uploaded and pending approval`,
       });
       
+      // Clear the input
+      event.target.value = '';
+      
+      // Refresh documents
       fetchDocuments();
     } catch (error) {
       console.error('Error uploading file:', error);
+      toast({
+        title: "Upload Error",
+        description: "Failed to upload document. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setUploading(false);
     }
