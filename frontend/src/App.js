@@ -983,6 +983,16 @@ const DocumentManagement = () => {
                                 Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
                                 {doc.uploaded_by && ` by ${doc.uploaded_by}`}
                               </p>
+                              {doc.department && (
+                                <div className="flex items-center mt-1">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${DEPARTMENTS.find(d => d.id === doc.department)?.color || 'bg-gray-100 text-gray-700 border-gray-200'}`}
+                                  >
+                                    {DEPARTMENTS.find(d => d.id === doc.department)?.name || doc.department}
+                                  </Badge>
+                                </div>
+                              )}
                               {doc.notes && (
                                 <p className="text-xs text-gray-400 mt-1">{doc.notes}</p>
                               )}
