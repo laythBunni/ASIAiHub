@@ -4323,8 +4323,14 @@ const SystemAdmin = () => {
         businessUnits={businessUnits}
         onSave={(data) => {
           if (selectedUser) {
-            // Updating existing user permissions
-            updateUserPermissions(selectedUser.id, data);
+            if (data.isUpdate) {
+              // Updating existing user details and permissions
+              updateUserPermissions(selectedUser.id, data.permissions);
+              fetchUsers(); // Refresh user list to show updated details
+            } else {
+              // Only updating permissions
+              updateUserPermissions(selectedUser.id, data);
+            }
           } else {
             // Creating new user with permissions
             updateUserPermissions(data.user.id, data.permissions);
