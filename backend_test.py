@@ -427,6 +427,44 @@ def main():
     tester.test_get_finance_sops()
     tester.test_update_finance_sop(sop_id if sop_success else None)
     
+    # Test BOOST Support Ticketing System
+    print("\n🎯 Testing BOOST Support Ticketing System...")
+    
+    # Test categories first
+    print("\n📋 Testing BOOST Categories...")
+    tester.test_boost_categories()
+    tester.test_boost_department_categories()
+    
+    # Test business units
+    print("\n🏢 Testing Business Units Management...")
+    bu_success, business_unit_id = tester.test_create_business_unit()
+    tester.test_get_business_units()
+    tester.test_update_business_unit(business_unit_id if bu_success else None)
+    
+    # Test BOOST users
+    print("\n👥 Testing BOOST Users Management...")
+    user_success, boost_user_id = tester.test_create_boost_user(business_unit_id if bu_success else None)
+    tester.test_get_boost_users()
+    tester.test_update_boost_user(boost_user_id if user_success else None)
+    
+    # Test BOOST tickets
+    print("\n🎫 Testing BOOST Tickets Management...")
+    boost_ticket_success, boost_ticket_id = tester.test_create_boost_ticket(business_unit_id if bu_success else None)
+    tester.test_get_boost_tickets()
+    tester.test_get_boost_tickets_filtered()
+    tester.test_get_boost_ticket_by_id(boost_ticket_id if boost_ticket_success else None)
+    tester.test_update_boost_ticket(boost_ticket_id if boost_ticket_success else None)
+    
+    # Test BOOST comments
+    print("\n💬 Testing BOOST Comments Management...")
+    tester.test_add_boost_comment(boost_ticket_id if boost_ticket_success else None)
+    tester.test_get_boost_comments(boost_ticket_id if boost_ticket_success else None)
+    
+    # Clean up test data (optional - delete created test records)
+    print("\n🧹 Cleaning up test data...")
+    tester.test_delete_boost_user(boost_user_id if user_success else None)
+    tester.test_delete_business_unit(business_unit_id if bu_success else None)
+    
     # Print final results
     print("\n" + "=" * 60)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
