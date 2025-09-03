@@ -122,14 +122,14 @@ class RAGSystem:
                 logger.warning(f"No text extracted from document {document_data['original_name']}")
                 return False
             
-            # Create document metadata
+            # Create document metadata (ChromaDB only accepts str, int, float, bool, None)
             doc_metadata = {
                 "document_id": document_data['id'],
                 "filename": document_data['filename'],
                 "original_name": document_data['original_name'],
-                "department": document_data.get('department'),
-                "tags": document_data.get('tags', []),
-                "uploaded_at": document_data['uploaded_at'],
+                "department": document_data.get('department') or "General",
+                "tags": ",".join(document_data.get('tags', [])),  # Convert list to comma-separated string
+                "uploaded_at": document_data['uploaded_at'].isoformat() if isinstance(document_data['uploaded_at'], datetime) else str(document_data['uploaded_at']),
                 "mime_type": document_data['mime_type'],
                 "file_size": document_data['file_size']
             }
