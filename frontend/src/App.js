@@ -3955,6 +3955,11 @@ const SystemAdmin = () => {
   };
 
   const editUser = (user) => {
+    setEditingUser(user);
+    setShowUserEditModal(true);
+  };
+
+  const manageUserPermissions = (user) => {
     setSelectedUser(user);
     setShowPermissionModal(true);
   };
