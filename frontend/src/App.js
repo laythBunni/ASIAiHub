@@ -1080,14 +1080,11 @@ const BoostSupport = () => {
     support_department: '',
     business_unit_id: ''
   });
-  const [currentUser] = useState({
-    id: 'layth_bunni',
-    name: 'Layth Bunni',
-    email: 'layth.bunni@adamsmithinternational.com',
-    boost_role: 'Manager', // Admin, Manager, Agent, User
-    department: 'OS Support',
-    business_unit_id: null
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authToken, setAuthToken] = useState(localStorage.getItem('authToken'));
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
   const [showNewTicketModal, setShowNewTicketModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketDetail, setShowTicketDetail] = useState(false);
