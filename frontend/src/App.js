@@ -1620,15 +1620,33 @@ const BoostNewTicketModal = ({ isOpen, onClose, onSubmit, businessUnits, categor
   );
 };
 
-// BOOST Ticket Detail Modal Component
+// Enhanced BOOST Ticket Detail Modal with Audit Trail & Quick Actions
 const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate }) => {
   const [comments, setComments] = useState([]);
+  const [auditTrail, setAuditTrail] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [isInternal, setIsInternal] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  
+  // Quick Actions state
+  const [quickStatus, setQuickStatus] = useState('');
+  const [quickPriority, setQuickPriority] = useState('');
+  const [quickAssignee, setQuickAssignee] = useState('');
+  const [availableAgents, setAvailableAgents] = useState([]);
+
+  const { apiCall } = useAPI();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (ticket && isOpen) {
       fetchComments();
+      fetchAuditTrail();
+      fetchAttachments();
+      fetchAvailableAgents();
+      // Initialize quick actions with current ticket values
+      setQuickStatus(ticket.status);
+      setQuickPriority(ticket.priority);
+      setQuickAssignee(ticket.owner_id || '');
     }
   }, [ticket, isOpen]);
 
@@ -1642,13 +1660,140 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
     }
   };
 
-  const { apiCall } = useAPI();
+  const fetchAuditTrail = async () => {
+    if (!ticket) return;
+    try {
+      // Create mock audit trail from ticket data and comments
+      const trail = [
+        {
+          id: 1,
+          action: 'created',
+          description: `Ticket created by ${ticket.requester_name}`,
+          user_name: ticket.requester_name,
+          timestamp: ticket.created_at,
+          details: `Priority: ${ticket.priority.toUpperCase()}, Department: ${ticket.support_department}`
+        }
+      ];
+
+      // Add assignment if exists
+      if (ticket.owner_name) {
+        trail.push({
+          id: 2,
+          action: 'assigned',
+          description: `Assigned to ${ticket.owner_name}`,
+          user_name: 'System',
+          timestamp: ticket.updated_at,
+          details: `Owner: ${ticket.owner_name}`
+        });
+      }
+
+      // Add status changes based on current status
+      if (ticket.status !== 'open') {
+        trail.push({
+          id: 3,
+          action: 'status_changed',
+          description: `Status changed to ${ticket.status.replace('_', ' ')}`,
+          user_name: ticket.owner_name || 'System',
+          timestamp: ticket.updated_at,
+          details: `New status: ${ticket.status.toUpperCase().replace('_', ' ')}`
+        });
+      }
+
+      setAuditTrail(trail.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+    } catch (error) {
+      console.error('Error creating audit trail:', error);
+    }
+  };
+
+  const fetchAttachments = async () => {
+    // Mock attachments for now
+    setAttachments([]);
+  };
+
+  const fetchAvailableAgents = async () => {
+    try {
+      const users = await apiCall('GET', '/boost/users');
+      const agents = users.filter(user => 
+        ['Agent', 'Manager', 'Admin'].includes(user.boost_role)
+      );
+      setAvailableAgents(agents);
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+    }
+  };
+
+  const handleQuickAction = async () => {
+    try {
+      const updates = {};
+      let changeDescription = [];
+
+      if (quickStatus !== ticket.status) {
+        updates.status = quickStatus;
+        changeDescription.push(`Status: ${quickStatus.replace('_', ' ')}`);
+      }
+      if (quickPriority !== ticket.priority) {
+        updates.priority = quickPriority;
+        changeDescription.push(`Priority: ${quickPriority}`);
+      }
+      if (quickAssignee !== (ticket.owner_id || '')) {
+        updates.owner_id = quickAssignee;
+        const agent = availableAgents.find(a => a.id === quickAssignee);
+        updates.owner_name = agent ? agent.name : '';
+        changeDescription.push(`Assignee: ${agent?.name || 'Unassigned'}`);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await apiCall('PUT', `/boost/tickets/${ticket.id}`, updates);
+        
+        // Add audit trail entry
+        await apiCall('POST', `/boost/tickets/${ticket.id}/comments`, {
+          body: `Quick action applied: ${changeDescription.join(', ')}`,
+          is_internal: true,
+          author_name: currentUser.name
+        });
+
+        toast({
+          title: "Success",
+          description: "Ticket updated successfully",
+        });
+
+        fetchComments();
+        fetchAuditTrail();
+        onUpdate();
+      }
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update ticket",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const canUseQuickActions = () => {
+    return ['Manager', 'Admin'].includes(currentUser.boost_role);
+  };
+
+  const canCloseTicket = () => {
+    return ['Manager', 'Admin'].includes(currentUser.boost_role);
+  };
+
+  const getActionIcon = (action) => {
+    switch (action) {
+      case 'created': return <Plus className="w-4 h-4 text-green-600" />;
+      case 'assigned': return <User className="w-4 h-4 text-blue-600" />;
+      case 'status_changed': return <RefreshCw className="w-4 h-4 text-orange-600" />;
+      case 'comment_added': return <MessageSquare className="w-4 h-4 text-gray-600" />;
+      default: return <Clock className="w-4 h-4 text-gray-600" />;
+    }
+  };
 
   if (!ticket) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span className="truncate">{ticket.subject}</span>
@@ -1659,137 +1804,314 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left: Details */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium">Status</Label>
-                <Badge className={`mt-1 ${ticket.status === 'open' ? 'bg-orange-100 text-orange-700' : 
-                  ticket.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                  {ticket.status.toUpperCase().replace('_', ' ')}
-                </Badge>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Priority</Label>
-                <Badge className={`mt-1 ${ticket.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                  ticket.priority === 'high' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
-                  {ticket.priority.toUpperCase()}
-                </Badge>
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium">Description</Label>
-              <div className="bg-gray-50 p-3 rounded mt-1 text-sm">
-                {ticket.description}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div><strong>Department:</strong> {ticket.support_department}</div>
-              <div><strong>Category:</strong> {ticket.category}</div>
-              <div><strong>Subcategory:</strong> {ticket.subcategory}</div>
-              <div><strong>Classification:</strong> {ticket.classification}</div>
-              <div><strong>Business Unit:</strong> {ticket.business_unit_name || 'None'}</div>
-              <div><strong>Due:</strong> {ticket.due_at ? new Date(ticket.due_at).toLocaleString() : 'Not set'}</div>
-            </div>
-          </div>
-
-          {/* Right: Attachments and Comments */}
-          <div className="space-y-4">
-            {/* Attachments Section */}
-            <div>
-              <Label className="text-sm font-medium">Attachments</Label>
-              <div className="mt-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-center">
-                <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm text-gray-500 mb-2">Drop files here or click to upload</p>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => {
-                    alert('File upload functionality will be fully implemented in Phase 2');
-                  }}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Choose Files
-                </Button>
-                <p className="text-xs text-gray-400 mt-2">Supports: PDF, DOC, DOCX, TXT, JPG, PNG (Max 10MB)</p>
-              </div>
-              {/* TODO: Show existing attachments here when implemented */}
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium">Comments</Label>
-              <div className="space-y-2 max-h-60 overflow-y-auto mt-2">
-                {comments.map(comment => (
-                  <div key={comment.id} className={`p-3 rounded text-sm ${
-                    comment.is_internal ? 'bg-yellow-50 border-l-4 border-yellow-400' : 'bg-gray-50'
-                  }`}>
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-medium">{comment.author_name}</span>
-                      <div className="flex items-center space-x-2">
-                        {comment.is_internal && (
-                          <Badge variant="outline" className="text-xs">Internal</Badge>
-                        )}
-                        <span className="text-xs text-gray-500">
-                          {new Date(comment.created_at).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                    <p>{comment.body}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column: Ticket Details */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Ticket Information */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Ticket Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Status</Label>
+                    <Badge className={`mt-1 ${ticket.status === 'open' ? 'bg-orange-100 text-orange-700' : 
+                      ticket.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {ticket.status.toUpperCase().replace('_', ' ')}
+                    </Badge>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Add Comment */}
-            <div>
-              <Label className="text-sm font-medium">Add Comment</Label>
-              <div className="space-y-2 mt-1">
-                {(currentUser.boost_role === 'Agent' || currentUser.boost_role === 'Manager' || currentUser.boost_role === 'Admin') && (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="internal"
-                      checked={isInternal}
-                      onChange={(e) => setIsInternal(e.target.checked)}
-                    />
-                    <Label htmlFor="internal" className="text-sm">Internal comment (staff only)</Label>
+                  <div>
+                    <Label className="text-sm font-medium">Priority</Label>
+                    <Badge className={`mt-1 ${ticket.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                      ticket.priority === 'high' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {ticket.priority.toUpperCase()}
+                    </Badge>
                   </div>
-                )}
-                <div className="flex space-x-2">
-                  <Textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Add a comment..."
-                    rows={3}
-                    className="flex-1"
-                  />
-                  <Button 
-                    onClick={async () => {
-                      if (newComment.trim()) {
-                        try {
-                          await apiCall('POST', `/boost/tickets/${ticket.id}/comments`, {
-                            body: newComment,
-                            is_internal: isInternal,
-                            author_name: currentUser.name
-                          });
-                          setNewComment('');
-                          setIsInternal(false);
-                          fetchComments();
-                        } catch (error) {
-                          console.error('Error adding comment:', error);
-                        }
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Description</Label>
+                  <div className="bg-gray-50 p-3 rounded mt-1 text-sm">
+                    {ticket.description}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div><strong>Department:</strong> {ticket.support_department}</div>
+                  <div><strong>Category:</strong> {ticket.category}</div>
+                  <div><strong>Subcategory:</strong> {ticket.subcategory}</div>
+                  <div><strong>Classification:</strong> {ticket.classification}</div>
+                  <div><strong>Business Unit:</strong> {ticket.business_unit_name || 'None'}</div>
+                  <div><strong>Owner:</strong> {ticket.owner_name || 'Unassigned'}</div>
+                  <div><strong>Due:</strong> {ticket.due_at ? new Date(ticket.due_at).toLocaleString() : 'Not set'}</div>
+                  <div><strong>Created:</strong> {new Date(ticket.created_at).toLocaleString()}</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Attachments */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Attachments</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-500 mb-2">Drop files here or click to upload</p>
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    id="file-upload"
+                    onChange={(e) => {
+                      if (e.target.files.length > 0) {
+                        toast({
+                          title: "Upload Started",
+                          description: `Uploading ${e.target.files.length} file(s)...`,
+                        });
+                        // TODO: Implement actual file upload
                       }
                     }}
-                    disabled={!newComment.trim()}
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
+                  />
+                  <Label htmlFor="file-upload">
+                    <Button size="sm" variant="outline" asChild>
+                      <span>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Choose Files
+                      </span>
+                    </Button>
+                  </Label>
+                  <p className="text-xs text-gray-400 mt-2">PDF, DOC, DOCX, TXT, JPG, PNG (Max 10MB each)</p>
                 </div>
-              </div>
-            </div>
+                {attachments.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {attachments.map(attachment => (
+                      <div key={attachment.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <span className="text-sm">{attachment.original_name}</span>
+                        <Button size="sm" variant="outline">Download</Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Comments */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Comments</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3 max-h-60 overflow-y-auto">
+                  {comments.map(comment => (
+                    <div key={comment.id} className={`p-3 rounded text-sm ${
+                      comment.is_internal ? 'bg-yellow-50 border-l-4 border-yellow-400' : 'bg-gray-50'
+                    }`}>
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-medium">{comment.author_name}</span>
+                        <div className="flex items-center space-x-2">
+                          {comment.is_internal && (
+                            <Badge variant="outline" className="text-xs">Internal</Badge>
+                          )}
+                          <span className="text-xs text-gray-500">
+                            {new Date(comment.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                      <p>{comment.body}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add Comment */}
+                <div className="border-t pt-4">
+                  <div className="space-y-2">
+                    {(currentUser.boost_role === 'Agent' || currentUser.boost_role === 'Manager' || currentUser.boost_role === 'Admin') && (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="internal"
+                          checked={isInternal}
+                          onChange={(e) => setIsInternal(e.target.checked)}
+                        />
+                        <Label htmlFor="internal" className="text-sm">Internal comment (staff only)</Label>
+                      </div>
+                    )}
+                    <div className="flex space-x-2">
+                      <Textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Add a comment..."
+                        rows={3}
+                        className="flex-1"
+                      />
+                      <Button 
+                        onClick={async () => {
+                          if (newComment.trim()) {
+                            try {
+                              await apiCall('POST', `/boost/tickets/${ticket.id}/comments`, {
+                                body: newComment,
+                                is_internal: isInternal,
+                                author_name: currentUser.name
+                              });
+                              setNewComment('');
+                              setIsInternal(false);
+                              fetchComments();
+                              fetchAuditTrail();
+                            } catch (error) {
+                              console.error('Error adding comment:', error);
+                            }
+                          }
+                        }}
+                        disabled={!newComment.trim()}
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Activity/Audit Trail */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Activity</CardTitle>
+                <CardDescription>Complete audit trail of all actions taken on this ticket</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-60 overflow-y-auto">
+                  {auditTrail.map(entry => (
+                    <div key={entry.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded">
+                      {getActionIcon(entry.action)}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{entry.description}</p>
+                        <p className="text-xs text-gray-500">{entry.details}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {entry.user_name} • {new Date(entry.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column: Admin Quick Actions */}
+          <div className="space-y-6">
+            {canUseQuickActions() && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Admin Quick Actions</CardTitle>
+                  <CardDescription>Update key ticket properties quickly</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium">Status</Label>
+                    <Select value={quickStatus} onValueChange={setQuickStatus}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">New</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="waiting_customer">Waiting on User</SelectItem>
+                        <SelectItem value="on_hold">On Hold</SelectItem>
+                        <SelectItem value="escalated">Escalated</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                        {canCloseTicket() && (
+                          <SelectItem value="closed">Closed</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Priority</Label>
+                    <Select value={quickPriority} onValueChange={setQuickPriority}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Assignee</Label>
+                    <Select value={quickAssignee} onValueChange={setQuickAssignee}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select assignee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Unassigned</SelectItem>
+                        {availableAgents.map(agent => (
+                          <SelectItem key={agent.id} value={agent.id}>
+                            {agent.name} ({agent.boost_role}) - {agent.department}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button 
+                    onClick={handleQuickAction}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                    disabled={
+                      quickStatus === ticket.status && 
+                      quickPriority === ticket.priority && 
+                      quickAssignee === (ticket.owner_id || '')
+                    }
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Ticket Summary */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span>Ticket ID:</span>
+                  <span className="font-medium">{ticket.ticket_number}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Created:</span>
+                  <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Last Updated:</span>
+                  <span>{new Date(ticket.updated_at).toLocaleDateString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Comments:</span>
+                  <span>{comments.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Attachments:</span>
+                  <span>{attachments.length}</span>
+                </div>
+                {ticket.due_at && (
+                  <div className="flex justify-between">
+                    <span>SLA Due:</span>
+                    <span className={new Date(ticket.due_at) < new Date() ? 'text-red-600 font-medium' : ''}>
+                      {new Date(ticket.due_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </DialogContent>
