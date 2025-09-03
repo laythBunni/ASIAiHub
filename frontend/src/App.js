@@ -107,18 +107,18 @@ const StructuredResponse = ({ response, documentsReferenced }) => {
       </div>
 
       {/* Details Section */}
-      {(response.details?.requirements?.length > 0 || 
-        response.details?.procedures?.length > 0 || 
-        response.details?.exceptions?.length > 0) && (
+      {(structuredData.details?.requirements?.length > 0 || 
+        structuredData.details?.procedures?.length > 0 || 
+        structuredData.details?.exceptions?.length > 0) && (
         <div className="space-y-3">
-          {response.details.requirements?.length > 0 && (
+          {structuredData.details.requirements?.length > 0 && (
             <div>
               <h5 className="font-medium text-gray-800 mb-2 flex items-center text-sm">
                 <AlertCircle className="w-3 h-3 mr-1 text-orange-500" />
                 Requirements
               </h5>
               <ul className="text-sm text-gray-600 space-y-1">
-                {response.details.requirements.map((req, idx) => (
+                {structuredData.details.requirements.map((req, idx) => (
                   <li key={idx} className="flex items-start">
                     <span className="text-emerald-500 mr-2">•</span>
                     {req}
@@ -128,14 +128,14 @@ const StructuredResponse = ({ response, documentsReferenced }) => {
             </div>
           )}
 
-          {response.details.procedures?.length > 0 && (
+          {structuredData.details.procedures?.length > 0 && (
             <div>
               <h5 className="font-medium text-gray-800 mb-2 flex items-center text-sm">
                 <PlayCircle className="w-3 h-3 mr-1 text-blue-500" />
                 Procedures
               </h5>
               <ol className="text-sm text-gray-600 space-y-1">
-                {response.details.procedures.map((proc, idx) => (
+                {structuredData.details.procedures.map((proc, idx) => (
                   <li key={idx} className="flex items-start">
                     <span className="text-blue-500 mr-2 font-medium">{idx + 1}.</span>
                     {proc}
@@ -145,14 +145,14 @@ const StructuredResponse = ({ response, documentsReferenced }) => {
             </div>
           )}
 
-          {response.details.exceptions?.length > 0 && (
+          {structuredData.details.exceptions?.length > 0 && (
             <div>
               <h5 className="font-medium text-gray-800 mb-2 flex items-center text-sm">
                 <AlertTriangle className="w-3 h-3 mr-1 text-yellow-500" />
                 Exceptions
               </h5>
               <ul className="text-sm text-gray-600 space-y-1">
-                {response.details.exceptions.map((exc, idx) => (
+                {structuredData.details.exceptions.map((exc, idx) => (
                   <li key={idx} className="flex items-start">
                     <span className="text-yellow-500 mr-2">!</span>
                     {exc}
