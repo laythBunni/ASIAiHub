@@ -120,6 +120,83 @@ class User(BaseModel):
     active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# BOOST Ticketing System Models
+class BusinessUnit(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    code: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class BoostUser(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    email: str
+    boost_role: BoostRole = BoostRole.USER
+    business_unit_id: Optional[str] = None
+    business_unit_name: Optional[str] = None
+    department: Optional[SupportDepartment] = None
+    active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class BoostTicket(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    ticket_number: str = Field(default_factory=lambda: f"BST-{str(uuid.uuid4())[:8].upper()}")
+    subject: str
+    description: str
+    requester_id: str
+    requester_name: str
+    requester_email: str
+    business_unit_id: Optional[str] = None
+    business_unit_name: Optional[str] = None
+    
+    # Categorization
+    support_department: SupportDepartment
+    category: str
+    subcategory: str
+    classification: TicketClassification
+    
+    # Status and Priority
+    status: TicketStatus = TicketStatus.OPEN
+    priority: TicketPriority
+    
+    # Assignment
+    owner_id: Optional[str] = None
+    owner_name: Optional[str] = None
+    
+    # Metadata
+    channel: TicketChannel = TicketChannel.HUB
+    justification: str = ""  # Required for Critical priority
+    resolution_notes: str = ""
+    resolution_type: Optional[ResolutionType] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    due_at: Optional[datetime] = None
+    resolved_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+
+class BoostComment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    ticket_id: str
+    author_id: str
+    author_name: str
+    body: str
+    is_internal: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class BoostAttachment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    ticket_id: str
+    filename: str
+    original_name: str
+    file_path: str
+    file_url: str = ""
+    file_size: int
+    mime_type: str
+    uploaded_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class DocumentStatus(str, Enum):
     PENDING_APPROVAL = "pending_approval"
     APPROVED = "approved" 
