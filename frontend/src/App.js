@@ -1081,10 +1081,11 @@ const BoostSupport = () => {
     business_unit_id: ''
   });
   const [currentUser] = useState({
-    id: 'default_user',
-    name: 'System User',
-    email: 'user@company.com',
+    id: 'layth_bunni',
+    name: 'Layth Bunni',
+    email: 'layth.bunni@adamsmithinternational.com',
     boost_role: 'Manager', // Admin, Manager, Agent, User
+    department: 'OS Support',
     business_unit_id: null
   });
   const [showNewTicketModal, setShowNewTicketModal] = useState(false);
