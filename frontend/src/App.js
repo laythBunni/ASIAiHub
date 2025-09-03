@@ -4097,9 +4097,15 @@ const SystemAdmin = () => {
         user={selectedUser}
         permissionCategories={permissionCategories}
         permissions={permissions[selectedUser?.id] || {}}
-        onSave={(newPermissions) => {
+        businessUnits={businessUnits}
+        onSave={(data) => {
           if (selectedUser) {
-            updateUserPermissions(selectedUser.id, newPermissions);
+            // Updating existing user permissions
+            updateUserPermissions(selectedUser.id, data);
+          } else {
+            // Creating new user with permissions
+            updateUserPermissions(data.user.id, data.permissions);
+            fetchUsers(); // Refresh user list
           }
           setShowPermissionModal(false);
           setSelectedUser(null);
