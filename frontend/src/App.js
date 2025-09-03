@@ -1757,45 +1757,107 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
   const fetchAuditTrail = async () => {
     if (!ticket) return;
     try {
-      // Create mock audit trail from ticket data and comments
-      const trail = [
-        {
+      // Try to get real audit trail from backend first
+      let trail = [];
+      
+      try {
+        const auditData = await apiCall('GET', `/boost/tickets/${ticket.id}/audit`);
+        trail = auditData || [];
+      } catch (error) {
+        // If no backend audit endpoint, create comprehensive trail from available data
+        console.log('No audit endpoint available, creating trail from ticket data');
+      }
+
+      // If no backend trail exists, create comprehensive trail from ticket and comments data
+      if (trail.length === 0) {
+        // Base ticket creation
+        trail.push({
           id: 1,
           action: 'created',
           description: `Ticket created by ${ticket.requester_name}`,
           user_name: ticket.requester_name,
           timestamp: ticket.created_at,
-          details: `Priority: ${ticket.priority.toUpperCase()}, Department: ${ticket.support_department}`
+          details: `Priority: ${ticket.priority.toUpperCase()}, Department: ${ticket.support_department}, Category: ${ticket.category}`
+        });
+
+        // Assignment tracking
+        if (ticket.owner_name) {
+          trail.push({
+            id: 2,
+            action: 'assigned',
+            description: `Assigned to ${ticket.owner_name}`,
+            user_name: 'System',
+            timestamp: ticket.updated_at,
+            details: `Owner: ${ticket.owner_name} (${ticket.support_department})`
+          });
         }
-      ];
 
-      // Add assignment if exists
-      if (ticket.owner_name) {
-        trail.push({
-          id: 2,
-          action: 'assigned',
-          description: `Assigned to ${ticket.owner_name}`,
-          user_name: 'System',
-          timestamp: ticket.updated_at,
-          details: `Owner: ${ticket.owner_name}`
+        // Status change tracking
+        if (ticket.status !== 'open') {
+          trail.push({
+            id: 3,
+            action: 'status_changed',
+            description: `Status changed to ${ticket.status.replace('_', ' ')}`,
+            user_name: ticket.owner_name || 'System',
+            timestamp: ticket.updated_at,
+            details: `Previous: Open → Current: ${ticket.status.toUpperCase().replace('_', ' ')}`
+          });
+        }
+
+        // Priority changes (if different from default)
+        if (ticket.priority !== 'medium') {
+          trail.push({
+            id: 4,
+            action: 'priority_changed',
+            description: `Priority set to ${ticket.priority.toUpperCase()}`,
+            user_name: ticket.owner_name || ticket.requester_name,
+            timestamp: ticket.updated_at,
+            details: `Priority level: ${ticket.priority.toUpperCase()}`
+          });
+        }
+
+        // Add comment entries from comments data
+        comments.forEach((comment, index) => {
+          trail.push({
+            id: 100 + index,
+            action: 'comment_added',
+            description: comment.is_internal ? 'Internal comment added' : 'Comment added',
+            user_name: comment.author_name,
+            timestamp: comment.created_at,
+            details: comment.body.substring(0, 100) + (comment.body.length > 100 ? '...' : '')
+          });
         });
+
+        // Add attachment entries (if any)
+        attachments.forEach((attachment, index) => {
+          trail.push({
+            id: 200 + index,
+            action: 'attachment_added',
+            description: `File attached: ${attachment.original_name}`,
+            user_name: attachment.uploaded_by || 'System',
+            timestamp: attachment.uploaded_at || ticket.updated_at,
+            details: `File: ${attachment.original_name} (${attachment.file_size || 'Unknown size'})`
+          });
+        });
+
+        // SLA tracking
+        if (ticket.due_at && new Date(ticket.due_at) < new Date() && !['resolved', 'closed'].includes(ticket.status)) {
+          trail.push({
+            id: 300,
+            action: 'sla_breach',
+            description: 'SLA deadline exceeded',
+            user_name: 'System',
+            timestamp: ticket.due_at,
+            details: `Due date: ${new Date(ticket.due_at).toLocaleString()}`
+          });
+        }
       }
 
-      // Add status changes based on current status
-      if (ticket.status !== 'open') {
-        trail.push({
-          id: 3,
-          action: 'status_changed',
-          description: `Status changed to ${ticket.status.replace('_', ' ')}`,
-          user_name: ticket.owner_name || 'System',
-          timestamp: ticket.updated_at,
-          details: `New status: ${ticket.status.toUpperCase().replace('_', ' ')}`
-        });
-      }
-
+      // Sort by timestamp (newest first)
       setAuditTrail(trail.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
     } catch (error) {
       console.error('Error creating audit trail:', error);
+      setAuditTrail([]);
     }
   };
 
