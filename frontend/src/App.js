@@ -2960,9 +2960,10 @@ const BoostAdmin = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="units">Business Units</TabsTrigger>
+          <TabsTrigger value="testing">Test Data</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
