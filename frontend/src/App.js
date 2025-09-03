@@ -50,11 +50,36 @@ const API = `${BACKEND_URL}/api`;
 
 // Structured Response Component
 const StructuredResponse = ({ response, documentsReferenced }) => {
-  // Handle both structured object and fallback string responses
+  // Parse response if it's a JSON string, or handle as object/string
+  let parsedResponse = response;
+  
   if (typeof response === 'string') {
+    try {
+      // Try to parse as JSON first (for structured responses stored as strings)
+      parsedResponse = JSON.parse(response);
+    } catch (e) {
+      // If parsing fails, it's a plain text response
+      return (
+        <div className="text-sm whitespace-pre-wrap">
+          {response}
+          {documentsReferenced > 0 && (
+            <div className="mt-2 pt-2 border-t border-gray-200">
+              <div className="text-xs text-gray-500 flex items-center">
+                <FileText className="w-3 h-3 mr-1" />
+                Referenced {documentsReferenced} company document(s)
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+  }
+  
+  // Handle case where parsedResponse is not a structured object
+  if (!parsedResponse || typeof parsedResponse !== 'object' || !parsedResponse.summary) {
     return (
       <div className="text-sm whitespace-pre-wrap">
-        {response}
+        {JSON.stringify(parsedResponse) || 'No response available'}
         {documentsReferenced > 0 && (
           <div className="mt-2 pt-2 border-t border-gray-200">
             <div className="text-xs text-gray-500 flex items-center">
@@ -66,6 +91,9 @@ const StructuredResponse = ({ response, documentsReferenced }) => {
       </div>
     );
   }
+  
+  // Use parsedResponse instead of response
+  const structuredData = parsedResponse;
 
   return (
     <div className="space-y-4">
