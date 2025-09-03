@@ -3715,7 +3715,7 @@ const SystemAdmin = () => {
       'view_statistics',
       'export_reports'
     ],
-    'AI Assistant': [
+    'Ashur': [
       'use_ai_chat',
       'view_chat_history',
       'delete_conversations'
