@@ -2290,6 +2290,451 @@ const Navigation = () => {
   );
 };
 
+// BOOST Admin Dashboard Component
+const BoostAdmin = () => {
+  const [activeTab, setActiveTab] = useState('users');
+  const [users, setUsers] = useState([]);
+  const [businessUnits, setBusinessUnits] = useState([]);
+  const [showNewUserModal, setShowNewUserModal] = useState(false);
+  const [showNewUnitModal, setShowNewUnitModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editingUnit, setEditingUnit] = useState(null);
+  const { apiCall } = useAPI();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchUsers();
+    fetchBusinessUnits();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const data = await apiCall('GET', '/boost/users');
+      setUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchBusinessUnits = async () => {
+    try {
+      const data = await apiCall('GET', '/boost/business-units');
+      setBusinessUnits(data);
+    } catch (error) {
+      console.error('Error fetching business units:', error);
+    }
+  };
+
+  const updateUserRole = async (userId, newRole) => {
+    try {
+      await apiCall('PUT', `/boost/users/${userId}`, { boost_role: newRole });
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Error updating user role:', error);
+    }
+  };
+
+  const deleteUser = async (userId) => {
+    try {
+      await apiCall('DELETE', `/boost/users/${userId}`);
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    }
+  };
+
+  const deleteBusinessUnit = async (unitId) => {
+    try {
+      await apiCall('DELETE', `/boost/business-units/${unitId}`);
+      toast({
+        title: "Success",
+        description: "Business unit deleted successfully",
+      });
+      fetchBusinessUnits();
+    } catch (error) {
+      console.error('Error deleting business unit:', error);
+    }
+  };
+
+  const getRoleColor = (role) => {
+    const colors = {
+      Admin: 'bg-red-100 text-red-700',
+      Manager: 'bg-orange-100 text-orange-700',
+      Agent: 'bg-blue-100 text-blue-700',
+      User: 'bg-gray-100 text-gray-700'
+    };
+    return colors[role] || colors.User;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">BOOST Admin</h1>
+          <p className="text-gray-600 mt-2">Manage users and business units</p>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="units">Business Units</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Users Management</CardTitle>
+                <Button onClick={() => setShowNewUserModal(true)} className="bg-emerald-600 hover:bg-emerald-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add User
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3">Name</th>
+                      <th className="text-left p-3">Email</th>
+                      <th className="text-left p-3">BOOST Role</th>
+                      <th className="text-left p-3">Business Unit</th>
+                      <th className="text-left p-3">Department</th>
+                      <th className="text-left p-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map(user => (
+                      <tr key={user.id} className="border-b hover:bg-gray-50">
+                        <td className="p-3 font-medium">{user.name}</td>
+                        <td className="p-3 text-gray-600">{user.email}</td>
+                        <td className="p-3">
+                          <Select 
+                            value={user.boost_role} 
+                            onValueChange={(newRole) => updateUserRole(user.id, newRole)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <Badge className={getRoleColor(user.boost_role)}>
+                                {user.boost_role}
+                              </Badge>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Admin">Admin</SelectItem>
+                              <SelectItem value="Manager">Manager</SelectItem>
+                              <SelectItem value="Agent">Agent</SelectItem>
+                              <SelectItem value="User">User</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="p-3 text-gray-600">{user.business_unit_name || 'None'}</td>
+                        <td className="p-3 text-gray-600">{user.department || 'None'}</td>
+                        <td className="p-3">
+                          <div className="flex space-x-1">
+                            <Button size="sm" variant="outline" onClick={() => setEditingUser(user)}>
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => deleteUser(user.id)}>
+                              <Trash2 className="w-3 h-3 text-red-600" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="units" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Business Units Management</CardTitle>
+                <Button onClick={() => setShowNewUnitModal(true)} className="bg-emerald-600 hover:bg-emerald-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Unit
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {businessUnits.map(unit => (
+                  <Card key={unit.id} className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium">{unit.name}</h3>
+                      <div className="flex space-x-1">
+                        <Button size="sm" variant="outline" onClick={() => setEditingUnit(unit)}>
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => deleteBusinessUnit(unit.id)}>
+                          <Trash2 className="w-3 h-3 text-red-600" />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600">Code: {unit.code || 'None'}</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Created {new Date(unit.created_at).toLocaleDateString()}
+                    </p>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* New User Modal */}
+      <BoostUserModal
+        isOpen={showNewUserModal}
+        onClose={() => setShowNewUserModal(false)}
+        user={null}
+        businessUnits={businessUnits}
+        onSave={() => {
+          setShowNewUserModal(false);
+          fetchUsers();
+        }}
+      />
+
+      {/* Edit User Modal */}
+      <BoostUserModal
+        isOpen={!!editingUser}
+        onClose={() => setEditingUser(null)}
+        user={editingUser}
+        businessUnits={businessUnits}
+        onSave={() => {
+          setEditingUser(null);
+          fetchUsers();
+        }}
+      />
+
+      {/* New Unit Modal */}
+      <BoostUnitModal
+        isOpen={showNewUnitModal}
+        onClose={() => setShowNewUnitModal(false)}
+        unit={null}
+        onSave={() => {
+          setShowNewUnitModal(false);
+          fetchBusinessUnits();
+        }}
+      />
+
+      {/* Edit Unit Modal */}
+      <BoostUnitModal
+        isOpen={!!editingUnit}
+        onClose={() => setEditingUnit(null)}
+        unit={editingUnit}
+        onSave={() => {
+          setEditingUnit(null);
+          fetchBusinessUnits();
+        }}
+      />
+    </div>
+  );
+};
+
+// BOOST User Modal Component
+const BoostUserModal = ({ isOpen, onClose, user, businessUnits, onSave }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    boost_role: 'User',
+    business_unit_id: '',
+    department: ''
+  });
+  const { apiCall } = useAPI();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name,
+        email: user.email,
+        boost_role: user.boost_role,
+        business_unit_id: user.business_unit_id || '',
+        department: user.department || ''
+      });
+    } else {
+      setFormData({
+        name: '',
+        email: '',
+        boost_role: 'User',
+        business_unit_id: '',
+        department: ''
+      });
+    }
+  }, [user]);
+
+  const handleSubmit = async () => {
+    try {
+      if (user) {
+        await apiCall('PUT', `/boost/users/${user.id}`, formData);
+        toast({ title: "Success", description: "User updated successfully" });
+      } else {
+        await apiCall('POST', '/boost/users', formData);
+        toast({ title: "Success", description: "User created successfully" });
+      }
+      onSave();
+    } catch (error) {
+      console.error('Error saving user:', error);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{user ? 'Edit User' : 'Add New User'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Name</Label>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              placeholder="Full name"
+            />
+          </div>
+          <div>
+            <Label>Email</Label>
+            <Input
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              placeholder="email@company.com"
+              type="email"
+            />
+          </div>
+          <div>
+            <Label>BOOST Role</Label>
+            <Select value={formData.boost_role} onValueChange={(value) => setFormData({...formData, boost_role: value})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Admin">Admin</SelectItem>
+                <SelectItem value="Manager">Manager</SelectItem>
+                <SelectItem value="Agent">Agent</SelectItem>
+                <SelectItem value="User">User</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Business Unit</Label>
+            <Select value={formData.business_unit_id} onValueChange={(value) => setFormData({...formData, business_unit_id: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select business unit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {businessUnits.map(unit => (
+                  <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Department</Label>
+            <Select value={formData.department} onValueChange={(value) => setFormData({...formData, department: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                <SelectItem value="OS Support">OS Support</SelectItem>
+                <SelectItem value="Finance">Finance</SelectItem>
+                <SelectItem value="HR/P&T">HR/P&T</SelectItem>
+                <SelectItem value="IT">IT</SelectItem>
+                <SelectItem value="DevOps">DevOps</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700">
+              {user ? 'Update' : 'Create'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// BOOST Unit Modal Component
+const BoostUnitModal = ({ isOpen, onClose, unit, onSave }) => {
+  const [formData, setFormData] = useState({ name: '', code: '' });
+  const { apiCall } = useAPI();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (unit) {
+      setFormData({ name: unit.name, code: unit.code });
+    } else {
+      setFormData({ name: '', code: '' });
+    }
+  }, [unit]);
+
+  const handleSubmit = async () => {
+    try {
+      if (unit) {
+        await apiCall('PUT', `/boost/business-units/${unit.id}`, formData);
+        toast({ title: "Success", description: "Business unit updated successfully" });
+      } else {
+        await apiCall('POST', '/boost/business-units', formData);
+        toast({ title: "Success", description: "Business unit created successfully" });
+      }
+      onSave();
+    } catch (error) {
+      console.error('Error saving business unit:', error);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{unit ? 'Edit Business Unit' : 'Add New Business Unit'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Name</Label>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              placeholder="Business unit name"
+            />
+          </div>
+          <div>
+            <Label>Code</Label>
+            <Input
+              value={formData.code}
+              onChange={(e) => setFormData({...formData, code: e.target.value})}
+              placeholder="Unit code (optional)"
+            />
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700">
+              {unit ? 'Update' : 'Create'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Main App Component
 function App() {
   return (
@@ -2300,6 +2745,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/chat" element={<ChatInterface />} />
+            <Route path="/boost" element={<BoostSupport />} />
+            <Route path="/boost/admin" element={<BoostAdmin />} />
             <Route path="/tickets" element={<TicketManagement />} />
             <Route path="/documents" element={<DocumentManagement />} />
           </Routes>
