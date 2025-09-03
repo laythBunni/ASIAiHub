@@ -1167,6 +1167,307 @@ async def get_dashboard_stats():
         logger.error(f"Error getting dashboard stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to get dashboard stats")
 
+# BOOST Ticketing System API Routes
+
+# Business Units Management
+@api_router.post("/boost/business-units", response_model=BusinessUnit)
+async def create_business_unit(unit_data: BusinessUnitCreate):
+    """Create a new business unit"""
+    try:
+        unit = BusinessUnit(**unit_data.dict())
+        await db.boost_business_units.insert_one(unit.dict())
+        return unit
+    except Exception as e:
+        logger.error(f"Error creating business unit: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create business unit")
+
+@api_router.get("/boost/business-units", response_model=List[BusinessUnit])
+async def get_business_units():
+    """Get all business units"""
+    try:
+        units = await db.boost_business_units.find().to_list(1000)
+        return [BusinessUnit(**unit) for unit in units]
+    except Exception as e:
+        logger.error(f"Error fetching business units: {e}")
+        return []
+
+@api_router.put("/boost/business-units/{unit_id}", response_model=BusinessUnit)
+async def update_business_unit(unit_id: str, unit_data: BusinessUnitCreate):
+    """Update a business unit"""
+    try:
+        result = await db.boost_business_units.update_one(
+            {"id": unit_id},
+            {"$set": unit_data.dict()}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Business unit not found")
+        
+        updated_unit = await db.boost_business_units.find_one({"id": unit_id})
+        return BusinessUnit(**updated_unit)
+    except Exception as e:
+        logger.error(f"Error updating business unit: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update business unit")
+
+@api_router.delete("/boost/business-units/{unit_id}")
+async def delete_business_unit(unit_id: str):
+    """Delete a business unit"""
+    try:
+        result = await db.boost_business_units.delete_one({"id": unit_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Business unit not found")
+        return {"message": "Business unit deleted successfully"}
+    except Exception as e:
+        logger.error(f"Error deleting business unit: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete business unit")
+
+# BOOST Users Management
+@api_router.post("/boost/users", response_model=BoostUser)
+async def create_boost_user(user_data: BoostUserCreate):
+    """Create a new BOOST user"""
+    try:
+        # Get business unit name if provided
+        business_unit_name = None
+        if user_data.business_unit_id:
+            unit = await db.boost_business_units.find_one({"id": user_data.business_unit_id})
+            if unit:
+                business_unit_name = unit["name"]
+        
+        user = BoostUser(
+            **user_data.dict(),
+            business_unit_name=business_unit_name
+        )
+        await db.boost_users.insert_one(user.dict())
+        return user
+    except Exception as e:
+        logger.error(f"Error creating BOOST user: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create user")
+
+@api_router.get("/boost/users", response_model=List[BoostUser])
+async def get_boost_users():
+    """Get all BOOST users"""
+    try:
+        users = await db.boost_users.find().to_list(1000)
+        return [BoostUser(**user) for user in users]
+    except Exception as e:
+        logger.error(f"Error fetching BOOST users: {e}")
+        return []
+
+@api_router.put("/boost/users/{user_id}", response_model=BoostUser)
+async def update_boost_user(user_id: str, update_data: BoostUserUpdate):
+    """Update a BOOST user"""
+    try:
+        update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
+        
+        # Update business unit name if business_unit_id changed
+        if "business_unit_id" in update_dict and update_dict["business_unit_id"]:
+            unit = await db.boost_business_units.find_one({"id": update_dict["business_unit_id"]})
+            if unit:
+                update_dict["business_unit_name"] = unit["name"]
+        elif "business_unit_id" in update_dict and not update_dict["business_unit_id"]:
+            update_dict["business_unit_name"] = None
+        
+        result = await db.boost_users.update_one(
+            {"id": user_id},
+            {"$set": update_dict}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        updated_user = await db.boost_users.find_one({"id": user_id})
+        return BoostUser(**updated_user)
+    except Exception as e:
+        logger.error(f"Error updating BOOST user: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update user")
+
+@api_router.delete("/boost/users/{user_id}")
+async def delete_boost_user(user_id: str):
+    """Delete a BOOST user"""
+    try:
+        result = await db.boost_users.delete_one({"id": user_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"message": "User deleted successfully"}
+    except Exception as e:
+        logger.error(f"Error deleting BOOST user: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete user")
+
+# BOOST Tickets
+@api_router.post("/boost/tickets", response_model=BoostTicket)
+async def create_boost_ticket(ticket_data: BoostTicketCreate):
+    """Create a new BOOST ticket"""
+    try:
+        # Auto-prefix subject
+        prefixed_subject = auto_prefix_subject(
+            ticket_data.support_department,
+            ticket_data.category,
+            ticket_data.subject
+        )
+        
+        # Calculate SLA due date
+        created_at = datetime.now(timezone.utc)
+        due_at = calculate_boost_sla_due(ticket_data.priority, created_at)
+        
+        # Get business unit name if provided
+        business_unit_name = None
+        if ticket_data.business_unit_id:
+            unit = await db.boost_business_units.find_one({"id": ticket_data.business_unit_id})
+            if unit:
+                business_unit_name = unit["name"]
+        
+        ticket = BoostTicket(
+            **ticket_data.dict(),
+            subject=prefixed_subject,
+            created_at=created_at,
+            updated_at=created_at,
+            due_at=due_at,
+            business_unit_name=business_unit_name,
+            requester_id="default_user"  # For MVP
+        )
+        
+        await db.boost_tickets.insert_one(ticket.dict())
+        return ticket
+        
+    except Exception as e:
+        logger.error(f"Error creating BOOST ticket: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create ticket")
+
+@api_router.get("/boost/tickets", response_model=List[BoostTicket])
+async def get_boost_tickets(
+    status: Optional[TicketStatus] = None,
+    priority: Optional[TicketPriority] = None,
+    support_department: Optional[SupportDepartment] = None,
+    business_unit_id: Optional[str] = None,
+    requester_id: Optional[str] = None,
+    owner_id: Optional[str] = None,
+    search: Optional[str] = None
+):
+    """Get BOOST tickets with optional filtering"""
+    try:
+        query = {}
+        
+        if status:
+            query["status"] = status
+        if priority:
+            query["priority"] = priority
+        if support_department:
+            query["support_department"] = support_department
+        if business_unit_id:
+            query["business_unit_id"] = business_unit_id
+        if requester_id:
+            query["requester_id"] = requester_id
+        if owner_id:
+            query["owner_id"] = owner_id
+        if search:
+            query["$or"] = [
+                {"subject": {"$regex": search, "$options": "i"}},
+                {"description": {"$regex": search, "$options": "i"}}
+            ]
+        
+        tickets = await db.boost_tickets.find(query).sort("created_at", -1).to_list(1000)
+        return [BoostTicket(**ticket) for ticket in tickets]
+        
+    except Exception as e:
+        logger.error(f"Error fetching BOOST tickets: {e}")
+        return []
+
+@api_router.get("/boost/tickets/{ticket_id}", response_model=BoostTicket)
+async def get_boost_ticket(ticket_id: str):
+    """Get a specific BOOST ticket"""
+    try:
+        ticket = await db.boost_tickets.find_one({"id": ticket_id})
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        return BoostTicket(**ticket)
+    except Exception as e:
+        logger.error(f"Error fetching BOOST ticket: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch ticket")
+
+@api_router.put("/boost/tickets/{ticket_id}", response_model=BoostTicket)
+async def update_boost_ticket(ticket_id: str, update_data: BoostTicketUpdate):
+    """Update a BOOST ticket"""
+    try:
+        update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
+        update_dict["updated_at"] = datetime.now(timezone.utc)
+        
+        # Handle status transitions
+        if update_data.status:
+            if update_data.status == TicketStatus.RESOLVED:
+                update_dict["resolved_at"] = datetime.now(timezone.utc)
+            elif update_data.status == TicketStatus.CLOSED:
+                update_dict["closed_at"] = datetime.now(timezone.utc)
+        
+        result = await db.boost_tickets.update_one(
+            {"id": ticket_id},
+            {"$set": update_dict}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        updated_ticket = await db.boost_tickets.find_one({"id": ticket_id})
+        return BoostTicket(**updated_ticket)
+        
+    except Exception as e:
+        logger.error(f"Error updating BOOST ticket: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update ticket")
+
+# BOOST Comments
+@api_router.post("/boost/tickets/{ticket_id}/comments", response_model=BoostComment)
+async def add_boost_comment(ticket_id: str, comment_data: BoostCommentCreate):
+    """Add a comment to a BOOST ticket"""
+    try:
+        # Verify ticket exists
+        ticket = await db.boost_tickets.find_one({"id": ticket_id})
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        comment = BoostComment(
+            ticket_id=ticket_id,
+            **comment_data.dict(),
+            author_id="default_user"  # For MVP
+        )
+        
+        await db.boost_comments.insert_one(comment.dict())
+        
+        # Update ticket's updated_at timestamp
+        await db.boost_tickets.update_one(
+            {"id": ticket_id},
+            {"$set": {"updated_at": datetime.now(timezone.utc)}}
+        )
+        
+        return comment
+        
+    except Exception as e:
+        logger.error(f"Error adding BOOST comment: {e}")
+        raise HTTPException(status_code=500, detail="Failed to add comment")
+
+@api_router.get("/boost/tickets/{ticket_id}/comments", response_model=List[BoostComment])
+async def get_boost_comments(ticket_id: str, include_internal: bool = True):
+    """Get comments for a BOOST ticket"""
+    try:
+        query = {"ticket_id": ticket_id}
+        if not include_internal:
+            query["is_internal"] = False
+        
+        comments = await db.boost_comments.find(query).sort("created_at", 1).to_list(1000)
+        return [BoostComment(**comment) for comment in comments]
+    except Exception as e:
+        logger.error(f"Error fetching BOOST comments: {e}")
+        return []
+
+# BOOST Categories
+@api_router.get("/boost/categories")
+async def get_boost_categories():
+    """Get BOOST categorization data"""
+    return BOOST_CATEGORIES
+
+@api_router.get("/boost/categories/{department}")
+async def get_department_categories(department: SupportDepartment):
+    """Get categories for a specific department"""
+    return BOOST_CATEGORIES.get(department, {})
+
 # Include the router in the main app
 app.include_router(api_router)
 
