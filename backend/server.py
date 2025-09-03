@@ -57,13 +57,13 @@ class TicketPriority(str, Enum):
     URGENT = "urgent"
 
 class Department(str, Enum):
-    USER_ACCESS = "User & Access Management"
-    CONTRACTS = "Contracts & Change Log"
-    FINANCE = "Finance & Purchasing"
-    PROJECT = "Project & Performance"
-    LEAVE = "Leave & People Management"
-    SYSTEM_IT = "System & IT Support"
-    KNOWLEDGE = "Knowledge Base Requests"
+    FINANCE = "Finance"
+    PEOPLE_TALENT = "People and Talent"
+    INFORMATION_TECHNOLOGY = "Information Technology"
+    LEGAL_ETHICS = "Legal, Ethics and Compliance"
+    BUSINESS_DEVELOPMENT = "Business Development"
+    PROJECT_MANAGEMENT = "Project Management"
+    OTHER = "Other"
 
 class UserRole(str, Enum):
     ADMIN = "admin"
