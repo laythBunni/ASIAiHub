@@ -1758,13 +1758,302 @@ async def get_ticket_audit_trail(ticket_id: str):
         logging.error(f"Error fetching audit trail: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch audit trail")
 
+# Beta Authentication System Models
+class BetaUser(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    personal_code: str
+    role: str = "User"  # Admin, Manager, Agent, User
+    department: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_login: Optional[datetime] = None
+
+class BetaSettings(BaseModel):
+    registration_code: str
+    admin_email: str = "layth.bunni@adamsmithinternational.com"
+    allowed_domain: str = "adamsmithinternational.com"
+    max_users: int = 20
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RegistrationRequest(BaseModel):
+    email: str
+    registration_code: str
+    personal_code: str
+    department: Optional[str] = None
+
+class LoginRequest(BaseModel):
+    email: str  
+    personal_code: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    user: BetaUser
+
+# Beta Authentication Helper
+security = HTTPBearer()
+
+def generate_access_token(user_id: str, email: str) -> str:
+    """Generate a simple access token"""
+    # In production, use proper JWT tokens
+    token_data = f"{user_id}:{email}:{datetime.now(timezone.utc).timestamp()}"
+    return hashlib.sha256(token_data.encode()).hexdigest()
+
+def validate_email_domain(email: str) -> bool:
+    """Validate email domain"""
+    domain = email.split('@')[-1].lower()
+    return domain == "adamsmithinternational.com"
+
+def validate_email_format(email: str) -> bool:
+    """Validate email format"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> BetaUser:
+    """Get current user from token"""
+    try:
+        token = credentials.credentials
+        # Simple token validation - in production use proper JWT
+        
+        # For now, extract user info from token
+        # This is a simplified implementation
+        users = await db.beta_users.find().to_list(length=None)
+        for user in users:
+            expected_token = generate_access_token(user['id'], user['email'])
+            if expected_token == token:
+                return BetaUser(**user)
+        
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token"
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token"
+        )
+
+async def require_admin(current_user: BetaUser = Depends(get_current_user)) -> BetaUser:
+    """Require admin role"""
+    if current_user.role != "Admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
+
+# Beta Authentication Endpoints
+@api_router.post("/auth/register", response_model=LoginResponse)
+async def register_user(request: RegistrationRequest):
+    """Register new beta user"""
+    try:
+        # Validate email format
+        if not validate_email_format(request.email):
+            raise HTTPException(status_code=400, detail="Invalid email format")
+        
+        # Validate email domain
+        if not validate_email_domain(request.email):
+            raise HTTPException(status_code=400, detail="Only adamsmithinternational.com emails allowed")
+        
+        # Check if user already exists
+        existing_user = await db.beta_users.find_one({"email": request.email})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="User already registered")
+        
+        # Validate registration code
+        settings = await db.beta_settings.find_one({})
+        if not settings or settings.get('registration_code') != request.registration_code:
+            raise HTTPException(status_code=400, detail="Invalid registration code")
+        
+        # Check user limit
+        user_count = await db.beta_users.count_documents({"is_active": True})
+        if user_count >= settings.get('max_users', 20):
+            raise HTTPException(status_code=400, detail="Beta user limit reached")
+        
+        # Validate personal code
+        if len(request.personal_code) < 6:
+            raise HTTPException(status_code=400, detail="Personal code must be at least 6 characters")
+        
+        # Create new user
+        new_user = BetaUser(
+            email=request.email,
+            personal_code=hashlib.sha256(request.personal_code.encode()).hexdigest(),
+            department=request.department,
+            role="Manager" if request.email == "layth.bunni@adamsmithinternational.com" else "User"
+        )
+        
+        # Save to database
+        await db.beta_users.insert_one(new_user.dict())
+        
+        # Generate access token
+        access_token = generate_access_token(new_user.id, new_user.email)
+        
+        # Return response without password hash
+        user_response = new_user.copy()
+        user_response.personal_code = "***"
+        
+        return LoginResponse(access_token=access_token, user=user_response)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Registration failed")
+
+@api_router.post("/auth/login", response_model=LoginResponse)
+async def login_user(request: LoginRequest):
+    """Login beta user"""
+    try:
+        # Find user
+        user_data = await db.beta_users.find_one({"email": request.email})
+        if not user_data:
+            raise HTTPException(status_code=401, detail="Invalid email or personal code")
+        
+        user = BetaUser(**user_data)
+        
+        # Check if user is active
+        if not user.is_active:
+            raise HTTPException(status_code=401, detail="User account is inactive")
+        
+        # Validate personal code
+        hashed_code = hashlib.sha256(request.personal_code.encode()).hexdigest()
+        if user.personal_code != hashed_code:
+            raise HTTPException(status_code=401, detail="Invalid email or personal code")
+        
+        # Update last login
+        await db.beta_users.update_one(
+            {"id": user.id},
+            {"$set": {"last_login": datetime.now(timezone.utc)}}
+        )
+        
+        # Generate access token
+        access_token = generate_access_token(user.id, user.email)
+        
+        # Return response without password hash
+        user_response = user.copy()
+        user_response.personal_code = "***"
+        
+        return LoginResponse(access_token=access_token, user=user_response)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Login failed")
+
+@api_router.get("/auth/me", response_model=BetaUser)
+async def get_current_user_info(current_user: BetaUser = Depends(get_current_user)):
+    """Get current user information"""
+    user_response = current_user.copy()
+    user_response.personal_code = "***"
+    return user_response
+
+@api_router.get("/auth/settings")
+async def get_auth_settings(admin_user: BetaUser = Depends(require_admin)):
+    """Get authentication settings (admin only)"""
+    settings = await db.beta_settings.find_one({})
+    if not settings:
+        return {
+            "registration_code": "Not set",
+            "allowed_domain": "adamsmithinternational.com",
+            "max_users": 20,
+            "current_users": await db.beta_users.count_documents({"is_active": True})
+        }
+    
+    return {
+        "registration_code": settings.get('registration_code', 'Not set'),
+        "allowed_domain": settings.get('allowed_domain', 'adamsmithinternational.com'),
+        "max_users": settings.get('max_users', 20),
+        "current_users": await db.beta_users.count_documents({"is_active": True})
+    }
+
+@api_router.post("/auth/settings/registration-code")
+async def update_registration_code(
+    new_code: dict,
+    admin_user: BetaUser = Depends(require_admin)
+):
+    """Update registration code (admin only)"""
+    try:
+        registration_code = new_code.get('registration_code', '').strip()
+        
+        if len(registration_code) < 8:
+            raise HTTPException(status_code=400, detail="Registration code must be at least 8 characters")
+        
+        # Update or create settings
+        await db.beta_settings.update_one(
+            {},
+            {
+                "$set": {
+                    "registration_code": registration_code,
+                    "admin_email": admin_user.email,
+                    "updated_at": datetime.now(timezone.utc)
+                }
+            },
+            upsert=True
+        )
+        
+        return {"message": "Registration code updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating registration code: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update registration code")
+
+@api_router.get("/auth/users")
+async def list_beta_users(admin_user: BetaUser = Depends(require_admin)):
+    """List all beta users (admin only)"""
+    users = await db.beta_users.find().to_list(length=None)
+    
+    # Remove personal codes from response
+    for user in users:
+        user['personal_code'] = "***"
+        user['_id'] = str(user['_id'])
+    
+    return users
+
+@api_router.put("/auth/users/{user_id}/role")
+async def update_user_role(
+    user_id: str,
+    role_data: dict,
+    admin_user: BetaUser = Depends(require_admin)
+):
+    """Update user role (admin only)"""
+    try:
+        new_role = role_data.get('role')
+        if new_role not in ['Admin', 'Manager', 'Agent', 'User']:
+            raise HTTPException(status_code=400, detail="Invalid role")
+        
+        result = await db.beta_users.update_one(
+            {"id": user_id},
+            {"$set": {"role": new_role}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {"message": "User role updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user role: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update user role")
+
 # Include the router in the main app
 app.include_router(api_router)
 
+# CORS setup
+origins = [
+    "http://localhost:3000",  # React development server
+    "https://intelliops-asi.preview.emergentagent.com",  # Production URL (if different)
+    # Add other allowed origins here
+]
+
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=origins,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
 )
