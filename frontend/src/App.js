@@ -580,13 +580,21 @@ const StructuredResponse = ({ response, documentsReferenced }) => {
 // Custom hook for API calls
 const useAPI = () => {
   const { toast } = useToast();
+  const { token } = useAuth();
 
   const apiCall = async (method, endpoint, data = null, isFormData = false) => {
     try {
+      const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+      
+      // Add authentication header if token exists
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const config = {
         method,
         url: `${API}${endpoint}`,
-        headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+        headers,
       };
       
       if (data) config.data = data;
