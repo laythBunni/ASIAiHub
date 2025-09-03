@@ -4126,13 +4126,39 @@ const SystemAdmin = () => {
   );
 };
 
-// Permission Management Modal Component
-const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissions, onSave }) => {
+// Enhanced Permission Management Modal Component with User Creation
+const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissions, onSave, businessUnits = [] }) => {
   const [localPermissions, setLocalPermissions] = useState(permissions);
+  const [userForm, setUserForm] = useState({
+    name: '',
+    email: '',
+    boost_role: 'User',
+    department: '',
+    business_unit_id: ''
+  });
+  const { apiCall } = useAPI();
+  const { toast } = useToast();
 
   useEffect(() => {
     setLocalPermissions(permissions);
-  }, [permissions]);
+    if (user) {
+      setUserForm({
+        name: user.name,
+        email: user.email,
+        boost_role: user.boost_role,
+        department: user.department || '',
+        business_unit_id: user.business_unit_id || ''
+      });
+    } else {
+      setUserForm({
+        name: '',
+        email: '',
+        boost_role: 'User',
+        department: '',
+        business_unit_id: ''
+      });
+    }
+  }, [permissions, user]);
 
   const handlePermissionChange = (permission, value) => {
     setLocalPermissions(prev => ({
@@ -4141,13 +4167,120 @@ const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissi
     }));
   };
 
-  const handleSave = () => {
-    onSave(localPermissions);
+  const handleRoleChange = (newRole) => {
+    setUserForm(prev => ({ ...prev, boost_role: newRole }));
+    // Auto-set permissions based on role
+    const defaultPermissions = getDefaultPermissions(newRole);
+    setLocalPermissions(defaultPermissions);
+  };
+
+  const getDefaultPermissions = (role) => {
+    const allPermissions = Object.values(permissionCategories).flat();
+    
+    switch (role) {
+      case 'Admin':
+        return Object.fromEntries(allPermissions.map(p => [p, true]));
+      case 'Manager':
+        return {
+          view_dashboard: true,
+          view_statistics: true,
+          export_reports: true,
+          use_ai_chat: true,
+          view_chat_history: true,
+          delete_conversations: true,
+          create_tickets: true,
+          view_own_tickets: true,
+          view_department_tickets: true,
+          view_all_tickets: true,
+          assign_tickets: true,
+          close_tickets: true,
+          view_documents: true,
+          upload_documents: true,
+          approve_documents: true,
+          manage_documents: true,
+          manage_users: false,
+          manage_business_units: false,
+          manage_permissions: false,
+          system_settings: false,
+          view_audit_logs: true
+        };
+      case 'Agent':
+        return {
+          view_dashboard: true,
+          view_statistics: false,
+          export_reports: false,
+          use_ai_chat: true,
+          view_chat_history: true,
+          delete_conversations: false,
+          create_tickets: true,
+          view_own_tickets: true,
+          view_department_tickets: true,
+          view_all_tickets: false,
+          assign_tickets: false,
+          close_tickets: false,
+          delete_tickets: false,
+          view_documents: true,
+          upload_documents: true,
+          approve_documents: false,
+          manage_documents: false,
+          admin_documents: false
+        };
+      case 'User':
+        return {
+          view_dashboard: true,
+          view_statistics: false,
+          use_ai_chat: true,
+          view_chat_history: true,
+          create_tickets: true,
+          view_own_tickets: true,
+          view_documents: true,
+          upload_documents: true
+        };
+      default:
+        return Object.fromEntries(allPermissions.map(p => [p, false]));
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      if (!user) {
+        // Creating new user
+        if (!userForm.name.trim() || !userForm.email.trim()) {
+          toast({
+            title: "Validation Error",
+            description: "Name and email are required",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Create user first
+        const newUser = await apiCall('POST', '/boost/users', userForm);
+        
+        toast({
+          title: "Success",
+          description: "User created successfully with permissions",
+        });
+        
+        // Pass both user data and permissions
+        onSave({ user: newUser, permissions: localPermissions });
+      } else {
+        // Updating existing user permissions
+        onSave(localPermissions);
+      }
+    } catch (error) {
+      console.error('Error saving user/permissions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save user/permissions",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {user ? `Manage Permissions - ${user.name}` : 'Create New User'}
@@ -4161,39 +4294,130 @@ const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissi
         </DialogHeader>
 
         <div className="space-y-6">
-          {Object.entries(permissionCategories).map(([category, categoryPermissions]) => (
-            <div key={category}>
-              <h3 className="text-lg font-medium mb-3 flex items-center">
-                {category === 'Dashboard' && <BarChart3 className="w-4 h-4 mr-2" />}
-                {category === 'AI Assistant' && <MessageCircle className="w-4 h-4 mr-2" />}
-                {category === 'BOOST Support' && <Ticket className="w-4 h-4 mr-2" />}
-                {category === 'Knowledge Base' && <FileText className="w-4 h-4 mr-2" />}
-                {category === 'Administration' && <Shield className="w-4 h-4 mr-2" />}
-                {category}
-              </h3>
-              <div className="grid grid-cols-1 gap-3 pl-6">
-                {categoryPermissions.map(permission => (
-                  <div key={permission} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">
-                      {permission.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={localPermissions[permission] || false}
-                      onChange={(e) => handlePermissionChange(permission, e.target.checked)}
-                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+          {/* User Details Form (for new users) */}
+          {!user && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">User Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Name *</Label>
+                    <Input
+                      value={userForm.name}
+                      onChange={(e) => setUserForm({...userForm, name: e.target.value})}
+                      placeholder="Full name"
                     />
                   </div>
-                ))}
-              </div>
-            </div>
-          ))}
+                  <div>
+                    <Label>Email *</Label>
+                    <Input
+                      type="email"
+                      value={userForm.email}
+                      onChange={(e) => setUserForm({...userForm, email: e.target.value})}
+                      placeholder="user@company.com"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Role</Label>
+                    <Select value={userForm.boost_role} onValueChange={handleRoleChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="User">User</SelectItem>
+                        <SelectItem value="Agent">Agent</SelectItem>
+                        <SelectItem value="Manager">Manager</SelectItem>
+                        <SelectItem value="Admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Department</Label>
+                    <Select value={userForm.department} onValueChange={(value) => setUserForm({...userForm, department: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="OS Support">OS Support</SelectItem>
+                        <SelectItem value="Finance">Finance</SelectItem>
+                        <SelectItem value="HR/P&T">HR/P&T</SelectItem>
+                        <SelectItem value="IT">IT</SelectItem>
+                        <SelectItem value="DevOps">DevOps</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Business Unit</Label>
+                  <Select value={userForm.business_unit_id} onValueChange={(value) => setUserForm({...userForm, business_unit_id: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select business unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {businessUnits.map(unit => (
+                        <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Permissions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Permissions Configuration</CardTitle>
+              {!user && (
+                <CardDescription>
+                  Permissions are automatically set based on role, but can be customized below
+                </CardDescription>
+              )}
+            </CardHeader>
+            <CardContent>
+              {Object.entries(permissionCategories).map(([category, categoryPermissions]) => (
+                <div key={category} className="mb-6">
+                  <h3 className="text-md font-medium mb-3 flex items-center border-b pb-2">
+                    {category === 'Dashboard' && <BarChart3 className="w-4 h-4 mr-2" />}
+                    {category === 'AI Assistant' && <MessageCircle className="w-4 h-4 mr-2" />}
+                    {category === 'BOOST Support' && <Ticket className="w-4 h-4 mr-2" />}
+                    {category === 'Knowledge Base' && <FileText className="w-4 h-4 mr-2" />}
+                    {category === 'Administration' && <Shield className="w-4 h-4 mr-2" />}
+                    {category}
+                  </h3>
+                  <div className="grid grid-cols-1 gap-2 pl-6">
+                    {categoryPermissions.map(permission => (
+                      <div key={permission} className="flex items-center justify-between py-1">
+                        <span className="text-sm text-gray-700">
+                          {permission.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={localPermissions[permission] || false}
+                          onChange={(e) => handlePermissionChange(permission, e.target.checked)}
+                          className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
 
         <div className="flex justify-end space-x-2 pt-4">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
-            Save Permissions
+            {user ? 'Save Permissions' : 'Create User'}
           </Button>
         </div>
       </DialogContent>
