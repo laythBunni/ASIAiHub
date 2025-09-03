@@ -2027,7 +2027,25 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
                 <CardTitle className="text-lg">Attachments</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <div 
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('border-emerald-400', 'bg-emerald-50');
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-emerald-400', 'bg-emerald-50');
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-emerald-400', 'bg-emerald-50');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                      handleFileUpload(files);
+                    }
+                  }}
+                >
                   <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                   <p className="text-sm text-gray-500 mb-2">Drop files here or click to upload</p>
                   <input
