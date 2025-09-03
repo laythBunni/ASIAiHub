@@ -195,15 +195,18 @@ test_plan:
 backend:
   - task: "Beta Authentication API"
     implemented: true
-    working: "unknown"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "unknown"
         agent: "main"
         comment: "Beta authentication system implemented with registration/login endpoints, user management, domain validation, and token-based auth. API endpoints include /api/auth/register, /api/auth/login, /api/auth/me with proper email validation for @adamsmithinternational.com domain. Need to test backend API functionality."
+      - working: true
+        agent: "testing"
+        comment: "Beta Authentication System backend API fully tested and working perfectly! ✅ All authentication endpoints working: /api/auth/register (validates @adamsmithinternational.com domain, registration code BETA2025, 6+ char personal codes), /api/auth/login (validates credentials, generates tokens), /api/auth/me (requires Bearer token authentication). ✅ Email domain validation working correctly - accepts only @adamsmithinternational.com emails. ✅ Registration code validation working (BETA2025 required). ✅ Personal code hashing with SHA256 working. ✅ Token-based authentication working with proper token storage and validation. ✅ User limit enforcement (20 users max). ✅ MongoDB collections (beta_users, beta_settings) created properly. ✅ Admin user setup working (layth.bunni@adamsmithinternational.com gets Manager role). ✅ All security validations working: duplicate user prevention, invalid credentials rejection, token-based access control. Fixed token generation bug - tokens now stored in database for proper validation. System ready for frontend integration."
 
 frontend:
   - task: "Beta Authentication Frontend"
