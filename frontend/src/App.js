@@ -3213,6 +3213,7 @@ const TicketManagement = () => {
 // Navigation Component
 const Navigation = () => {
   const location = useLocation();
+  const { user, logout } = useAuth();
   
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
@@ -3236,7 +3237,7 @@ const Navigation = () => {
             </Link>
           </div>
           
-          <div className="flex space-x-8">
+          <div className="flex items-center space-x-8">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -3256,6 +3257,25 @@ const Navigation = () => {
                 </Link>
               );
             })}
+            
+            {/* User Menu */}
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-700">
+                <span className="font-medium">{user?.email}</span>
+                <span className="ml-2 px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded-full">
+                  {user?.role}
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={logout}
+                className="text-gray-700 hover:text-gray-900"
+              >
+                <User className="w-4 h-4 mr-1" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </div>
