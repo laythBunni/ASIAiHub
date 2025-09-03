@@ -86,7 +86,10 @@ export const AuthProvider = ({ children }) => {
           const response = await axios.get(`${API}/auth/me`, {
             headers: { Authorization: `Bearer ${storedToken}` }
           });
-          setUser(response.data);
+          // Map new auth system to legacy BOOST system for backward compatibility
+          const userData = response.data;
+          userData.boost_role = userData.role; // Add boost_role mapping for legacy components
+          setUser(userData);
           setToken(storedToken);
         } catch (error) {
           console.error('Auth check failed:', error);
