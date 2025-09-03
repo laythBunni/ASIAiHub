@@ -4566,10 +4566,10 @@ const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissi
                     </Select>
                   </div>
                   <div>
-                    <Label>Department</Label>
-                    <Select value={userForm.department} onValueChange={(value) => setUserForm({...userForm, department: value})}>
+                    <Label>BOOST Department</Label>
+                    <Select value={userForm.department || ""} onValueChange={(value) => setUserForm({...userForm, department: value === "none" ? null : value})}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
+                        <SelectValue placeholder="Select BOOST department" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">None</SelectItem>
