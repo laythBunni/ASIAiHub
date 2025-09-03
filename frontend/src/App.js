@@ -3176,7 +3176,7 @@ const BoostAdmin = () => {
                       <th className="text-left p-3">Email</th>
                       <th className="text-left p-3">BOOST Role</th>
                       <th className="text-left p-3">Business Unit</th>
-                      <th className="text-left p-3">Department</th>
+                      <th className="text-left p-3">BOOST Department</th>
                       <th className="text-left p-3">Actions</th>
                     </tr>
                   </thead>
