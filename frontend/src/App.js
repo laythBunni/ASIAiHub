@@ -55,7 +55,8 @@ import {
   Target,
   FolderOpen,
   RefreshCw,
-  Save
+  Save,
+  Download
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
