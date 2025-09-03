@@ -2046,7 +2046,7 @@ app.include_router(api_router)
 # CORS setup
 origins = [
     "http://localhost:3000",  # React development server
-    "https://intelliops-asi.preview.emergentagent.com",  # Production URL (if different)
+    "https://asi-aihub.preview.emergentagent.com",  # Production URL (if different)
     # Add other allowed origins here
 ]
 
