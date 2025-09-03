@@ -3871,6 +3871,9 @@ const SystemAdmin = () => {
 
   const updateUserPermissions = async (userId, newPermissions) => {
     try {
+      // TODO: Save to backend when permissions API is available
+      // await apiCall('PUT', `/boost/users/${userId}/permissions`, newPermissions);
+      
       setPermissions(prev => ({
         ...prev,
         [userId]: newPermissions
