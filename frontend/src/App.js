@@ -290,21 +290,30 @@ const Dashboard = () => {
           apiCall('GET', '/documents/rag-stats').catch(() => ({ total_documents: 0, processed_documents: 0 }))
         ]);
 
-        // Calculate real statistics
-        const totalTickets = tickets.length || 0;
-        const openTickets = tickets.filter(t => t.status === 'open').length || 0;
-        const totalDocuments = documents.length || 0;
-        const approvedDocuments = documents.filter(d => d.approval_status === 'approved').length || 0;
-        const overdueTickets = tickets.filter(t => 
-          t.due_at && new Date(t.due_at) < new Date() && !['resolved', 'closed'].includes(t.status)
-        ).length || 0;
+        // Calculate real statistics with better error handling
+        const totalTickets = Array.isArray(tickets) ? tickets.length : 0;
+        const openTickets = Array.isArray(tickets) ? tickets.filter(t => t && t.status === 'open').length : 0;
+        const totalDocuments = Array.isArray(documents) ? documents.length : 0;
+        const approvedDocuments = Array.isArray(documents) ? documents.filter(d => d && d.approval_status === 'approved').length : 0;
+        const overdueTickets = Array.isArray(tickets) ? tickets.filter(t => 
+          t && t.due_at && new Date(t.due_at) < new Date() && !['resolved', 'closed'].includes(t.status)
+        ).length : 0;
+
+        console.log('Dashboard Stats Debug:', {
+          ticketsCount: totalTickets,
+          openCount: openTickets,
+          documentsCount: totalDocuments,
+          approvedCount: approvedDocuments,
+          overdueCount: overdueTickets,
+          ragStats
+        });
 
         setStats({
           totalTickets,
           openTickets,
-          totalDocuments: ragStats.total_documents || totalDocuments,
+          totalDocuments: ragStats?.total_documents || totalDocuments,
           overdue: overdueTickets,
-          processed_documents: ragStats.processed_documents || approvedDocuments
+          processed_documents: ragStats?.processed_documents || approvedDocuments
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
