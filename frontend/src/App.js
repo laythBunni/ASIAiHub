@@ -353,7 +353,7 @@ const Dashboard = () => {
             <Ticket className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-900">{stats.total_tickets}</div>
+            <div className="text-2xl font-bold text-emerald-900">{stats.totalTickets}</div>
             <p className="text-xs text-emerald-600 mt-1">All support requests</p>
           </CardContent>
         </Card>
@@ -364,7 +364,7 @@ const Dashboard = () => {
             <AlertCircle className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-900">{stats.open_tickets}</div>
+            <div className="text-2xl font-bold text-orange-900">{stats.openTickets}</div>
             <p className="text-xs text-orange-600 mt-1">Awaiting resolution</p>
           </CardContent>
         </Card>
@@ -375,7 +375,7 @@ const Dashboard = () => {
             <FileText className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{stats.total_documents}</div>
+            <div className="text-2xl font-bold text-blue-900">{stats.totalDocuments}</div>
             <p className="text-xs text-blue-600 mt-1">Knowledge base files</p>
           </CardContent>
         </Card>
