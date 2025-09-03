@@ -1711,7 +1711,7 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
       // Initialize quick actions with current ticket values
       setQuickStatus(ticket.status);
       setQuickPriority(ticket.priority);
-      setQuickAssignee(ticket.owner_id || '');
+      setQuickAssignee(ticket.owner_id || 'unassigned');
     }
   }, [ticket, isOpen]);
 
