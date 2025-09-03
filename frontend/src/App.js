@@ -882,7 +882,7 @@ const DocumentManagement = () => {
               <TabsTrigger 
                 key={dept.id} 
                 value={dept.id} 
-                className="flex items-center justify-center space-x-1 px-2 py-2 rounded-md border-2 border-transparent data-[state=active]:border-emerald-400 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 hover:bg-gray-50 transition-all duration-200"
+                className={`flex items-center justify-center space-x-1 px-2 py-2 rounded-md border-2 border-transparent data-[state=active]:${dept.color} hover:bg-gray-50 transition-all duration-200`}
               >
                 <Icon className="w-4 h-4" />
                 <span className="text-xs font-medium">{dept.name}</span>
