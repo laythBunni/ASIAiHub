@@ -2115,7 +2115,7 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
                         <SelectValue placeholder="Select assignee" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
                         {availableAgents.map(agent => (
                           <SelectItem key={agent.id} value={agent.id}>
                             {agent.name} ({agent.boost_role}) - {agent.department}
