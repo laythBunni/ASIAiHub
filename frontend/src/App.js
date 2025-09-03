@@ -897,9 +897,9 @@ const DocumentManagement = () => {
                     : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span className="text-xs font-medium">{dept.name}</span>
-              </TabsTrigger>
+                <Icon className="w-5 h-5" />
+                <span className="text-sm font-medium">{dept.name}</span>
+              </button>
             );
           })}
         </TabsList>
