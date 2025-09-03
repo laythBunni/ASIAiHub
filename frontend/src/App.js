@@ -884,7 +884,7 @@ const DocumentManagement = () => {
 
       {/* Department Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-7 bg-white border-2 border-emerald-200 rounded-lg p-1 shadow-sm">
+        <div className="flex flex-wrap gap-3 mb-6 justify-center">
           {DEPARTMENTS.map((dept) => {
             const Icon = dept.icon;
             return (
