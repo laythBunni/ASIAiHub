@@ -1796,8 +1796,8 @@ security = HTTPBearer()
 
 def generate_access_token(user_id: str, email: str) -> str:
     """Generate a simple access token"""
-    # In production, use proper JWT tokens
-    token_data = f"{user_id}:{email}:{datetime.now(timezone.utc).timestamp()}"
+    # Generate a consistent token based on user data and a secret
+    token_data = f"{user_id}:{email}:beta_auth_secret"
     return hashlib.sha256(token_data.encode()).hexdigest()
 
 def validate_email_domain(email: str) -> bool:
@@ -1814,15 +1814,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     """Get current user from token"""
     try:
         token = credentials.credentials
-        # Simple token validation - in production use proper JWT
         
-        # For now, extract user info from token
-        # This is a simplified implementation
-        users = await db.beta_users.find().to_list(length=None)
-        for user in users:
-            expected_token = generate_access_token(user['id'], user['email'])
-            if expected_token == token:
-                return BetaUser(**user)
+        # Find user by token
+        user_data = await db.beta_users.find_one({"access_token": token})
+        if user_data:
+            return BetaUser(**user_data)
         
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
