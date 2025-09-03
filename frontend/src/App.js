@@ -1217,7 +1217,7 @@ const BoostSupport = () => {
                 <SelectValue placeholder="All departments" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All departments</SelectItem>
+                <SelectItem value="all">All departments</SelectItem>
                 <SelectItem value="OS Support">OS Support</SelectItem>
                 <SelectItem value="Finance">Finance</SelectItem>
                 <SelectItem value="HR/P&T">HR/P&T</SelectItem>
