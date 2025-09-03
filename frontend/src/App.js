@@ -783,8 +783,8 @@ const DocumentManagement = () => {
       const data = await apiCall('POST', '/documents/upload', formData, true);
       
       toast({
-        title: "Success",
-        description: `${data.filename} uploaded and pending approval`,
+        title: "Item Uploaded",
+        description: `${data.filename} uploaded successfully and pending approval`,
       });
       
       // Clear the input
