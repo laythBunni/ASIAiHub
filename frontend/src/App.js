@@ -828,13 +828,17 @@ const DocumentManagement = () => {
 
       {/* Department Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-7 bg-white border-2 border-emerald-200 rounded-lg p-1 shadow-sm">
           {DEPARTMENTS.map((dept) => {
             const Icon = dept.icon;
             return (
-              <TabsTrigger key={dept.id} value={dept.id} className="flex items-center space-x-1">
+              <TabsTrigger 
+                key={dept.id} 
+                value={dept.id} 
+                className="flex items-center justify-center space-x-1 px-2 py-2 rounded-md border-2 border-transparent data-[state=active]:border-emerald-400 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 hover:bg-gray-50 transition-all duration-200"
+              >
                 <Icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{dept.name}</span>
+                <span className="text-xs font-medium">{dept.name}</span>
               </TabsTrigger>
             );
           })}
