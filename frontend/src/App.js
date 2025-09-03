@@ -112,6 +112,8 @@ export const AuthProvider = ({ children }) => {
       });
       
       const { access_token, user: userData } = response.data;
+      // Map new auth system to legacy BOOST system for backward compatibility
+      userData.boost_role = userData.role; // Add boost_role mapping for legacy components
       localStorage.setItem('auth_token', access_token);
       setToken(access_token);
       setUser(userData);
@@ -135,6 +137,8 @@ export const AuthProvider = ({ children }) => {
       });
       
       const { access_token, user: userData } = response.data;
+      // Map new auth system to legacy BOOST system for backward compatibility
+      userData.boost_role = userData.role; // Add boost_role mapping for legacy components
       localStorage.setItem('auth_token', access_token);
       setToken(access_token);
       setUser(userData);
