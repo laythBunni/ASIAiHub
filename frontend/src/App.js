@@ -209,9 +209,9 @@ const StructuredResponse = ({ response, documentsReferenced }) => {
           <div className="text-xs text-gray-500 flex items-center">
             <FileText className="w-3 h-3 mr-1" />
             Referenced {documentsReferenced} company document(s)
-            {response.sources && (
+            {structuredData.sources && (
               <span className="ml-2">
-                ({response.sources.join(', ')})
+                ({structuredData.sources.join(', ')})
               </span>
             )}
           </div>
