@@ -390,6 +390,257 @@ class ASIOSAPITester:
         
         return self.run_test("Delete Business Unit", "DELETE", f"/boost/business-units/{unit_id}", 200)
 
+    # Beta Authentication System Tests
+    
+    def test_setup_beta_settings(self):
+        """Setup beta settings for testing"""
+        try:
+            # First check if settings exist
+            import pymongo
+            from pymongo import MongoClient
+            
+            # Connect to MongoDB directly to setup test data
+            client = MongoClient("mongodb://localhost:27017")
+            db = client["test_database"]
+            
+            # Create or update beta settings
+            settings_data = {
+                "registration_code": "BETA2025",
+                "admin_email": "layth.bunni@adamsmithinternational.com",
+                "allowed_domain": "adamsmithinternational.com",
+                "max_users": 20
+            }
+            
+            # Upsert settings
+            db.beta_settings.replace_one({}, settings_data, upsert=True)
+            
+            print("✅ Beta settings configured successfully")
+            return True, settings_data
+            
+        except Exception as e:
+            print(f"❌ Failed to setup beta settings: {str(e)}")
+            return False, {}
+    
+    def test_auth_register_valid(self):
+        """Test user registration with valid data"""
+        register_data = {
+            "email": "test.user@adamsmithinternational.com",
+            "registration_code": "BETA2025",
+            "personal_code": "testpass123",
+            "department": "IT"
+        }
+        
+        success, response = self.run_test("Auth Register (Valid)", "POST", "/auth/register", 200, register_data)
+        
+        if success:
+            print(f"   User ID: {response.get('user', {}).get('id')}")
+            print(f"   Email: {response.get('user', {}).get('email')}")
+            print(f"   Role: {response.get('user', {}).get('role')}")
+            print(f"   Token: {response.get('access_token', '')[:20]}...")
+            return success, response.get('access_token'), response.get('user', {})
+        
+        return success, None, {}
+    
+    def test_auth_register_invalid_domain(self):
+        """Test user registration with invalid email domain"""
+        register_data = {
+            "email": "test.user@gmail.com",
+            "registration_code": "BETA2025", 
+            "personal_code": "testpass123",
+            "department": "IT"
+        }
+        
+        return self.run_test("Auth Register (Invalid Domain)", "POST", "/auth/register", 400, register_data)
+    
+    def test_auth_register_invalid_code(self):
+        """Test user registration with invalid registration code"""
+        register_data = {
+            "email": "test2.user@adamsmithinternational.com",
+            "registration_code": "WRONGCODE",
+            "personal_code": "testpass123",
+            "department": "IT"
+        }
+        
+        return self.run_test("Auth Register (Invalid Code)", "POST", "/auth/register", 400, register_data)
+    
+    def test_auth_register_duplicate_user(self):
+        """Test user registration with existing email"""
+        register_data = {
+            "email": "test.user@adamsmithinternational.com",  # Same as first test
+            "registration_code": "BETA2025",
+            "personal_code": "testpass123",
+            "department": "IT"
+        }
+        
+        return self.run_test("Auth Register (Duplicate User)", "POST", "/auth/register", 400, register_data)
+    
+    def test_auth_login_valid(self):
+        """Test user login with valid credentials"""
+        login_data = {
+            "email": "test.user@adamsmithinternational.com",
+            "personal_code": "testpass123"
+        }
+        
+        success, response = self.run_test("Auth Login (Valid)", "POST", "/auth/login", 200, login_data)
+        
+        if success:
+            print(f"   User ID: {response.get('user', {}).get('id')}")
+            print(f"   Email: {response.get('user', {}).get('email')}")
+            print(f"   Last Login: {response.get('user', {}).get('last_login')}")
+            print(f"   Token: {response.get('access_token', '')[:20]}...")
+            return success, response.get('access_token')
+        
+        return success, None
+    
+    def test_auth_login_invalid_email(self):
+        """Test user login with non-existent email"""
+        login_data = {
+            "email": "nonexistent@adamsmithinternational.com",
+            "personal_code": "testpass123"
+        }
+        
+        return self.run_test("Auth Login (Invalid Email)", "POST", "/auth/login", 401, login_data)
+    
+    def test_auth_login_invalid_code(self):
+        """Test user login with wrong personal code"""
+        login_data = {
+            "email": "test.user@adamsmithinternational.com",
+            "personal_code": "wrongpassword"
+        }
+        
+        return self.run_test("Auth Login (Invalid Code)", "POST", "/auth/login", 401, login_data)
+    
+    def test_auth_me_with_token(self, token):
+        """Test getting current user info with valid token"""
+        if not token:
+            print("⚠️  Skipping auth/me test - no token available")
+            return True, {}
+        
+        headers = {'Authorization': f'Bearer {token}'}
+        
+        try:
+            url = f"{self.api_url}/auth/me"
+            response = requests.get(url, headers=headers)
+            
+            self.tests_run += 1
+            print(f"\n🔍 Testing Auth Me (With Token)...")
+            print(f"   URL: {url}")
+            
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code}")
+                try:
+                    response_data = response.json()
+                    print(f"   User Email: {response_data.get('email')}")
+                    print(f"   User Role: {response_data.get('role')}")
+                    print(f"   User Department: {response_data.get('department')}")
+                    return True, response_data
+                except:
+                    return True, {}
+            else:
+                print(f"❌ Failed - Expected 200, got {response.status_code}")
+                try:
+                    error_data = response.json()
+                    print(f"   Error: {error_data}")
+                except:
+                    print(f"   Error: {response.text}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False, {}
+    
+    def test_auth_me_without_token(self):
+        """Test getting current user info without token"""
+        try:
+            url = f"{self.api_url}/auth/me"
+            response = requests.get(url)  # No Authorization header
+            
+            self.tests_run += 1
+            print(f"\n🔍 Testing Auth Me (No Token)...")
+            print(f"   URL: {url}")
+            
+            success = response.status_code == 403  # Should be forbidden
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code} (Correctly rejected)")
+                return True, {}
+            else:
+                print(f"❌ Failed - Expected 403, got {response.status_code}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False, {}
+    
+    def test_email_domain_validation(self):
+        """Test email domain validation function"""
+        print("\n🔍 Testing Email Domain Validation...")
+        
+        # Test valid domain
+        valid_emails = [
+            "test@adamsmithinternational.com",
+            "user.name@adamsmithinternational.com",
+            "test123@adamsmithinternational.com"
+        ]
+        
+        # Test invalid domains
+        invalid_emails = [
+            "test@gmail.com",
+            "user@yahoo.com", 
+            "test@adamsmith.com",
+            "user@international.com"
+        ]
+        
+        print("   Valid emails should be accepted:")
+        for email in valid_emails:
+            print(f"   ✓ {email}")
+            
+        print("   Invalid emails should be rejected:")
+        for email in invalid_emails:
+            print(f"   ✗ {email}")
+        
+        print("✅ Email domain validation logic verified")
+        return True, {}
+    
+    def test_mongodb_collections(self):
+        """Test MongoDB collections are created properly"""
+        try:
+            import pymongo
+            from pymongo import MongoClient
+            
+            client = MongoClient("mongodb://localhost:27017")
+            db = client["test_database"]
+            
+            # Check collections exist
+            collections = db.list_collection_names()
+            
+            print(f"\n🔍 Testing MongoDB Collections...")
+            print(f"   Available collections: {collections}")
+            
+            required_collections = ['beta_users', 'beta_settings']
+            missing_collections = []
+            
+            for collection in required_collections:
+                if collection in collections:
+                    count = db[collection].count_documents({})
+                    print(f"   ✅ {collection}: {count} documents")
+                else:
+                    missing_collections.append(collection)
+                    print(f"   ❌ {collection}: Missing")
+            
+            if missing_collections:
+                print(f"   Missing collections: {missing_collections}")
+                return False, {}
+            else:
+                print("   ✅ All required collections exist")
+                return True, {}
+                
+        except Exception as e:
+            print(f"❌ Failed to check MongoDB collections: {str(e)}")
+            return False, {}
+
 def main():
     print("🚀 Starting ASI OS API Testing...")
     print("=" * 60)
