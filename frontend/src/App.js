@@ -3949,6 +3949,55 @@ const SystemAdmin = () => {
     }
   };
 
+  const editUser = (user) => {
+    setSelectedUser(user);
+    setShowPermissionModal(true);
+  };
+
+  const deleteUser = async (userId) => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    
+    try {
+      await apiCall('DELETE', `/boost/users/${userId}`);
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+      fetchUsers();
+      // Remove user from permissions state
+      setPermissions(prev => {
+        const newPerms = { ...prev };
+        delete newPerms[userId];
+        return newPerms;
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateUser = async (userId, userData) => {
+    try {
+      await apiCall('PUT', `/boost/users/${userId}`, userData);
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
