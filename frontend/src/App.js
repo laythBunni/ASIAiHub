@@ -1005,6 +1005,774 @@ const DocumentManagement = () => {
   );
 };
 
+// BOOST Support Ticketing System
+const BoostSupport = () => {
+  const [tickets, setTickets] = useState([]);
+  const [filters, setFilters] = useState({
+    search: '',
+    status: '',
+    support_department: '',
+    business_unit_id: ''
+  });
+  const [currentUser] = useState({
+    id: 'default_user',
+    name: 'System User',
+    email: 'user@company.com',
+    boost_role: 'Manager', // Admin, Manager, Agent, User
+    business_unit_id: null
+  });
+  const [showNewTicketModal, setShowNewTicketModal] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [showTicketDetail, setShowTicketDetail] = useState(false);
+  const [businessUnits, setBusinessUnits] = useState([]);
+  const [categories, setCategories] = useState({});
+  const { apiCall } = useAPI();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchTickets();
+    fetchBusinessUnits();
+    fetchCategories();
+  }, [filters]);
+
+  const fetchTickets = async () => {
+    try {
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value);
+      });
+      
+      const endpoint = queryParams.toString() ? `/boost/tickets?${queryParams}` : '/boost/tickets';
+      const data = await apiCall('GET', endpoint);
+      setTickets(data);
+    } catch (error) {
+      console.error('Error fetching BOOST tickets:', error);
+    }
+  };
+
+  const fetchBusinessUnits = async () => {
+    try {
+      const data = await apiCall('GET', '/boost/business-units');
+      setBusinessUnits(data);
+    } catch (error) {
+      console.error('Error fetching business units:', error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await apiCall('GET', '/boost/categories');
+      setCategories(data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  // Filter tickets by column
+  const getToDoTickets = () => {
+    return tickets.filter(ticket => 
+      ticket.owner_id === currentUser.id && 
+      ['open', 'in_progress', 'waiting_customer'].includes(ticket.status)
+    );
+  };
+
+  const getCreatedByYouTickets = () => {
+    return tickets.filter(ticket => ticket.requester_id === currentUser.id);
+  };
+
+  const getAllTickets = () => {
+    return tickets; // Admin view
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      open: 'bg-orange-100 text-orange-700 border-orange-200',
+      in_progress: 'bg-blue-100 text-blue-700 border-blue-200',
+      waiting_customer: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      on_hold: 'bg-purple-100 text-purple-700 border-purple-200',
+      escalated: 'bg-red-100 text-red-700 border-red-200',
+      resolved: 'bg-green-100 text-green-700 border-green-200',
+      closed: 'bg-gray-100 text-gray-700 border-gray-200'
+    };
+    return colors[status] || colors.open;
+  };
+
+  const getPriorityColor = (priority) => {
+    const colors = {
+      low: 'bg-gray-100 text-gray-700',
+      medium: 'bg-blue-100 text-blue-700',
+      high: 'bg-orange-100 text-orange-700',
+      urgent: 'bg-red-100 text-red-700' // Critical
+    };
+    return colors[priority] || colors.medium;
+  };
+
+  const getDepartmentColor = (department) => {
+    const colors = {
+      'OS Support': 'bg-green-100 text-green-700',
+      'Finance': 'bg-blue-100 text-blue-700',
+      'HR/P&T': 'bg-purple-100 text-purple-700',
+      'IT': 'bg-indigo-100 text-indigo-700',
+      'DevOps': 'bg-red-100 text-red-700'
+    };
+    return colors[department] || colors['OS Support'];
+  };
+
+  const openTicketDetail = (ticket) => {
+    setSelectedTicket(ticket);
+    setShowTicketDetail(true);
+  };
+
+  const TicketRow = ({ ticket, showQuickActions = true }) => (
+    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1" onClick={() => openTicketDetail(ticket)}>
+          <h3 className="font-medium text-gray-900 text-sm mb-2 line-clamp-2">
+            {ticket.subject}
+          </h3>
+          <div className="flex flex-wrap gap-1 mb-2">
+            <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
+              {ticket.status.toUpperCase().replace('_', ' ')}
+            </Badge>
+            <Badge className={`text-xs ${getDepartmentColor(ticket.support_department)}`}>
+              {ticket.support_department}
+            </Badge>
+            <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>
+              {ticket.priority.toUpperCase()}
+            </Badge>
+          </div>
+          <p className="text-xs text-gray-500">
+            Created {new Date(ticket.created_at).toLocaleDateString()}
+          </p>
+        </div>
+      </div>
+      
+      {showQuickActions && (
+        <div className="flex space-x-1 pt-2 border-t border-gray-100">
+          <Button size="sm" variant="outline" onClick={() => openTicketDetail(ticket)}>
+            <Eye className="w-3 h-3 mr-1" />
+            View
+          </Button>
+          <Button size="sm" variant="outline">
+            <MessageSquare className="w-3 h-3 mr-1" />
+            Comment
+          </Button>
+          <Button size="sm" variant="outline">
+            <Upload className="w-3 h-3 mr-1" />
+            Attach
+          </Button>
+          {ticket.status === 'waiting_customer' && ticket.requester_id === currentUser.id && (
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Done
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">BOOST Support</h1>
+          <p className="text-gray-600 mt-2">Comprehensive support ticketing system</p>
+        </div>
+        <Button onClick={() => setShowNewTicketModal(true)} className="bg-emerald-600 hover:bg-emerald-700">
+          <Plus className="w-4 h-4 mr-2" />
+          New Ticket
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Input
+              placeholder="Search tickets..."
+              value={filters.search}
+              onChange={(e) => setFilters({...filters, search: e.target.value})}
+              className="w-full"
+            />
+            <Select value={filters.status} onValueChange={(value) => setFilters({...filters, status: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All statuses</SelectItem>
+                <SelectItem value="open">New</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="waiting_customer">Waiting on User</SelectItem>
+                <SelectItem value="on_hold">On Hold</SelectItem>
+                <SelectItem value="escalated">Escalated</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+                {(currentUser.boost_role === 'Manager' || currentUser.boost_role === 'Admin') && (
+                  <SelectItem value="closed">Closed</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            <Select value={filters.support_department} onValueChange={(value) => setFilters({...filters, support_department: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="All departments" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All departments</SelectItem>
+                <SelectItem value="OS Support">OS Support</SelectItem>
+                <SelectItem value="Finance">Finance</SelectItem>
+                <SelectItem value="HR/P&T">HR/P&T</SelectItem>
+                <SelectItem value="IT">IT</SelectItem>
+                <SelectItem value="DevOps">DevOps</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filters.business_unit_id} onValueChange={(value) => setFilters({...filters, business_unit_id: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="All business units" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All business units</SelectItem>
+                {businessUnits.map(unit => (
+                  <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 3-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Column 1: Your tickets – To do */}
+        <Card className="h-fit">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="w-5 h-5 text-orange-600" />
+              Your tickets – To do
+            </CardTitle>
+            <CardDescription>
+              {getToDoTickets().length} ticket(s) requiring your action
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {getToDoTickets().length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">All caught up!</p>
+              </div>
+            ) : (
+              getToDoTickets().map(ticket => (
+                <TicketRow key={ticket.id} ticket={ticket} />
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Column 2: Your tickets – Created by you */}
+        <Card className="h-fit">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <User className="w-5 h-5 text-blue-600" />
+              Your tickets – Created by you
+            </CardTitle>
+            <CardDescription>
+              {getCreatedByYouTickets().length} ticket(s) you've submitted
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {getCreatedByYouTickets().length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Ticket className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">No tickets created yet</p>
+              </div>
+            ) : (
+              getCreatedByYouTickets().map(ticket => (
+                <TicketRow key={ticket.id} ticket={ticket} />
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Column 3: All tickets (Admin) */}
+        {(currentUser.boost_role === 'Manager' || currentUser.boost_role === 'Admin') && (
+          <Card className="h-fit">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Shield className="w-5 h-5 text-emerald-600" />
+                All tickets (Admin)
+              </CardTitle>
+              <CardDescription>
+                {getAllTickets().length} total ticket(s) in system
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {getAllTickets().length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Ticket className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm">No tickets in system</p>
+                </div>
+              ) : (
+                getAllTickets().slice(0, 10).map(ticket => (
+                  <TicketRow key={ticket.id} ticket={ticket} showQuickActions={false} />
+                ))
+              )}
+              {getAllTickets().length > 10 && (
+                <div className="text-center pt-2">
+                  <Button variant="outline" size="sm">
+                    View all {getAllTickets().length} tickets
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* New Ticket Modal */}
+      <BoostNewTicketModal 
+        isOpen={showNewTicketModal}
+        onClose={() => setShowNewTicketModal(false)}
+        onSubmit={() => {
+          setShowNewTicketModal(false);
+          fetchTickets();
+        }}
+        businessUnits={businessUnits}
+        categories={categories}
+        currentUser={currentUser}
+      />
+
+      {/* Ticket Detail Modal */}
+      <BoostTicketDetailModal
+        isOpen={showTicketDetail}
+        onClose={() => setShowTicketDetail(false)}
+        ticket={selectedTicket}
+        currentUser={currentUser}
+        onUpdate={() => {
+          fetchTickets();
+        }}
+      />
+    </div>
+  );
+};
+
+// BOOST New Ticket Modal Component
+const BoostNewTicketModal = ({ isOpen, onClose, onSubmit, businessUnits, categories, currentUser }) => {
+  const [formData, setFormData] = useState({
+    support_department: '',
+    category: '',
+    subcategory: '',
+    subject: '',
+    description: '',
+    classification: '',
+    priority: '',
+    justification: '',
+    business_unit_id: currentUser.business_unit_id || '',
+    channel: 'Hub'
+  });
+  const [availableCategories, setAvailableCategories] = useState({});
+  const [availableSubcategories, setAvailableSubcategories] = useState([]);
+  const { apiCall } = useAPI();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (formData.support_department && categories[formData.support_department]) {
+      setAvailableCategories(categories[formData.support_department]);
+      setFormData(prev => ({ ...prev, category: '', subcategory: '' }));
+    }
+  }, [formData.support_department, categories]);
+
+  useEffect(() => {
+    if (formData.category && availableCategories[formData.category]) {
+      setAvailableSubcategories(availableCategories[formData.category]);
+      setFormData(prev => ({ ...prev, subcategory: '' }));
+    }
+  }, [formData.category, availableCategories]);
+
+  const handleSubmit = async () => {
+    try {
+      // Validation
+      if (!formData.support_department || !formData.category || !formData.subcategory || 
+          !formData.subject || !formData.description || !formData.classification || !formData.priority) {
+        toast({
+          title: "Validation Error",
+          description: "Please fill in all required fields",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (formData.priority === 'urgent' && !formData.justification.trim()) {
+        toast({
+          title: "Validation Error", 
+          description: "Critical priority requires justification",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const ticketData = {
+        ...formData,
+        requester_name: currentUser.name,
+        requester_email: currentUser.email
+      };
+
+      await apiCall('POST', '/boost/tickets', ticketData);
+      
+      toast({
+        title: "Success",
+        description: "Ticket created successfully",
+      });
+      
+      onSubmit();
+      
+      // Reset form
+      setFormData({
+        support_department: '',
+        category: '',
+        subcategory: '',
+        subject: '',
+        description: '',
+        classification: '',
+        priority: '',
+        justification: '',
+        business_unit_id: currentUser.business_unit_id || '',
+        channel: 'Hub'
+      });
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+    }
+  };
+
+  const getPriorityTargets = (priority) => {
+    const targets = {
+      low: 'Target: 2 business days response',
+      medium: 'Target: 1 business day response', 
+      high: 'Target: 4 hours response',
+      urgent: 'Target: 15 minutes first response, 1 hour resolution'
+    };
+    return targets[priority] || '';
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>New Support Ticket</DialogTitle>
+          <DialogDescription>Create a new BOOST support request</DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          {/* Support Department */}
+          <div>
+            <Label htmlFor="support_department">Support Department *</Label>
+            <Select value={formData.support_department} onValueChange={(value) => setFormData({...formData, support_department: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="OS Support">OS Support</SelectItem>
+                <SelectItem value="Finance">Finance</SelectItem>
+                <SelectItem value="HR/P&T">HR/P&T</SelectItem>
+                <SelectItem value="IT">IT</SelectItem>
+                <SelectItem value="DevOps">DevOps</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Category */}
+          <div>
+            <Label htmlFor="category">Category *</Label>
+            <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})} disabled={!formData.support_department}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.keys(availableCategories).map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Subcategory */}
+          <div>
+            <Label htmlFor="subcategory">Subcategory *</Label>
+            <Select value={formData.subcategory} onValueChange={(value) => setFormData({...formData, subcategory: value})} disabled={!formData.category}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select subcategory" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableSubcategories.map(subcat => (
+                  <SelectItem key={subcat} value={subcat}>{subcat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Subject */}
+          <div>
+            <Label htmlFor="subject">Subject *</Label>
+            <Input
+              id="subject"
+              value={formData.subject}
+              onChange={(e) => setFormData({...formData, subject: e.target.value})}
+              placeholder="Brief description of the issue"
+            />
+            {formData.support_department && formData.category && (
+              <p className="text-xs text-gray-500 mt-1">
+                Will be prefixed as: "{formData.support_department}: {formData.category} – {formData.subject}"
+              </p>
+            )}
+          </div>
+
+          {/* Description */}
+          <div>
+            <Label htmlFor="description">Description *</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              placeholder="Please include what happened, when it started, any error messages, steps you tried"
+              rows={4}
+            />
+          </div>
+
+          {/* Classification */}
+          <div>
+            <Label htmlFor="classification">Classification *</Label>
+            <Select value={formData.classification} onValueChange={(value) => setFormData({...formData, classification: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select classification" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Incident">Incident</SelectItem>
+                <SelectItem value="Bug">Bug</SelectItem>
+                <SelectItem value="ServiceRequest">Service Request</SelectItem>
+                <SelectItem value="ChangeRequest">Change Request</SelectItem>
+                <SelectItem value="Implementation">Implementation/Enhancement</SelectItem>
+                <SelectItem value="HowToQuery">How-To/Query</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Priority */}
+          <div>
+            <Label htmlFor="priority">Priority *</Label>
+            <Select value={formData.priority} onValueChange={(value) => setFormData({...formData, priority: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low - General "how-to"</SelectItem>
+                <SelectItem value="medium">Medium - Minor blocker w/ workaround</SelectItem>
+                <SelectItem value="high">High - Payroll/PO blockers, MFA lockouts</SelectItem>
+                <SelectItem value="urgent">Critical - Outage, payroll cut-off, compliance breach</SelectItem>
+              </SelectContent>
+            </Select>
+            {formData.priority && (
+              <p className="text-xs text-emerald-600 mt-1">
+                {getPriorityTargets(formData.priority)}
+              </p>
+            )}
+          </div>
+
+          {/* Critical Justification */}
+          {formData.priority === 'urgent' && (
+            <div>
+              <Label htmlFor="justification">Critical Justification *</Label>
+              <Textarea
+                id="justification"
+                value={formData.justification}
+                onChange={(e) => setFormData({...formData, justification: e.target.value})}
+                placeholder="Please explain why this is critical priority"
+                rows={3}
+              />
+            </div>
+          )}
+
+          {/* Business Unit */}
+          <div>
+            <Label htmlFor="business_unit_id">Business Unit</Label>
+            <Select value={formData.business_unit_id} onValueChange={(value) => setFormData({...formData, business_unit_id: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select business unit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {businessUnits.map(unit => (
+                  <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700">
+              Create Ticket
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// BOOST Ticket Detail Modal Component
+const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate }) => {
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [isInternal, setIsInternal] = useState(false);
+
+  useEffect(() => {
+    if (ticket && isOpen) {
+      fetchComments();
+    }
+  }, [ticket, isOpen]);
+
+  const fetchComments = async () => {
+    if (!ticket) return;
+    try {
+      const data = await apiCall('GET', `/boost/tickets/${ticket.id}/comments`);
+      setComments(data);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    }
+  };
+
+  const { apiCall } = useAPI();
+
+  if (!ticket) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span className="truncate">{ticket.subject}</span>
+            <Badge variant="outline">{ticket.ticket_number}</Badge>
+          </DialogTitle>
+          <DialogDescription>
+            Created {new Date(ticket.created_at).toLocaleDateString()} by {ticket.requester_name}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left: Details */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium">Status</Label>
+                <Badge className={`mt-1 ${ticket.status === 'open' ? 'bg-orange-100 text-orange-700' : 
+                  ticket.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                  {ticket.status.toUpperCase().replace('_', ' ')}
+                </Badge>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Priority</Label>
+                <Badge className={`mt-1 ${ticket.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                  ticket.priority === 'high' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                  {ticket.priority.toUpperCase()}
+                </Badge>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Description</Label>
+              <div className="bg-gray-50 p-3 rounded mt-1 text-sm">
+                {ticket.description}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><strong>Department:</strong> {ticket.support_department}</div>
+              <div><strong>Category:</strong> {ticket.category}</div>
+              <div><strong>Subcategory:</strong> {ticket.subcategory}</div>
+              <div><strong>Classification:</strong> {ticket.classification}</div>
+              <div><strong>Business Unit:</strong> {ticket.business_unit_name || 'None'}</div>
+              <div><strong>Due:</strong> {ticket.due_at ? new Date(ticket.due_at).toLocaleString() : 'Not set'}</div>
+            </div>
+          </div>
+
+          {/* Right: Comments */}
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Comments</Label>
+              <div className="space-y-2 max-h-60 overflow-y-auto mt-2">
+                {comments.map(comment => (
+                  <div key={comment.id} className={`p-3 rounded text-sm ${
+                    comment.is_internal ? 'bg-yellow-50 border-l-4 border-yellow-400' : 'bg-gray-50'
+                  }`}>
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-medium">{comment.author_name}</span>
+                      <div className="flex items-center space-x-2">
+                        {comment.is_internal && (
+                          <Badge variant="outline" className="text-xs">Internal</Badge>
+                        )}
+                        <span className="text-xs text-gray-500">
+                          {new Date(comment.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    <p>{comment.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Add Comment */}
+            <div>
+              <Label className="text-sm font-medium">Add Comment</Label>
+              <div className="space-y-2 mt-1">
+                {(currentUser.boost_role === 'Agent' || currentUser.boost_role === 'Manager' || currentUser.boost_role === 'Admin') && (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="internal"
+                      checked={isInternal}
+                      onChange={(e) => setIsInternal(e.target.checked)}
+                    />
+                    <Label htmlFor="internal" className="text-sm">Internal comment (staff only)</Label>
+                  </div>
+                )}
+                <div className="flex space-x-2">
+                  <Textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a comment..."
+                    rows={3}
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={async () => {
+                      if (newComment.trim()) {
+                        try {
+                          await apiCall('POST', `/boost/tickets/${ticket.id}/comments`, {
+                            body: newComment,
+                            is_internal: isInternal,
+                            author_name: currentUser.name
+                          });
+                          setNewComment('');
+                          setIsInternal(false);
+                          fetchComments();
+                        } catch (error) {
+                          console.error('Error adding comment:', error);
+                        }
+                      }
+                    }}
+                    disabled={!newComment.trim()}
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Enhanced Ticket Management Component (keeping existing implementation)
 const TicketManagement = () => {
   const [tickets, setTickets] = useState([]);
