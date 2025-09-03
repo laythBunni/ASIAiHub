@@ -3704,6 +3704,8 @@ const SystemAdmin = () => {
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [showBusinessUnitModal, setShowBusinessUnitModal] = useState(false);
   const [editingUnit, setEditingUnit] = useState(null);
+  const [showUserEditModal, setShowUserEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   
   const { apiCall } = useAPI();
   const { toast } = useToast();
