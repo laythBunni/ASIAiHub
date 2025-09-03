@@ -808,7 +808,7 @@ const DocumentManagement = () => {
     try {
       await apiCall('PUT', `/documents/${documentId}/approve`);
       toast({
-        title: "Success",
+        title: "Item Saved",
         description: "Document approved and added to knowledge base",
       });
       fetchDocuments();
