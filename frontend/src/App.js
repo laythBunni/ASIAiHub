@@ -103,7 +103,7 @@ const StructuredResponse = ({ response, documentsReferenced }) => {
           <CheckCircle className="w-4 h-4 mr-2 text-emerald-600" />
           Summary
         </h4>
-        <p className="text-sm text-gray-700">{response.summary}</p>
+        <p className="text-sm text-gray-700">{structuredData.summary}</p>
       </div>
 
       {/* Details Section */}
