@@ -451,9 +451,30 @@ async def upload_document(
         raise HTTPException(status_code=500, detail="Failed to upload document")
 
 @api_router.get("/documents", response_model=List[Document])
-async def get_documents():
-    """Get all uploaded documents"""
-    documents = await db.documents.find().to_list(1000)
+async def get_documents(
+    department: Optional[Department] = None,
+    approval_status: Optional[DocumentStatus] = None,
+    show_all: bool = False
+):
+    """Get documents with optional filtering"""
+    query = {}
+    
+    # For regular users, only show approved documents by default
+    if not show_all:
+        query["approval_status"] = DocumentStatus.APPROVED
+    
+    if department:
+        query["department"] = department
+    if approval_status:
+        query["approval_status"] = approval_status
+    
+    documents = await db.documents.find(query).to_list(1000)
+    return [Document(**doc) for doc in documents]
+
+@api_router.get("/documents/admin", response_model=List[Document])
+async def get_documents_admin():
+    """Get all documents for admin review"""
+    documents = await db.documents.find().sort("uploaded_at", -1).to_list(1000)
     return [Document(**doc) for doc in documents]
 
 @api_router.get("/documents/rag-stats")
