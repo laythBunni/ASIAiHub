@@ -2035,13 +2035,11 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
                     multiple
                     className="hidden"
                     id="file-upload"
+                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
                     onChange={(e) => {
                       if (e.target.files.length > 0) {
-                        toast({
-                          title: "Upload Started",
-                          description: `Uploading ${e.target.files.length} file(s)...`,
-                        });
-                        // TODO: Implement actual file upload
+                        handleFileUpload(e.target.files);
+                        e.target.value = ''; // Reset input
                       }
                     }}
                   />
