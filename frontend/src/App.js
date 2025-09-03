@@ -2435,7 +2435,7 @@ const TicketManagement = () => {
     description: '',
     department: '',
     priority: 'medium',
-    requester_name: 'System User'
+    requester_name: 'Layth Bunni'
   });
   const { apiCall } = useAPI();
   const { toast } = useToast();
