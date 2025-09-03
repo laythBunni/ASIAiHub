@@ -363,6 +363,32 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
 async def root():
     return {"message": "ASI OS - AI-Powered Operations Platform API"}
 
+@api_router.post("/documents/reprocess-all")
+async def reprocess_all_documents():
+    """Reprocess all existing documents with RAG system"""
+    try:
+        documents = await db.documents.find().to_list(1000)
+        processed_count = 0
+        
+        for doc in documents:
+            # Skip if already processed
+            if doc.get("processed", False):
+                continue
+                
+            # Process document in background
+            asyncio.create_task(process_document_with_rag(doc))
+            processed_count += 1
+        
+        return {
+            "message": f"Started reprocessing {processed_count} documents",
+            "total_documents": len(documents),
+            "reprocessed": processed_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error reprocessing documents: {e}")
+        raise HTTPException(status_code=500, detail="Failed to reprocess documents")
+
 # Document Management Routes
 @api_router.post("/documents/upload", response_model=DocumentUploadResponse)
 async def upload_document(
