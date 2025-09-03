@@ -714,12 +714,18 @@ const DocumentManagement = () => {
 
   const fetchDocuments = async () => {
     try {
-      const endpoint = isAdmin ? '/documents/admin' : `/documents?department=${activeTab}&show_all=${isAdmin}`;
-      const data = await apiCall('GET', endpoint);
-      const filteredDocs = isAdmin ? data : data.filter(doc => doc.department === activeTab);
-      setDocuments(filteredDocs);
+      if (isAdmin) {
+        // Admin sees all documents
+        const data = await apiCall('GET', '/documents/admin');
+        setDocuments(data);
+      } else {
+        // Regular users see only approved documents for the current tab
+        const data = await apiCall('GET', `/documents?department=${activeTab}&approval_status=approved`);
+        setDocuments(data);
+      }
     } catch (error) {
       console.error('Error fetching documents:', error);
+      setDocuments([]); // Set empty array on error
     }
   };
 
