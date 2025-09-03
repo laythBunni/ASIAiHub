@@ -4355,6 +4355,31 @@ const SystemAdmin = () => {
         }}
       />
 
+      {/* User Edit Modal */}
+      <UserEditModal
+        isOpen={showUserEditModal}
+        onClose={() => {
+          setShowUserEditModal(false);
+          setEditingUser(null);
+        }}
+        user={editingUser}
+        businessUnits={businessUnits}
+        onSave={async (userData) => {
+          try {
+            if (editingUser) {
+              await updateUser(editingUser.id, userData);
+            } else {
+              // This modal is only for editing, not creating
+              console.log('UserEditModal should only be used for editing');
+            }
+            setShowUserEditModal(false);
+            setEditingUser(null);
+          } catch (error) {
+            console.error('Error in UserEditModal save:', error);
+          }
+        }}
+      />
+
       {/* Business Unit Modal */}
       <BusinessUnitManagementModal
         isOpen={showBusinessUnitModal}
