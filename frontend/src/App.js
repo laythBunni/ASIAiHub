@@ -2166,7 +2166,15 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
                     {attachments.map(attachment => (
                       <div key={attachment.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                         <span className="text-sm">{attachment.original_name}</span>
-                        <Button size="sm" variant="outline">Download</Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            window.open(`${API}/boost/tickets/${ticket.id}/attachments/${attachment.id}`, '_blank');
+                          }}
+                        >
+                          Download
+                        </Button>
                       </div>
                     ))}
                   </div>
