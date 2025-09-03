@@ -1426,11 +1426,9 @@ const BoostSupport = () => {
     support_department: '',
     business_unit_id: ''
   });
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authToken, setAuthToken] = useState(localStorage.getItem('authToken'));
-  const [showLogin, setShowLogin] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
+  // Use global authentication context instead of local state
+  const { user: currentUser, token: authToken } = useAuth();
+  const isAuthenticated = !!currentUser;
   const [showNewTicketModal, setShowNewTicketModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketDetail, setShowTicketDetail] = useState(false);
