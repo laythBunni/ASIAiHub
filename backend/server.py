@@ -360,6 +360,7 @@ class BoostTicketCreate(BaseModel):
     requester_email: str = "user@company.com"
     business_unit_id: Optional[str] = None
     channel: TicketChannel = TicketChannel.HUB
+    conversation_session_id: Optional[str] = None  # For tickets created from chat conversations
 
 class BoostTicketUpdate(BaseModel):
     status: Optional[TicketStatus] = None
