@@ -1138,7 +1138,35 @@ const ChatInterface = () => {
                       {message.role === 'user' ? (
                         <div className="text-sm whitespace-pre-wrap">{message.content}</div>
                       ) : (
-                        <StructuredResponse response={message.content} documentsReferenced={message.documents_referenced} />
+                        <div>
+                          <StructuredResponse response={message.content} documentsReferenced={message.documents_referenced} />
+                          
+                          {/* Add "Create Ticket" option for AI responses */}
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-500">Not helpful enough?</span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs"
+                                onClick={() => {
+                                  // Get the user's question from the previous message
+                                  const userQuestion = index > 0 ? messages[index - 1]?.content : '';
+                                  const aiResponse = typeof message.content === 'string' ? message.content : JSON.stringify(message.content);
+                                  
+                                  setTicketFromChat({
+                                    userQuestion,
+                                    aiResponse,
+                                    show: true
+                                  });
+                                }}
+                              >
+                                <Ticket className="w-3 h-3 mr-1" />
+                                Create Ticket
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
