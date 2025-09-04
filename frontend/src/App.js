@@ -993,7 +993,7 @@ const ChatInterface = () => {
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 mt-20">
                   <Bot className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium mb-2">Welcome to ASI AiHub Ashur</h3>
+                  <h3 className="text-lg font-medium mb-2">Welcome to James</h3>
                   <p className="mb-4">Ask anything about company policies, procedures, or operational guidance.</p>
                   <div className="bg-gray-50 rounded-lg p-4 max-w-md mx-auto">
                     <p className="text-sm font-medium text-gray-700 mb-2">Try asking:</p>
