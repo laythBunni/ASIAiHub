@@ -1247,20 +1247,101 @@ const ChatInterface = () => {
   );
 };
 
-// Ticket Creation Modal from Chat
+// Ticket Creation Modal from Chat - Complete Form with Auto-Deduction
 const TicketFromChatModal = ({ isOpen, onClose, userQuestion, aiResponse }) => {
   const [formData, setFormData] = useState({
+    support_department: '',
+    category: '',
+    subcategory: '',
     subject: '',
     description: '',
+    classification: 'ServiceRequest',
     priority: 'medium',
-    support_department: 'IT',
-    category: 'Other',
-    classification: 'ServiceRequest'
+    business_unit_id: '',
+    justification: ''
   });
+  const [availableCategories, setAvailableCategories] = useState({});
+  const [availableSubcategories, setAvailableSubcategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [businessUnits, setBusinessUnits] = useState([]);
+  const [categories, setCategories] = useState({});
+  
   const { apiCall } = useAPI();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+
+  // Fetch business units and categories when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchBusinessUnits();
+      fetchCategories();
+    }
+  }, [isOpen]);
+
+  const fetchBusinessUnits = async () => {
+    try {
+      const data = await apiCall('GET', '/boost/business-units');
+      setBusinessUnits(data);
+    } catch (error) {
+      console.error('Error fetching business units:', error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await apiCall('GET', '/boost/categories');
+      setCategories(data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  // Auto-deduction logic based on chat content
+  const autoDeduceTicketDetails = (question, response) => {
+    const text = (question + ' ' + (typeof response === 'string' ? response : JSON.stringify(response))).toLowerCase();
+    
+    let deducedDepartment = 'IT'; // default
+    let deducedCategory = 'Other';
+    let deducedPriority = 'medium';
+    let deducedClassification = 'ServiceRequest';
+
+    // Smart department detection
+    if (text.includes('finance') || text.includes('invoice') || text.includes('payment') || text.includes('budget') || text.includes('accounting')) {
+      deducedDepartment = 'Finance';
+    } else if (text.includes('hr') || text.includes('leave') || text.includes('holiday') || text.includes('staff') || text.includes('employee') || text.includes('payroll')) {
+      deducedDepartment = 'HR/P&T';
+    } else if (text.includes('legal') || text.includes('compliance') || text.includes('ethics') || text.includes('contract') || text.includes('regulation')) {
+      deducedDepartment = 'LEC';
+    } else if (text.includes('computer') || text.includes('software') || text.includes('system') || text.includes('network') || text.includes('password') || text.includes('access') || text.includes('login')) {
+      deducedDepartment = 'IT';
+    } else if (text.includes('support') || text.includes('general') || text.includes('help')) {
+      deducedDepartment = 'OS Support';
+    }
+
+    // Priority detection
+    if (text.includes('urgent') || text.includes('critical') || text.includes('emergency') || text.includes('asap')) {
+      deducedPriority = 'urgent';
+    } else if (text.includes('high') || text.includes('important') || text.includes('priority')) {
+      deducedPriority = 'high';
+    } else if (text.includes('low') || text.includes('when possible') || text.includes('eventually')) {
+      deducedPriority = 'low';
+    }
+
+    // Classification detection  
+    if (text.includes('incident') || text.includes('error') || text.includes('broken') || text.includes('not working') || text.includes('issue')) {
+      deducedClassification = 'Incident';
+    } else if (text.includes('request') || text.includes('need') || text.includes('access') || text.includes('new')) {
+      deducedClassification = 'ServiceRequest';
+    } else if (text.includes('change') || text.includes('update') || text.includes('modify')) {
+      deducedClassification = 'Change';
+    }
+
+    return {
+      support_department: deducedDepartment,
+      priority: deducedPriority, 
+      classification: deducedClassification
+    };
+  };
 
   useEffect(() => {
     if (isOpen && userQuestion) {
@@ -1276,16 +1357,49 @@ AI Response: ${typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiRe
 Additional Details:
 [Please add any additional information or clarify what specifically you need help with]`;
 
+      // Auto-deduce ticket details
+      const deduced = autoDeduceTicketDetails(userQuestion, aiResponse);
+
       setFormData(prev => ({
         ...prev,
         subject: subject || 'Support Request from Chat',
-        description: description
+        description: description,
+        justification: 'Created from chat conversation - requires additional assistance',
+        ...deduced
       }));
     }
   }, [isOpen, userQuestion, aiResponse]);
 
+  // Update categories when department changes
+  useEffect(() => {
+    if (formData.support_department && categories[formData.support_department]) {
+      setAvailableCategories(categories[formData.support_department]);
+      setFormData(prev => ({ ...prev, category: '', subcategory: '' }));
+    }
+  }, [formData.support_department, categories]);
+
+  // Update subcategories when category changes
+  useEffect(() => {
+    if (formData.category && availableCategories[formData.category]) {
+      setAvailableSubcategories(availableCategories[formData.category]);
+      setFormData(prev => ({ ...prev, subcategory: '' }));
+    }
+  }, [formData.category, availableCategories]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.support_department || !formData.category || !formData.subcategory || 
+        !formData.subject || !formData.description || !formData.classification || !formData.priority) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -1294,7 +1408,6 @@ Additional Details:
         requester_name: currentUser.name || currentUser.email,
         requester_email: currentUser.email,
         requester_id: currentUser.id,
-        justification: 'Created from chat conversation - requires additional assistance',
         channel: 'Hub'
       };
 
@@ -1321,20 +1434,101 @@ Additional Details:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Ticket className="w-5 h-5 text-emerald-600" />
-            Create Support Ticket
+            Create Support Ticket from Chat
           </DialogTitle>
           <DialogDescription>
-            Create a support ticket based on your chat conversation. Review and edit the details below.
+            Auto-filled based on your conversation. Review and adjust details as needed.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Department, Classification, Priority Row */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="support_department">Department *</Label>
+              <Select value={formData.support_department} onValueChange={(value) => setFormData({...formData, support_department: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IT">IT</SelectItem>
+                  <SelectItem value="Finance">Finance</SelectItem>
+                  <SelectItem value="HR/P&T">HR/P&T</SelectItem>
+                  <SelectItem value="LEC">LEC</SelectItem>
+                  <SelectItem value="OS Support">OS Support</SelectItem>
+                  <SelectItem value="DevOps">DevOps</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="classification">Classification *</Label>
+              <Select value={formData.classification} onValueChange={(value) => setFormData({...formData, classification: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Incident">Incident</SelectItem>
+                  <SelectItem value="ServiceRequest">Service Request</SelectItem>
+                  <SelectItem value="Change">Change Request</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="priority">Priority *</Label>
+              <Select value={formData.priority} onValueChange={(value) => setFormData({...formData, priority: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">🟢 Low</SelectItem>
+                  <SelectItem value="medium">🟡 Medium</SelectItem>
+                  <SelectItem value="high">🟠 High</SelectItem>
+                  <SelectItem value="urgent">🔴 Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Category and Subcategory */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="category">Category *</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})} disabled={!formData.support_department}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(availableCategories).map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="subcategory">Subcategory *</Label>
+              <Select value={formData.subcategory} onValueChange={(value) => setFormData({...formData, subcategory: value})} disabled={!formData.category}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subcategory" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSubcategories.map(subcat => (
+                    <SelectItem key={subcat} value={subcat}>{subcat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Subject */}
           <div>
-            <Label htmlFor="subject">Subject</Label>
+            <Label htmlFor="subject">Subject *</Label>
             <Input
               id="subject"
               value={formData.subject}
@@ -1345,8 +1539,9 @@ Additional Details:
             />
           </div>
 
+          {/* Description */}
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
               value={formData.description}
@@ -1358,40 +1553,23 @@ Additional Details:
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Priority</Label>
-              <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">🟢 Low</SelectItem>
-                  <SelectItem value="medium">🟡 Medium</SelectItem>
-                  <SelectItem value="high">🟠 High</SelectItem>
-                  <SelectItem value="urgent">🔴 Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Department</Label>
-              <Select value={formData.support_department} onValueChange={(value) => setFormData({ ...formData, support_department: value })}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="IT">IT</SelectItem>
-                  <SelectItem value="Finance">Finance</SelectItem>
-                  <SelectItem value="HR/P&T">HR/P&T</SelectItem>
-                  <SelectItem value="LEC">LEC</SelectItem>
-                  <SelectItem value="OS Support">OS Support</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Business Unit */}
+          <div>
+            <Label htmlFor="business_unit_id">Business Unit (Optional)</Label>
+            <Select value={formData.business_unit_id} onValueChange={(value) => setFormData({...formData, business_unit_id: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select business unit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {businessUnits.map(unit => (
+                  <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
