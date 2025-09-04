@@ -1739,7 +1739,7 @@ const BoostSupport = () => {
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Input
               placeholder="Search tickets..."
               value={filters.search}
@@ -1761,6 +1761,18 @@ const BoostSupport = () => {
                 {(currentUser.boost_role === 'Manager' || currentUser.boost_role === 'Admin') && (
                   <SelectItem value="closed">Closed</SelectItem>
                 )}
+              </SelectContent>
+            </Select>
+            <Select value={filters.priority || 'all'} onValueChange={(value) => setFilters({...filters, priority: value})}>
+              <SelectTrigger>
+                <SelectValue placeholder="All priorities" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All priorities</SelectItem>
+                <SelectItem value="low">🟢 Low</SelectItem>
+                <SelectItem value="medium">🟡 Medium</SelectItem>
+                <SelectItem value="high">🟠 High</SelectItem>
+                <SelectItem value="urgent">🔴 Urgent</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filters.support_department} onValueChange={(value) => setFilters({...filters, support_department: value})}>
