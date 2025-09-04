@@ -2426,42 +2426,48 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
         updates.owner_id = quickAssignee === 'unassigned' ? null : quickAssignee;
         const agent = availableAgents.find(a => a.id === quickAssignee);
         updates.owner_name = agent ? agent.name : null;
+        updates.support_department = agent ? agent.department : ticket.support_department;
         changeDescription.push(`Assignee: ${agent?.name || 'Unassigned'}`);
       }
 
       if (Object.keys(updates).length > 0) {
-        await apiCall('PUT', `/boost/tickets/${ticket.id}`, updates);
+        // Add timestamp to track when changes were made
+        updates.updated_at = new Date().toISOString();
+        updates.updated_by = currentUser.name || currentUser.email;
         
-        // Add proper audit trail entries (NOT comments)
-        try {
-          // Try to add to proper audit trail endpoint
-          await apiCall('POST', `/boost/tickets/${ticket.id}/audit`, {
-            action: 'admin_update',
-            description: `Admin quick action: ${changeDescription.join(', ')}`,
-            user_name: currentUser.name || currentUser.email,
-            timestamp: new Date().toISOString(),
-            details: `Changes applied: ${changeDescription.join(', ')}`
-          });
-        } catch (error) {
-          // If no audit endpoint exists, we'll handle this in audit trail generation
-          console.log('No audit endpoint available, changes will be reflected in audit trail generation');
-        }
-
+        // Update the ticket
+        const updatedTicket = await apiCall('PUT', `/boost/tickets/${ticket.id}`, updates);
+        
+        // Show success message with specific changes
         toast({
-          title: "Success",
-          description: "Ticket updated successfully",
+          title: "✅ Ticket Updated Successfully",
+          description: `Changes saved: ${changeDescription.join(', ')}`,
+          duration: 3000,
         });
 
+        // Update local ticket object to reflect changes immediately
+        Object.assign(ticket, updates);
+        
+        // Refresh data to ensure UI is in sync
         fetchComments();
         fetchAuditTrail();
-        onUpdate();
+        onUpdate(); // This refreshes the main ticket list
+        
+        console.log('Ticket updates applied:', updates);
+      } else {
+        toast({
+          title: "No Changes",
+          description: "No changes were made to save.",
+          variant: "default",
+        });
       }
     } catch (error) {
       console.error('Error updating ticket:', error);
       toast({
-        title: "Error",
-        description: "Failed to update ticket",
-        variant: "destructive"
+        title: "❌ Update Failed",
+        description: error.response?.data?.detail || "Failed to update ticket. Please try again.",
+        variant: "destructive",
+        duration: 5000,
       });
     }
   };
