@@ -1727,8 +1727,9 @@ const DocumentManagement = () => {
     try {
       await apiCall('PUT', `/documents/${documentId}/reject`, { notes: "Not approved for knowledge base" });
       toast({
-        title: "Item Saved",
-        description: "Document rejected and removed from approval queue",
+        title: "❌ Document Rejected",
+        description: "Document has been rejected and removed from the approval queue",
+        duration: 3000,
       });
       fetchDocuments();
     } catch (error) {
