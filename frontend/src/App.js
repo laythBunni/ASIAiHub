@@ -1563,6 +1563,14 @@ const BoostSupport = () => {
   const getToDoTickets = () => {
     let filteredTickets = [];
     
+    // Debug information
+    console.log('Current user for filtering:', {
+      id: currentUser.id,
+      email: currentUser.email,
+      name: currentUser.name,
+      role: currentUser.boost_role
+    });
+    
     if (currentUser.boost_role === 'User') {
       // End users: only tickets where they are mentioned or need to respond
       filteredTickets = tickets.filter(ticket => 
@@ -1576,18 +1584,36 @@ const BoostSupport = () => {
         ['open', 'in_progress', 'waiting_customer'].includes(ticket.status)
       );
     } else {
-      // Managers/Admins: all assigned tickets
+      // Managers/Admins: all assigned tickets to them (tickets they should work on)
       filteredTickets = tickets.filter(ticket => 
         ticket.owner_id === currentUser.id && 
         ['open', 'in_progress', 'waiting_customer'].includes(ticket.status)
       );
     }
     
+    console.log(`To-Do tickets for ${currentUser.name}:`, filteredTickets.length, filteredTickets.map(t => ({
+      id: t.id,
+      subject: t.subject,
+      owner_id: t.owner_id,
+      owner_name: t.owner_name,
+      requester_id: t.requester_id,
+      status: t.status
+    })));
+    
     return filteredTickets;
   };
 
   const getCreatedByYouTickets = () => {
-    return tickets.filter(ticket => ticket.requester_id === currentUser.id);
+    const createdTickets = tickets.filter(ticket => ticket.requester_id === currentUser.id);
+    
+    console.log(`Created-by-you tickets for ${currentUser.name}:`, createdTickets.length, createdTickets.map(t => ({
+      id: t.id,
+      subject: t.subject,
+      requester_id: t.requester_id,
+      requester_name: t.requester_name
+    })));
+    
+    return createdTickets;
   };
 
   const getAllTickets = () => {
