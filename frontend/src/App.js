@@ -3123,8 +3123,8 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
                   <div><strong>Created:</strong> {new Date(ticket.created_at).toLocaleString()}</div>
                 </div>
 
-                {/* Conversation Link Button in Ticket Information */}
-                {ticket.conversation_session_id && (
+                {/* Conversation Link Button in Ticket Information - Visible to EVERYONE */}
+                {(ticket.conversation_session_id || ticket.channel === 'Hub') && (
                   <div className="pt-4 border-t border-gray-100">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -3134,14 +3134,29 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(`${window.location.origin}/chat?session=${ticket.conversation_session_id}`, '_blank')}
+                        onClick={() => {
+                          if (ticket.conversation_session_id) {
+                            window.open(`${window.location.origin}/chat?session=${ticket.conversation_session_id}`, '_blank');
+                          } else {
+                            alert(`Conversation ID: ${ticket.conversation_session_id || 'Not available'} - Channel: ${ticket.channel}`);
+                          }
+                        }}
                         className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
                       >
                         <MessageCircle className="w-3 h-3 mr-1" />
                         View Full Conversation
                       </Button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">This ticket was created from a chat conversation with James AI Assistant</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {ticket.conversation_session_id 
+                        ? "This ticket was created from a chat conversation with James AI Assistant"
+                        : "Debug: Checking conversation link functionality"
+                      }
+                    </p>
+                    {/* Debug info - remove after testing */}
+                    <p className="text-xs text-red-500 mt-1">
+                      Debug: Session ID = {ticket.conversation_session_id || 'MISSING'} | Channel = {ticket.channel || 'MISSING'}
+                    </p>
                   </div>
                 )}
               </CardContent>
