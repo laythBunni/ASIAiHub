@@ -969,12 +969,26 @@ const ChatInterface = () => {
         }
       }
 
-      // Update final message with metadata
+      // Update final message with metadata and ensure proper JSON parsing
       setMessages(prev => {
         const newMessages = [...prev];
         if (newMessages.length > 0) {
           const lastMessage = newMessages[newMessages.length - 1];
           if (lastMessage.role === 'assistant') {
+            // Ensure the content is properly parsed JSON for StructuredResponse
+            try {
+              if (typeof fullResponse === 'string') {
+                lastMessage.content = JSON.parse(fullResponse);
+              } else {
+                lastMessage.content = fullResponse;
+              }
+            } catch {
+              // If JSON parsing fails, wrap in a basic structure
+              lastMessage.content = {
+                content: fullResponse,
+                type: "text"
+              };
+            }
             lastMessage.documents_referenced = documentsReferenced;
             lastMessage.response_type = 'completed';
           }
