@@ -1940,57 +1940,74 @@ const BoostSupport = () => {
     setShowTicketDetail(true);
   };
 
-  const TicketRow = ({ ticket, showQuickActions = true }) => (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1" onClick={() => openTicketDetail(ticket)}>
-          <h3 className="font-medium text-gray-900 text-sm mb-2 line-clamp-2">
-            {ticket.subject}
-          </h3>
-          <div className="flex flex-wrap gap-1 mb-2">
-            <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
-              {ticket.status.toUpperCase().replace('_', ' ')}
-            </Badge>
-            <Badge className={`text-xs ${getDepartmentColor(ticket.support_department)}`}>
-              {ticket.support_department}
-            </Badge>
-            <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>
-              {ticket.priority.toUpperCase()}
-            </Badge>
+  const TicketRow = ({ ticket, showQuickActions = true }) => {
+    // Determine if ticket is unassigned
+    const isUnassigned = !ticket.owner_id || ticket.owner_id === 'unassigned';
+    
+    return (
+      <div className={`bg-white border-2 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
+        isUnassigned 
+          ? 'border-red-300 bg-red-50/30 shadow-sm' 
+          : 'border-gray-200'
+      }`}>
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1" onClick={() => openTicketDetail(ticket)}>
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="font-medium text-gray-900 text-sm line-clamp-2">
+                {ticket.subject}
+              </h3>
+              {isUnassigned && (
+                <Badge variant="outline" className="text-xs border-red-300 text-red-700 bg-red-50">
+                  Unassigned
+                </Badge>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1 mb-2">
+              <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
+                {ticket.status.toUpperCase().replace('_', ' ')}
+              </Badge>
+              <Badge className={`text-xs ${getDepartmentColor(ticket.support_department)}`}>
+                {ticket.support_department}
+              </Badge>
+              <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>
+                {ticket.priority.toUpperCase()}
+              </Badge>
+            </div>
+            <p className="text-xs text-gray-500">
+              Created {new Date(ticket.created_at).toLocaleDateString()}
+              {ticket.owner_name && ` • Assigned to ${ticket.owner_name}`}
+            </p>
           </div>
-          <p className="text-xs text-gray-500">
-            Created {new Date(ticket.created_at).toLocaleDateString()}
-          </p>
         </div>
-      </div>
       
-      {showQuickActions && (
-        <div className="flex space-x-1 pt-2 border-t border-gray-100">
-          <Button size="sm" variant="outline" onClick={() => openTicketDetail(ticket)}>
-            <Eye className="w-3 h-3 mr-1" />
-            View
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => openTicketDetail(ticket)}>
-            <MessageSquare className="w-3 h-3 mr-1" />
-            Comment
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => {
-            setSelectedTicket(ticket);
-            setShowTicketDetail(true);
-          }}>
-            <Upload className="w-3 h-3 mr-1" />
-            Attach
-          </Button>
-          {ticket.status === 'waiting_customer' && ticket.requester_id === currentUser.id && (
-            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Done
+        {showQuickActions && (
+          <div className="flex space-x-1 pt-2 border-t border-gray-100">
+            <Button size="sm" variant="outline" onClick={() => openTicketDetail(ticket)}>
+              <Eye className="w-3 h-3 mr-1" />
+              View
             </Button>
-          )}
-        </div>
-      )}
-    </div>
-  );
+            <Button size="sm" variant="outline" onClick={() => openTicketDetail(ticket)}>
+              <MessageSquare className="w-3 h-3 mr-1" />
+              Comment
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => {
+              setSelectedTicket(ticket);
+              setShowTicketDetail(true);
+            }}>
+              <Upload className="w-3 h-3 mr-1" />
+              Attach
+            </Button>
+            {ticket.status === 'waiting_customer' && ticket.requester_id === currentUser.id && (
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Mark Resolved
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
