@@ -1299,6 +1299,10 @@ def main():
     tester.test_auth_me_with_token(login_token if login_success else access_token)
     tester.test_auth_me_without_token()
     
+    # SPECIAL DEBUG TEST - Ticket Allocation Issue
+    print("\n🔍 DEBUGGING TICKET ALLOCATION ISSUE...")
+    debug_results = tester.test_ticket_allocation_debugging()
+    
     # Clean up test data (optional - delete created test records)
     print("\n🧹 Cleaning up test data...")
     tester.test_delete_boost_user(boost_user_id if user_success else None)
