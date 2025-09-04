@@ -2072,6 +2072,7 @@ const BoostSupport = () => {
                 <SelectItem value="Finance">Finance</SelectItem>
                 <SelectItem value="HR/P&T">HR/P&T</SelectItem>
                 <SelectItem value="IT">IT</SelectItem>
+                <SelectItem value="LEC">LEC</SelectItem>
                 <SelectItem value="DevOps">DevOps</SelectItem>
               </SelectContent>
             </Select>
