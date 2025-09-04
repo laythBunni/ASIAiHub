@@ -641,6 +641,251 @@ class ASIOSAPITester:
             print(f"❌ Failed to check MongoDB collections: {str(e)}")
             return False, {}
 
+    def test_boost_ticket_workflow(self):
+        """Test comprehensive BOOST ticket workflow as requested in review"""
+        print("\n🎯 BOOST TICKET WORKFLOW TESTING - Creating Test Tickets for Ticket Management")
+        print("=" * 80)
+        
+        # Step 1: Get current user info (layth.bunni@adamsmithinternational.com)
+        print("\n👤 Step 1: Verifying Current User Info...")
+        # For this test, we'll use the known user info from the review request
+        current_user = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "name": "Layth Bunni",
+            "id": "layth-bunni-id"
+        }
+        print(f"   ✅ Current User: {current_user['name']} ({current_user['email']})")
+        
+        # Step 2: Create business units for testing
+        print("\n🏢 Step 2: Creating Test Business Units...")
+        
+        # IT Department Business Unit
+        it_unit_data = {
+            "name": "IT Operations",
+            "code": "IT-OPS"
+        }
+        it_success, it_response = self.run_test("Create IT Business Unit", "POST", "/boost/business-units", 200, it_unit_data)
+        it_unit_id = it_response.get('id') if it_success else None
+        
+        # Finance Department Business Unit  
+        finance_unit_data = {
+            "name": "Finance Department",
+            "code": "FIN-DEPT"
+        }
+        finance_success, finance_response = self.run_test("Create Finance Business Unit", "POST", "/boost/business-units", 200, finance_unit_data)
+        finance_unit_id = finance_response.get('id') if finance_success else None
+        
+        # Step 3: Create test users for assignment
+        print("\n👥 Step 3: Creating Test Users for Assignment...")
+        
+        # Create IT Agent
+        it_agent_data = {
+            "name": "Mike Chen",
+            "email": "mike.chen@adamsmithinternational.com",
+            "boost_role": "Agent",
+            "business_unit_id": it_unit_id,
+            "department": "IT"
+        }
+        it_agent_success, it_agent_response = self.run_test("Create IT Agent", "POST", "/boost/users", 200, it_agent_data)
+        it_agent_id = it_agent_response.get('id') if it_agent_success else None
+        
+        # Create Finance Agent
+        finance_agent_data = {
+            "name": "Sarah Johnson", 
+            "email": "sarah.johnson@adamsmithinternational.com",
+            "boost_role": "Agent",
+            "business_unit_id": finance_unit_id,
+            "department": "Finance"
+        }
+        finance_agent_success, finance_agent_response = self.run_test("Create Finance Agent", "POST", "/boost/users", 200, finance_agent_data)
+        finance_agent_id = finance_agent_response.get('id') if finance_agent_success else None
+        
+        # Step 4: Create Test Tickets as specified in review request
+        print("\n🎫 Step 4: Creating Test Tickets for Workflow Testing...")
+        
+        # Ticket 1: IT department ticket assigned to current user (layth.bunni@adamsmithinternational.com)
+        ticket1_data = {
+            "subject": "Access Request for New System",
+            "description": "Need access to the new project management system for upcoming client deliverables. Require admin privileges to set up project templates and user permissions.",
+            "support_department": "IT",
+            "category": "Access",
+            "subcategory": "Login",
+            "classification": "ServiceRequest",
+            "priority": "medium",
+            "justification": "Required for project delivery timeline",
+            "requester_name": "John Doe",
+            "requester_email": "john.doe@adamsmithinternational.com",
+            "business_unit_id": it_unit_id,
+            "channel": "Hub"
+        }
+        
+        ticket1_success, ticket1_response = self.run_test("Create IT Ticket (Assigned)", "POST", "/boost/tickets", 200, ticket1_data)
+        ticket1_id = ticket1_response.get('id') if ticket1_success else None
+        
+        # Assign Ticket 1 to current user (Layth Bunni)
+        if ticket1_id:
+            assign_data = {
+                "owner_id": current_user['id'],
+                "owner_name": current_user['name'],
+                "status": "in_progress"
+            }
+            self.run_test("Assign Ticket 1 to Layth", "PUT", f"/boost/tickets/{ticket1_id}", 200, assign_data)
+        
+        # Ticket 2: Finance department ticket unassigned
+        ticket2_data = {
+            "subject": "Invoice Processing Delay",
+            "description": "Multiple supplier invoices are stuck in the approval workflow. The system shows 'pending approval' but no approver is assigned. This is affecting our payment schedule.",
+            "support_department": "Finance", 
+            "category": "Invoices",
+            "subcategory": "AP",
+            "classification": "Incident",
+            "priority": "high",
+            "justification": "Blocking payment processing and supplier relationships",
+            "requester_name": "Emma Wilson",
+            "requester_email": "emma.wilson@adamsmithinternational.com",
+            "business_unit_id": finance_unit_id,
+            "channel": "Email"
+        }
+        
+        ticket2_success, ticket2_response = self.run_test("Create Finance Ticket (Unassigned)", "POST", "/boost/tickets", 200, ticket2_data)
+        ticket2_id = ticket2_response.get('id') if ticket2_success else None
+        
+        # Ticket 3: General ticket with different priority
+        ticket3_data = {
+            "subject": "Device Compliance Issue",
+            "description": "Employee laptop is showing non-compliance warnings in Intune. Device encryption status is unclear and Company Portal is not updating policies correctly.",
+            "support_department": "IT",
+            "category": "Device Compliance", 
+            "subcategory": "Intune",
+            "classification": "Bug",
+            "priority": "urgent",
+            "justification": "Security compliance violation - immediate attention required",
+            "requester_name": "David Brown",
+            "requester_email": "david.brown@adamsmithinternational.com", 
+            "business_unit_id": it_unit_id,
+            "channel": "Teams"
+        }
+        
+        ticket3_success, ticket3_response = self.run_test("Create General Ticket (Urgent)", "POST", "/boost/tickets", 200, ticket3_data)
+        ticket3_id = ticket3_response.get('id') if ticket3_success else None
+        
+        # Step 5: Test Ticket Assignment Workflow
+        print("\n🔄 Step 5: Testing Ticket Assignment Workflow...")
+        
+        # Assign Ticket 2 to Finance Agent
+        if ticket2_id and finance_agent_id:
+            assign_finance_data = {
+                "owner_id": finance_agent_id,
+                "owner_name": "Sarah Johnson",
+                "status": "in_progress"
+            }
+            self.run_test("Assign Finance Ticket to Agent", "PUT", f"/boost/tickets/{ticket2_id}", 200, assign_finance_data)
+        
+        # Assign Ticket 3 to IT Agent
+        if ticket3_id and it_agent_id:
+            assign_it_data = {
+                "owner_id": it_agent_id,
+                "owner_name": "Mike Chen", 
+                "status": "in_progress"
+            }
+            self.run_test("Assign Urgent Ticket to IT Agent", "PUT", f"/boost/tickets/{ticket3_id}", 200, assign_it_data)
+        
+        # Step 6: Test Ticket Updates and Status Changes
+        print("\n📝 Step 6: Testing Ticket Updates and Status Changes...")
+        
+        # Update Ticket 1 - Change priority and add resolution notes
+        if ticket1_id:
+            update1_data = {
+                "priority": "high",
+                "resolution_notes": "Access granted to project management system. User credentials configured.",
+                "status": "resolved"
+            }
+            self.run_test("Update Ticket 1 Status", "PUT", f"/boost/tickets/{ticket1_id}", 200, update1_data)
+        
+        # Update Ticket 2 - Change status to waiting for customer
+        if ticket2_id:
+            update2_data = {
+                "status": "waiting_customer",
+                "resolution_notes": "Requested additional invoice details from supplier. Waiting for response."
+            }
+            self.run_test("Update Ticket 2 Status", "PUT", f"/boost/tickets/{ticket2_id}", 200, update2_data)
+        
+        # Step 7: Add Comments to Tickets
+        print("\n💬 Step 7: Testing Ticket Comments...")
+        
+        # Add comment to Ticket 1
+        if ticket1_id:
+            comment1_data = {
+                "body": "Access has been successfully configured. User can now log in to the project management system with admin privileges. Please test and confirm functionality.",
+                "is_internal": False,
+                "author_name": "Layth Bunni"
+            }
+            self.run_test("Add Comment to Ticket 1", "POST", f"/boost/tickets/{ticket1_id}/comments", 200, comment1_data)
+        
+        # Add internal comment to Ticket 2
+        if ticket2_id:
+            comment2_data = {
+                "body": "Internal note: This appears to be a recurring issue with the approval workflow. Need to investigate the root cause after resolving current backlog.",
+                "is_internal": True,
+                "author_name": "Sarah Johnson"
+            }
+            self.run_test("Add Internal Comment to Ticket 2", "POST", f"/boost/tickets/{ticket2_id}/comments", 200, comment2_data)
+        
+        # Step 8: Verify Ticket Retrieval and Filtering
+        print("\n🔍 Step 8: Testing Ticket Retrieval and Filtering...")
+        
+        # Get all tickets
+        self.run_test("Get All BOOST Tickets", "GET", "/boost/tickets", 200)
+        
+        # Get tickets by status
+        self.run_test("Get In-Progress Tickets", "GET", "/boost/tickets?status=in_progress", 200)
+        
+        # Get tickets by priority
+        self.run_test("Get High Priority Tickets", "GET", "/boost/tickets?priority=high", 200)
+        
+        # Get tickets by department
+        self.run_test("Get IT Department Tickets", "GET", "/boost/tickets?support_department=IT", 200)
+        
+        # Get tickets assigned to specific user
+        self.run_test("Get Layth's Assigned Tickets", "GET", f"/boost/tickets?owner_id={current_user['id']}", 200)
+        
+        # Step 9: Verify Individual Ticket Details
+        print("\n📋 Step 9: Verifying Individual Ticket Details...")
+        
+        if ticket1_id:
+            success, ticket1_details = self.run_test("Get Ticket 1 Details", "GET", f"/boost/tickets/{ticket1_id}", 200)
+            if success:
+                print(f"   ✅ Ticket 1 - Status: {ticket1_details.get('status')}, Owner: {ticket1_details.get('owner_name')}")
+        
+        if ticket2_id:
+            success, ticket2_details = self.run_test("Get Ticket 2 Details", "GET", f"/boost/tickets/{ticket2_id}", 200)
+            if success:
+                print(f"   ✅ Ticket 2 - Status: {ticket2_details.get('status')}, Owner: {ticket2_details.get('owner_name')}")
+        
+        if ticket3_id:
+            success, ticket3_details = self.run_test("Get Ticket 3 Details", "GET", f"/boost/tickets/{ticket3_id}", 200)
+            if success:
+                print(f"   ✅ Ticket 3 - Status: {ticket3_details.get('status')}, Owner: {ticket3_details.get('owner_name')}")
+        
+        # Step 10: Get Comments for Tickets
+        print("\n💭 Step 10: Verifying Ticket Comments...")
+        
+        if ticket1_id:
+            self.run_test("Get Ticket 1 Comments", "GET", f"/boost/tickets/{ticket1_id}/comments", 200)
+        
+        if ticket2_id:
+            self.run_test("Get Ticket 2 Comments", "GET", f"/boost/tickets/{ticket2_id}/comments", 200)
+        
+        print("\n🎉 BOOST Ticket Workflow Testing Complete!")
+        print("=" * 80)
+        
+        # Return created IDs for cleanup
+        return {
+            'tickets': [ticket1_id, ticket2_id, ticket3_id],
+            'users': [it_agent_id, finance_agent_id],
+            'business_units': [it_unit_id, finance_unit_id]
+        }
+
 def main():
     print("🚀 Starting ASI OS API Testing...")
     print("=" * 60)
