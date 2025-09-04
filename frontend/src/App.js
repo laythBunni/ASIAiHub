@@ -1599,19 +1599,28 @@ const BoostSupport = () => {
       // End users: only tickets where they are mentioned or need to respond
       filteredTickets = tickets.filter(ticket => 
         (ticket.requester_id === currentUser.id && ticket.status === 'waiting_customer') ||
-        (ticket.owner_id === currentUser.id)
+        (ticket.owner_id === currentUser.id) ||
+        // Backup matching by email in case of ID format issues
+        (ticket.requester_email === currentUser.email && ticket.status === 'waiting_customer') ||
+        (ticket.owner_email === currentUser.email)
       );
     } else if (currentUser.boost_role === 'Agent') {
       // Agents: assigned tickets in their department
       filteredTickets = tickets.filter(ticket => 
-        ticket.owner_id === currentUser.id && 
-        ['open', 'in_progress', 'waiting_customer'].includes(ticket.status)
+        (ticket.owner_id === currentUser.id && 
+         ['open', 'in_progress', 'waiting_customer'].includes(ticket.status)) ||
+        // Backup matching by email
+        (ticket.owner_email === currentUser.email && 
+         ['open', 'in_progress', 'waiting_customer'].includes(ticket.status))
       );
     } else {
       // Managers/Admins: all assigned tickets to them (tickets they should work on)
       filteredTickets = tickets.filter(ticket => 
-        ticket.owner_id === currentUser.id && 
-        ['open', 'in_progress', 'waiting_customer'].includes(ticket.status)
+        (ticket.owner_id === currentUser.id && 
+         ['open', 'in_progress', 'waiting_customer'].includes(ticket.status)) ||
+        // Backup matching by email
+        (ticket.owner_email === currentUser.email && 
+         ['open', 'in_progress', 'waiting_customer'].includes(ticket.status))
       );
     }
     
@@ -1620,7 +1629,9 @@ const BoostSupport = () => {
       subject: t.subject,
       owner_id: t.owner_id,
       owner_name: t.owner_name,
+      owner_email: t.owner_email,
       requester_id: t.requester_id,
+      requester_email: t.requester_email,
       status: t.status
     })));
     
@@ -1628,13 +1639,18 @@ const BoostSupport = () => {
   };
 
   const getCreatedByYouTickets = () => {
-    const createdTickets = tickets.filter(ticket => ticket.requester_id === currentUser.id);
+    // Filter by both ID and email to handle different ID formats
+    const createdTickets = tickets.filter(ticket => 
+      ticket.requester_id === currentUser.id ||
+      ticket.requester_email === currentUser.email
+    );
     
     console.log(`Created-by-you tickets for ${currentUser.name}:`, createdTickets.length, createdTickets.map(t => ({
       id: t.id,
       subject: t.subject,
       requester_id: t.requester_id,
-      requester_name: t.requester_name
+      requester_name: t.requester_name,
+      requester_email: t.requester_email
     })));
     
     return createdTickets;
