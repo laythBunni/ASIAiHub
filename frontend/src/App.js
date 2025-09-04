@@ -924,7 +924,7 @@ const ChatInterface = () => {
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Ashur</h2>
+            <h2 className="text-xl font-bold text-gray-900">James</h2>
             <Badge variant="outline" className="text-emerald-600 border-emerald-200">
               <Bot className="w-3 h-3 mr-1" />
               GPT-5
