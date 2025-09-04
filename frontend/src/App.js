@@ -1405,6 +1405,7 @@ Additional Details:
     try {
       const ticketData = {
         ...formData,
+        business_unit_id: formData.business_unit_id === 'none' ? '' : formData.business_unit_id, // Convert 'none' back to empty string for API
         requester_name: currentUser.name || currentUser.email,
         requester_email: currentUser.email,
         requester_id: currentUser.id,
