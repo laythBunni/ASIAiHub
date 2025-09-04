@@ -820,6 +820,7 @@ const ChatInterface = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [documentsCount, setDocumentsCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [ticketFromChat, setTicketFromChat] = useState({ show: false, userQuestion: '', aiResponse: '' });
   const { apiCall } = useAPI();
   const { toast } = useToast();
   const { token } = useAuth();
