@@ -1241,6 +1241,7 @@ const ChatInterface = () => {
           onClose={() => setTicketFromChat({ show: false, userQuestion: '', aiResponse: '' })}
           userQuestion={ticketFromChat.userQuestion}
           aiResponse={ticketFromChat.aiResponse}
+          sessionId={currentSession}
         />
       )}
     </div>
