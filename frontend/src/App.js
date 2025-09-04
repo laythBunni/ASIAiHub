@@ -1483,8 +1483,20 @@ Please review the original conversation for complete context and provide additio
             <Ticket className="w-5 h-5 text-emerald-600" />
             Create Support Ticket from Chat
           </DialogTitle>
-          <DialogDescription>
-            Auto-filled based on your conversation. Review and adjust details as needed.
+          <DialogDescription className="flex items-center justify-between">
+            <span>Auto-filled based on your conversation. Review and adjust details as needed.</span>
+            {conversationUrl && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(conversationUrl, '_blank')}
+                className="ml-4"
+              >
+                <MessageCircle className="w-4 h-4 mr-1" />
+                View Conversation
+              </Button>
+            )}
           </DialogDescription>
         </DialogHeader>
 
