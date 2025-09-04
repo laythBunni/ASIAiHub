@@ -3230,7 +3230,7 @@ const Navigation = () => {
   
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
-    { path: '/chat', label: 'Ashur your ultimate assistant!', icon: MessageCircle },
+    { path: '/chat', label: 'James', icon: MessageCircle },
     { path: '/boost', label: 'BOOST Support', icon: Ticket },
     { path: '/tickets', label: 'Legacy Tickets', icon: Settings },
     { path: '/documents', label: 'Knowledge Base', icon: FileText },
