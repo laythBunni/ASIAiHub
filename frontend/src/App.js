@@ -1379,7 +1379,7 @@ Please review the linked conversation for complete context and provide additiona
         : userQuestion;
       
       // Auto-deduce ticket details with proper formatting
-      const deduced = autoDeduceAndFormat(userQuestion, aiResponse, 'current-session'); // We'll get proper session ID later
+      const deduced = autoDeduceAndFormat(userQuestion, aiResponse, sessionId || 'unknown-session');
 
       setFormData(prev => ({
         ...prev,
