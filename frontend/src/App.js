@@ -1378,20 +1378,12 @@ Please review the linked conversation for complete context and provide additiona
         ? userQuestion.substring(0, 47) + '...' 
         : userQuestion;
       
-      const description = `Original Question: ${userQuestion}
-
-AI Response: ${typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiResponse)}
-
-Additional Details:
-[Please add any additional information or clarify what specifically you need help with]`;
-
-      // Auto-deduce ticket details
-      const deduced = autoDeduceTicketDetails(userQuestion, aiResponse);
+      // Auto-deduce ticket details with proper formatting
+      const deduced = autoDeduceAndFormat(userQuestion, aiResponse, 'current-session'); // We'll get proper session ID later
 
       setFormData(prev => ({
         ...prev,
         subject: subject || 'Support Request from Chat',
-        description: description,
         justification: 'Created from chat conversation - requires additional assistance',
         ...deduced
       }));
