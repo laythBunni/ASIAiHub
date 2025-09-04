@@ -1377,17 +1377,15 @@ ${responseSummary}
 **Additional Support Required:**
 The user requires further assistance beyond the initial guidance provided by James AI Assistant.
 
-**Reference:**
-🔗 View full conversation: ${window.location.origin}/chat?session=${sessionId}
-
 **Next Steps:**
-Please review the linked conversation for complete context and provide additional support as needed.`;
+Please review the original conversation for complete context and provide additional support as needed.`;
 
     return {
       support_department: deducedDepartment,
       priority: deducedPriority, 
       classification: deducedClassification,
-      description: description
+      description: description,
+      conversationUrl: `${window.location.origin}/chat?session=${sessionId}` // Add conversation URL separately
     };
   };
 
