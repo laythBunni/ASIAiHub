@@ -1257,7 +1257,7 @@ const TicketFromChatModal = ({ isOpen, onClose, userQuestion, aiResponse }) => {
     description: '',
     classification: 'ServiceRequest',
     priority: 'medium',
-    business_unit_id: '',
+    business_unit_id: 'none',  // Changed from empty string to 'none'
     justification: ''
   });
   const [availableCategories, setAvailableCategories] = useState({});
