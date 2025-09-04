@@ -303,6 +303,7 @@ class ChatRequest(BaseModel):
     session_id: str
     message: str
     document_ids: List[str] = []  # Optional - for backward compatibility, but not used
+    stream: bool = False  # Enable streaming response
 
 class ChatResponse(BaseModel):
     session_id: str
