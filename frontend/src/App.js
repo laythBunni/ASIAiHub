@@ -762,7 +762,7 @@ const Dashboard = () => {
             <Link to="/chat">
               <Button className="w-full h-20 flex flex-col gap-2 bg-emerald-600 hover:bg-emerald-700">
                 <MessageCircle className="w-6 h-6" />
-                <span>Ask Ashur</span>
+                <span>Ask James</span>
               </Button>
             </Link>
             <Link to="/boost">
