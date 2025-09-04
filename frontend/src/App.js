@@ -3274,9 +3274,10 @@ const Navigation = () => {
             {/* User Menu */}
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-700">
-                <span className="font-medium">{user?.email}</span>
-                <span className="ml-2 px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded-full">
-                  {user?.role}
+                <span className="font-medium">
+                  {user?.email ? user.email.split('@')[0].split('.').map(part => 
+                    part.charAt(0).toUpperCase() + part.slice(1)
+                  ).join(' ') : 'User'}
                 </span>
               </div>
               <Button
