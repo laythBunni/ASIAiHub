@@ -877,42 +877,111 @@ const ChatInterface = () => {
     if (!inputMessage.trim() || !currentSession) return;
 
     setLoading(true);
+    
+    // Add user message immediately
+    const userMsg = {
+      role: 'user',
+      content: inputMessage,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Add placeholder assistant message for streaming
+    const assistantMsg = {
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+      documents_referenced: 0,
+      response_type: 'streaming'
+    };
+    
+    setMessages(prev => [...prev, userMsg, assistantMsg]);
+    const currentInput = inputMessage;
+    setInputMessage('');
+
     try {
-      const data = await apiCall('POST', '/chat/send', {
-        session_id: currentSession,
-        message: inputMessage,
-        document_ids: [] // Empty array - backend automatically uses all documents
+      // Use streaming fetch instead of regular apiCall
+      const response = await fetch(`${API}/chat/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          session_id: currentSession,
+          message: currentInput,
+          document_ids: [],
+          stream: true
+        })
       });
 
-      // Add messages to UI
-      const userMsg = {
-        role: 'user',
-        content: inputMessage,
-        timestamp: new Date().toISOString()
-      };
-      const aiMsg = {
-        role: 'assistant',
-        content: data.response, // Now contains structured data
-        timestamp: new Date().toISOString(),
-        documents_referenced: data.documents_referenced,
-        response_type: data.response_type
-      };
-
-      setMessages(prev => [...prev, userMsg, aiMsg]);
-      setInputMessage('');
-
-      // Show ticket suggestion if available
-      if (data.suggested_ticket) {
-        toast({
-          title: "Ticket Creation Suggested",
-          description: "This query might require a support ticket. Would you like to create one?",
-        });
+      if (!response.ok) {
+        throw new Error('Failed to send message');
       }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullResponse = '';
+      let documentsReferenced = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === 'content') {
+                fullResponse += data.content;
+                // Update the last message (assistant message) with streaming content
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  if (newMessages.length > 0) {
+                    const lastMessage = newMessages[newMessages.length - 1];
+                    if (lastMessage.role === 'assistant') {
+                      lastMessage.content = fullResponse;
+                    }
+                  }
+                  return newMessages;
+                });
+              } else if (data.type === 'metadata') {
+                documentsReferenced = data.documents_referenced || 0;
+              }
+            } catch (e) {
+              // Skip malformed JSON
+            }
+          }
+        }
+      }
+
+      // Update final message with metadata
+      setMessages(prev => {
+        const newMessages = [...prev];
+        if (newMessages.length > 0) {
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage.role === 'assistant') {
+            lastMessage.documents_referenced = documentsReferenced;
+            lastMessage.response_type = 'completed';
+          }
+        }
+        return newMessages;
+      });
 
       // Refresh sessions
       fetchSessions();
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove the placeholder message on error
+      setMessages(prev => prev.slice(0, -1));
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
