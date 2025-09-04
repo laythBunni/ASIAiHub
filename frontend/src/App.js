@@ -1457,9 +1457,9 @@ Please review the original conversation for complete context and provide additio
       await apiCall('POST', '/boost/tickets', ticketData);
       
       toast({
-        title: "✅ Ticket Created Successfully",
-        description: "Your support ticket has been created and assigned to the appropriate team.",
-        duration: 4000,
+        title: "🎫 Ticket Created Successfully!",
+        description: `Your support ticket has been created and assigned to the ${ticketData.support_department} team. Ticket reference will be provided shortly.`,
+        duration: 5000,
       });
 
       onClose();
