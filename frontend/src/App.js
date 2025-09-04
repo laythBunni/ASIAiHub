@@ -1280,6 +1280,7 @@ const TicketFromChatModal = ({ isOpen, onClose, userQuestion, aiResponse, sessio
     business_unit_id: 'none',  // Changed from empty string to 'none'
     justification: ''
   });
+  const [conversationUrl, setConversationUrl] = useState('');
   const [availableCategories, setAvailableCategories] = useState({});
   const [availableSubcategories, setAvailableSubcategories] = useState([]);
   const [loading, setLoading] = useState(false);
