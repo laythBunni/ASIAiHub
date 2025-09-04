@@ -4505,10 +4505,10 @@ const BoostUserModal = ({ isOpen, onClose, user, businessUnits, onSave }) => {
     try {
       if (user) {
         await apiCall('PUT', `/boost/users/${user.id}`, formData);
-        toast({ title: "Success", description: "User updated successfully" });
+        toast({ title: "👤 User Updated!", description: `User details saved successfully`, duration: 3000 });
       } else {
         await apiCall('POST', '/boost/users', formData);
-        toast({ title: "Success", description: "User created successfully" });
+        toast({ title: "👤 User Created!", description: `New user added successfully`, duration: 3000 });
       }
       onSave();
     } catch (error) {
