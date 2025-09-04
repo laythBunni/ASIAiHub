@@ -171,6 +171,7 @@ class BoostTicket(BaseModel):
     # Metadata
     channel: TicketChannel = TicketChannel.HUB
     justification: str = ""  # Required for Critical priority
+    conversation_session_id: Optional[str] = None  # For tickets created from chat conversations
     resolution_notes: str = ""
     resolution_type: Optional[ResolutionType] = None
     
