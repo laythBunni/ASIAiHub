@@ -1713,8 +1713,9 @@ const DocumentManagement = () => {
     try {
       await apiCall('PUT', `/documents/${documentId}/approve`);
       toast({
-        title: "Item Saved",
-        description: "Document approved and added to knowledge base",
+        title: "✅ Document Approved!",
+        description: "Document has been approved and added to the knowledge base",
+        duration: 3000,
       });
       fetchDocuments();
     } catch (error) {
