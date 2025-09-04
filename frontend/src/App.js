@@ -1399,15 +1399,18 @@ Please review the original conversation for complete context and provide additio
       
       // Auto-deduce ticket details with proper formatting
       const deduced = autoDeduceAndFormat(userQuestion, aiResponse, sessionId || 'unknown-session');
-
+      
       setFormData(prev => ({
         ...prev,
         subject: subject || 'Support Request from Chat',
         justification: 'Created from chat conversation - requires additional assistance',
         ...deduced
       }));
+      
+      // Store conversation URL for the button
+      setConversationUrl(deduced.conversationUrl);
     }
-  }, [isOpen, userQuestion, aiResponse]);
+  }, [isOpen, userQuestion, aiResponse, sessionId]);
 
   // Update categories when department changes
   useEffect(() => {
