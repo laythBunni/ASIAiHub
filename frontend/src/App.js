@@ -5418,7 +5418,7 @@ const UserEditModal = ({ isOpen, onClose, user, businessUnits = [], onSave }) =>
                 <SelectValue placeholder="Select business unit" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {businessUnits.map(unit => (
                   <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
                 ))}
