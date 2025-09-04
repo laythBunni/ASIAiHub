@@ -641,6 +641,319 @@ class ASIOSAPITester:
             print(f"❌ Failed to check MongoDB collections: {str(e)}")
             return False, {}
 
+    def test_ticket_allocation_debugging(self):
+        """DEBUG TICKET ALLOCATION ISSUE - Specific debugging for layth.bunni@adamsmithinternational.com"""
+        print("\n🔍 TICKET ALLOCATION DEBUGGING - Investigating ID Format Mismatch")
+        print("=" * 80)
+        
+        # Step 1: Check Current User Authentication Data
+        print("\n👤 Step 1: Checking Current User Authentication Data...")
+        
+        # Test login with the specific user
+        login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "admin123456"
+        }
+        
+        login_success, login_response = self.run_test("Login Layth Bunni", "POST", "/auth/login", 200, login_data)
+        
+        if not login_success:
+            print("❌ Cannot login with layth.bunni@adamsmithinternational.com - stopping debug")
+            return False
+        
+        access_token = login_response.get('access_token')
+        user_from_login = login_response.get('user', {})
+        
+        print(f"   ✅ Login successful")
+        print(f"   📧 Email: {user_from_login.get('email')}")
+        print(f"   🆔 User ID from login: {user_from_login.get('id')}")
+        print(f"   👤 Role: {user_from_login.get('role')}")
+        print(f"   🏢 Department: {user_from_login.get('department')}")
+        
+        # Get user info via /auth/me endpoint
+        if access_token:
+            headers = {'Authorization': f'Bearer {access_token}'}
+            
+            try:
+                url = f"{self.api_url}/auth/me"
+                response = requests.get(url, headers=headers)
+                
+                print(f"\n🔍 Testing /auth/me endpoint...")
+                print(f"   URL: {url}")
+                
+                if response.status_code == 200:
+                    auth_me_data = response.json()
+                    print(f"   ✅ /auth/me successful")
+                    print(f"   📧 Email: {auth_me_data.get('email')}")
+                    print(f"   🆔 User ID from /auth/me: {auth_me_data.get('id')}")
+                    print(f"   👤 Role: {auth_me_data.get('role')}")
+                    print(f"   🏢 Department: {auth_me_data.get('department')}")
+                    
+                    # Compare IDs
+                    login_id = user_from_login.get('id')
+                    auth_me_id = auth_me_data.get('id')
+                    
+                    if login_id == auth_me_id:
+                        print(f"   ✅ ID consistency: Both endpoints return same ID: {login_id}")
+                    else:
+                        print(f"   ⚠️  ID mismatch: Login ID ({login_id}) != Auth/me ID ({auth_me_id})")
+                    
+                    current_user = auth_me_data
+                else:
+                    print(f"   ❌ /auth/me failed with status {response.status_code}")
+                    current_user = user_from_login
+            except Exception as e:
+                print(f"   ❌ Error calling /auth/me: {str(e)}")
+                current_user = user_from_login
+        else:
+            current_user = user_from_login
+        
+        # Step 2: Check Existing Ticket Data
+        print(f"\n🎫 Step 2: Checking Existing BOOST Ticket Data...")
+        
+        tickets_success, tickets_response = self.run_test("Get All BOOST Tickets", "GET", "/boost/tickets", 200)
+        
+        if tickets_success and isinstance(tickets_response, list):
+            print(f"   ✅ Found {len(tickets_response)} existing tickets")
+            
+            # Analyze ticket ownership patterns
+            owner_ids = set()
+            requester_ids = set()
+            
+            for ticket in tickets_response:
+                owner_id = ticket.get('owner_id')
+                requester_id = ticket.get('requester_id')
+                
+                if owner_id:
+                    owner_ids.add(owner_id)
+                if requester_id:
+                    requester_ids.add(requester_id)
+                
+                print(f"   📋 Ticket {ticket.get('ticket_number', 'N/A')[:12]}:")
+                print(f"      Owner ID: {owner_id}")
+                print(f"      Requester ID: {requester_id}")
+                print(f"      Subject: {ticket.get('subject', 'N/A')[:50]}...")
+            
+            print(f"\n   📊 Ticket Ownership Analysis:")
+            print(f"      Unique Owner IDs: {list(owner_ids)}")
+            print(f"      Unique Requester IDs: {list(requester_ids)}")
+            
+            # Check if current user ID appears in tickets
+            current_user_id = current_user.get('id')
+            current_user_email = current_user.get('email')
+            
+            matching_owner_tickets = [t for t in tickets_response if t.get('owner_id') == current_user_id]
+            matching_requester_tickets = [t for t in tickets_response if t.get('requester_id') == current_user_id]
+            
+            # Also check by email
+            matching_email_tickets = [t for t in tickets_response if t.get('requester_email') == current_user_email]
+            
+            print(f"\n   🔍 Current User Ticket Analysis:")
+            print(f"      Current User ID: {current_user_id}")
+            print(f"      Current User Email: {current_user_email}")
+            print(f"      Tickets owned by user ID: {len(matching_owner_tickets)}")
+            print(f"      Tickets requested by user ID: {len(matching_requester_tickets)}")
+            print(f"      Tickets requested by user email: {len(matching_email_tickets)}")
+            
+        else:
+            print(f"   ⚠️  No existing tickets found or error retrieving tickets")
+            tickets_response = []
+        
+        # Step 3: Identify ID Format Mismatch
+        print(f"\n🔍 Step 3: Identifying ID Format Mismatch...")
+        
+        current_user_id = current_user.get('id')
+        current_user_email = current_user.get('email')
+        
+        print(f"   Current User Authentication:")
+        print(f"      ID Format: {type(current_user_id).__name__}")
+        print(f"      ID Value: {current_user_id}")
+        print(f"      ID Length: {len(str(current_user_id)) if current_user_id else 0}")
+        print(f"      Email: {current_user_email}")
+        
+        if tickets_response:
+            sample_ticket = tickets_response[0] if tickets_response else {}
+            sample_owner_id = sample_ticket.get('owner_id')
+            sample_requester_id = sample_ticket.get('requester_id')
+            
+            print(f"   Sample Ticket ID Formats:")
+            print(f"      Owner ID Format: {type(sample_owner_id).__name__}")
+            print(f"      Owner ID Value: {sample_owner_id}")
+            print(f"      Requester ID Format: {type(sample_requester_id).__name__}")
+            print(f"      Requester ID Value: {sample_requester_id}")
+            
+            # Check for format mismatch
+            if current_user_id and sample_owner_id:
+                if type(current_user_id) != type(sample_owner_id):
+                    print(f"   ⚠️  TYPE MISMATCH: User ID is {type(current_user_id).__name__}, Ticket Owner ID is {type(sample_owner_id).__name__}")
+                elif str(current_user_id) != str(sample_owner_id) and current_user_id not in [t.get('owner_id') for t in tickets_response]:
+                    print(f"   ⚠️  VALUE MISMATCH: User ID format doesn't match any ticket owner IDs")
+                else:
+                    print(f"   ✅ ID formats appear compatible")
+        
+        # Step 4: Create Test Tickets with Correct IDs
+        print(f"\n🎫 Step 4: Creating Test Tickets with Correct ID Formats...")
+        
+        # Create business unit for testing
+        test_unit_data = {
+            "name": "Debug Test Unit",
+            "code": "DEBUG-001"
+        }
+        unit_success, unit_response = self.run_test("Create Debug Business Unit", "POST", "/boost/business-units", 200, test_unit_data)
+        test_unit_id = unit_response.get('id') if unit_success else None
+        
+        # Ticket 1: Assigned to current user (for "To do" column)
+        ticket1_data = {
+            "subject": "DEBUG: Test Ticket Assigned to Layth",
+            "description": "This is a test ticket created to debug the ticket allocation issue. This ticket should appear in the 'To do' column for layth.bunni@adamsmithinternational.com",
+            "support_department": "IT",
+            "category": "Access",
+            "subcategory": "Login",
+            "classification": "ServiceRequest",
+            "priority": "medium",
+            "justification": "Debug testing for ticket allocation",
+            "requester_name": "Test User",
+            "requester_email": "test.user@adamsmithinternational.com",
+            "business_unit_id": test_unit_id,
+            "channel": "Hub"
+        }
+        
+        ticket1_success, ticket1_response = self.run_test("Create Debug Ticket 1", "POST", "/boost/tickets", 200, ticket1_data)
+        ticket1_id = ticket1_response.get('id') if ticket1_success else None
+        
+        # Assign to current user using the exact ID format from authentication
+        if ticket1_id and current_user_id:
+            assign_data = {
+                "owner_id": current_user_id,
+                "owner_name": current_user.get('name', current_user_email.split('@')[0]),
+                "status": "in_progress"
+            }
+            assign_success, assign_response = self.run_test("Assign Ticket 1 to Layth", "PUT", f"/boost/tickets/{ticket1_id}", 200, assign_data)
+            
+            if assign_success:
+                print(f"   ✅ Successfully assigned ticket to user ID: {current_user_id}")
+            else:
+                print(f"   ❌ Failed to assign ticket to user ID: {current_user_id}")
+        
+        # Ticket 2: Created by current user (for "Created by you" column)
+        ticket2_data = {
+            "subject": "DEBUG: Test Ticket Created by Layth",
+            "description": "This is a test ticket created to debug the ticket allocation issue. This ticket should appear in the 'Created by you' column for layth.bunni@adamsmithinternational.com",
+            "support_department": "Finance",
+            "category": "Invoices",
+            "subcategory": "AP",
+            "classification": "Incident",
+            "priority": "high",
+            "justification": "Debug testing for ticket creation tracking",
+            "requester_name": current_user.get('name', current_user_email.split('@')[0]),
+            "requester_email": current_user_email,
+            "business_unit_id": test_unit_id,
+            "channel": "Hub"
+        }
+        
+        ticket2_success, ticket2_response = self.run_test("Create Debug Ticket 2", "POST", "/boost/tickets", 200, ticket2_data)
+        ticket2_id = ticket2_response.get('id') if ticket2_success else None
+        
+        # Update the requester_id to match current user ID
+        if ticket2_id and current_user_id:
+            update_data = {
+                "requester_id": current_user_id  # This might not work via API, but let's try
+            }
+            # Note: The API might not allow updating requester_id, but we'll try
+            try:
+                url = f"{self.api_url}/boost/tickets/{ticket2_id}"
+                response = requests.put(url, json=update_data, headers={'Content-Type': 'application/json'})
+                if response.status_code == 200:
+                    print(f"   ✅ Successfully updated requester_id to: {current_user_id}")
+                else:
+                    print(f"   ⚠️  Could not update requester_id via API (expected - may need direct DB update)")
+            except Exception as e:
+                print(f"   ⚠️  Could not update requester_id: {str(e)}")
+        
+        # Step 5: Verify Ticket Assignment Logic
+        print(f"\n🔍 Step 5: Verifying Ticket Assignment Logic...")
+        
+        # Get tickets assigned to current user
+        assigned_success, assigned_response = self.run_test(
+            "Get Tickets Assigned to Layth", 
+            "GET", 
+            f"/boost/tickets?owner_id={current_user_id}", 
+            200
+        )
+        
+        if assigned_success and isinstance(assigned_response, list):
+            print(f"   ✅ Found {len(assigned_response)} tickets assigned to user")
+            for ticket in assigned_response:
+                print(f"      📋 {ticket.get('ticket_number')}: {ticket.get('subject')[:50]}...")
+        
+        # Get tickets created by current user (by email)
+        created_success, created_response = self.run_test(
+            "Get Tickets Created by Layth (by email)", 
+            "GET", 
+            f"/boost/tickets?search={current_user_email}", 
+            200
+        )
+        
+        if created_success and isinstance(created_response, list):
+            created_by_email = [t for t in created_response if t.get('requester_email') == current_user_email]
+            print(f"   ✅ Found {len(created_by_email)} tickets created by user email")
+            for ticket in created_by_email:
+                print(f"      📋 {ticket.get('ticket_number')}: {ticket.get('subject')[:50]}...")
+        
+        # Get all tickets and analyze
+        all_tickets_success, all_tickets_response = self.run_test("Get All Tickets for Analysis", "GET", "/boost/tickets", 200)
+        
+        if all_tickets_success and isinstance(all_tickets_response, list):
+            # Filter for current user
+            user_assigned = [t for t in all_tickets_response if t.get('owner_id') == current_user_id]
+            user_created_by_id = [t for t in all_tickets_response if t.get('requester_id') == current_user_id]
+            user_created_by_email = [t for t in all_tickets_response if t.get('requester_email') == current_user_email]
+            
+            print(f"\n   📊 Final Ticket Allocation Analysis:")
+            print(f"      Total tickets in system: {len(all_tickets_response)}")
+            print(f"      Tickets assigned to user (owner_id match): {len(user_assigned)}")
+            print(f"      Tickets created by user (requester_id match): {len(user_created_by_id)}")
+            print(f"      Tickets created by user (requester_email match): {len(user_created_by_email)}")
+            
+            # Identify the issue
+            if len(user_assigned) == 0 and len(user_created_by_id) == 0:
+                print(f"\n   🚨 ISSUE IDENTIFIED:")
+                print(f"      - No tickets found matching user ID: {current_user_id}")
+                print(f"      - This explains why columns appear empty")
+                print(f"      - Frontend filtering by user.id is not finding matches")
+                
+                if len(user_created_by_email) > 0:
+                    print(f"      - However, {len(user_created_by_email)} tickets match by email")
+                    print(f"      - Suggests requester_id field is not being set to user.id during ticket creation")
+                
+                # Check what IDs are actually in the tickets
+                actual_owner_ids = set([t.get('owner_id') for t in all_tickets_response if t.get('owner_id')])
+                actual_requester_ids = set([t.get('requester_id') for t in all_tickets_response if t.get('requester_id')])
+                
+                print(f"\n   🔍 Actual IDs in tickets:")
+                print(f"      Owner IDs found: {list(actual_owner_ids)}")
+                print(f"      Requester IDs found: {list(actual_requester_ids)}")
+                print(f"      Current user ID: {current_user_id}")
+                
+                # Suggest solution
+                print(f"\n   💡 SUGGESTED SOLUTION:")
+                print(f"      1. Update ticket creation to use authenticated user.id for requester_id")
+                print(f"      2. Update ticket assignment to use proper user.id format")
+                print(f"      3. Ensure frontend filtering matches the ID format used in backend")
+                
+            else:
+                print(f"   ✅ Ticket allocation appears to be working correctly")
+        
+        print(f"\n🎉 Ticket Allocation Debugging Complete!")
+        print("=" * 80)
+        
+        return {
+            'current_user': current_user,
+            'tickets_created': [ticket1_id, ticket2_id],
+            'business_unit': test_unit_id,
+            'issue_identified': len(user_assigned) == 0 and len(user_created_by_id) == 0 if 'user_assigned' in locals() else True
+        }
+
     def test_boost_ticket_workflow(self):
         """Test comprehensive BOOST ticket workflow as requested in review"""
         print("\n🎯 BOOST TICKET WORKFLOW TESTING - Creating Test Tickets for Ticket Management")
