@@ -1233,6 +1233,16 @@ const ChatInterface = () => {
           </div>
         )}
       </div>
+      
+      {/* Ticket Creation Modal from Chat */}
+      {ticketFromChat.show && (
+        <TicketFromChatModal 
+          isOpen={ticketFromChat.show}
+          onClose={() => setTicketFromChat({ show: false, userQuestion: '', aiResponse: '' })}
+          userQuestion={ticketFromChat.userQuestion}
+          aiResponse={ticketFromChat.aiResponse}
+        />
+      )}
     </div>
   );
 };
