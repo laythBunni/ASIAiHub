@@ -1451,7 +1451,8 @@ Please review the original conversation for complete context and provide additio
         requester_name: currentUser.name || currentUser.email,
         requester_email: currentUser.email,
         requester_id: currentUser.id,
-        channel: 'Hub'
+        channel: 'Hub',
+        conversation_session_id: sessionId || null // Store session ID for conversation linking
       };
 
       await apiCall('POST', '/boost/tickets', ticketData);
