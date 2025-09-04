@@ -4639,10 +4639,10 @@ const BoostUnitModal = ({ isOpen, onClose, unit, onSave }) => {
     try {
       if (unit) {
         await apiCall('PUT', `/boost/business-units/${unit.id}`, formData);
-        toast({ title: "Success", description: "Business unit updated successfully" });
+        toast({ title: "🏢 Business Unit Updated!", description: `${formData.name} updated successfully`, duration: 3000 });
       } else {
         await apiCall('POST', '/boost/business-units', formData);
-        toast({ title: "Success", description: "Business unit created successfully" });
+        toast({ title: "🏢 Business Unit Created!", description: `${formData.name} created successfully`, duration: 3000 });
       }
       onSave();
     } catch (error) {
