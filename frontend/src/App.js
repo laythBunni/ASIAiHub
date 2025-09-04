@@ -828,7 +828,26 @@ const ChatInterface = () => {
   useEffect(() => {
     fetchSessions();
     fetchDocumentsCount();
+    
+    // Check for shared conversation link
+    checkForSharedSession();
   }, []);
+
+  const checkForSharedSession = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session');
+    
+    if (sessionId) {
+      // Load the shared session
+      setCurrentSession(sessionId);
+      fetchMessages(sessionId);
+      toast({
+        title: "Shared Conversation Loaded",
+        description: "You're viewing a shared conversation from a support ticket.",
+        duration: 4000,
+      });
+    }
+  };
 
   const fetchSessions = async () => {
     try {
