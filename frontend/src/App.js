@@ -3135,6 +3135,28 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
                   <div><strong>Due:</strong> {ticket.due_at ? new Date(ticket.due_at).toLocaleString() : 'Not set'}</div>
                   <div><strong>Created:</strong> {new Date(ticket.created_at).toLocaleString()}</div>
                 </div>
+
+                {/* Conversation Link Button in Ticket Information */}
+                {ticket.conversation_session_id && (
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <MessageCircle className="w-4 h-4 mr-2 text-emerald-600" />
+                        <span className="text-sm font-medium text-emerald-700">Original Conversation</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`${window.location.origin}/chat?session=${ticket.conversation_session_id}`, '_blank')}
+                        className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                      >
+                        <MessageCircle className="w-3 h-3 mr-1" />
+                        View Full Conversation
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">This ticket was created from a chat conversation with James AI Assistant</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
