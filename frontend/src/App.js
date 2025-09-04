@@ -1296,8 +1296,8 @@ const TicketFromChatModal = ({ isOpen, onClose, userQuestion, aiResponse }) => {
     }
   };
 
-  // Auto-deduction logic based on chat content
-  const autoDeduceTicketDetails = (question, response) => {
+  // Auto-deduction and formatting logic based on chat content
+  const autoDeduceAndFormat = (question, response, sessionId) => {
     const text = (question + ' ' + (typeof response === 'string' ? response : JSON.stringify(response))).toLowerCase();
     
     let deducedDepartment = 'IT'; // default
@@ -1336,10 +1336,38 @@ const TicketFromChatModal = ({ isOpen, onClose, userQuestion, aiResponse }) => {
       deducedClassification = 'Change';
     }
 
+    // Create professional summary
+    const questionSummary = question.length > 100 ? question.substring(0, 97) + '...' : question;
+    
+    // Extract key points from AI response
+    let responseSummary = '';
+    if (typeof response === 'string') {
+      responseSummary = response.length > 200 ? response.substring(0, 197) + '...' : response;
+    } else if (response && response.content) {
+      responseSummary = response.content.length > 200 ? response.content.substring(0, 197) + '...' : response.content;
+    }
+
+    // Create professional description
+    const description = `**Issue Summary:**
+${questionSummary}
+
+**Initial Guidance Provided:**
+${responseSummary}
+
+**Additional Support Required:**
+The user requires further assistance beyond the initial guidance provided by James AI Assistant.
+
+**Reference:**
+🔗 View full conversation: ${window.location.origin}/chat?session=${sessionId}
+
+**Next Steps:**
+Please review the linked conversation for complete context and provide additional support as needed.`;
+
     return {
       support_department: deducedDepartment,
       priority: deducedPriority, 
-      classification: deducedClassification
+      classification: deducedClassification,
+      description: description
     };
   };
 
