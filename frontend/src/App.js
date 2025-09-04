@@ -4135,8 +4135,9 @@ const BoostAdmin = () => {
     try {
       await apiCall('PUT', `/boost/users/${userId}`, { boost_role: newRole });
       toast({
-        title: "Success",
-        description: "User role updated successfully",
+        title: "👤 User Role Updated!",
+        description: `Successfully changed role to ${newRole}`,
+        duration: 3000,
       });
       fetchUsers();
     } catch (error) {
