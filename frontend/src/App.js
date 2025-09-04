@@ -794,6 +794,7 @@ const ChatInterface = () => {
   const [loading, setLoading] = useState(false);
   const { apiCall } = useAPI();
   const { toast } = useToast();
+  const { token } = useAuth();
 
   useEffect(() => {
     fetchSessions();
