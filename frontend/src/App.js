@@ -3466,8 +3466,9 @@ const TicketManagement = () => {
     try {
       await apiCall('POST', '/tickets', newTicket);
       toast({
-        title: "Success",
-        description: "Ticket created successfully",
+        title: "🎫 Ticket Created Successfully!",
+        description: `Your ${newTicket.department} support request has been submitted and will be assigned to an agent shortly.`,
+        duration: 5000,
       });
       setShowCreateModal(false);
       setNewTicket({ 
