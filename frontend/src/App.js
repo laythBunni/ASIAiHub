@@ -89,6 +89,16 @@ export const AuthProvider = ({ children }) => {
           // Map new auth system to legacy BOOST system for backward compatibility
           const userData = response.data;
           userData.boost_role = userData.role; // Add boost_role mapping for legacy components
+          
+          // Ensure user has a display name
+          if (!userData.name && userData.email) {
+            // Extract name from email: layth.bunni@domain.com → Layth Bunni
+            const emailPrefix = userData.email.split('@')[0];
+            userData.name = emailPrefix.split('.').map(part => 
+              part.charAt(0).toUpperCase() + part.slice(1)
+            ).join(' ');
+          }
+          
           setUser(userData);
           setToken(storedToken);
         } catch (error) {
