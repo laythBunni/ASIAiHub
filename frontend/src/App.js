@@ -1384,6 +1384,7 @@ Additional Details:
                   <SelectItem value="IT">IT</SelectItem>
                   <SelectItem value="Finance">Finance</SelectItem>
                   <SelectItem value="HR/P&T">HR/P&T</SelectItem>
+                  <SelectItem value="LEC">LEC</SelectItem>
                   <SelectItem value="OS Support">OS Support</SelectItem>
                 </SelectContent>
               </Select>
