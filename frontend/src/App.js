@@ -4943,8 +4943,9 @@ const SystemAdmin = () => {
       }));
       
       toast({
-        title: "Success",
-        description: "User permissions updated successfully",
+        title: "🔐 Permissions Updated!",
+        description: `User permissions saved successfully`,
+        duration: 3000,
       });
     } catch (error) {
       console.error('Error updating permissions:', error);
