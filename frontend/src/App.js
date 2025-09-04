@@ -1248,7 +1248,7 @@ const ChatInterface = () => {
 };
 
 // Ticket Creation Modal from Chat - Complete Form with Auto-Deduction
-const TicketFromChatModal = ({ isOpen, onClose, userQuestion, aiResponse }) => {
+const TicketFromChatModal = ({ isOpen, onClose, userQuestion, aiResponse, sessionId }) => {
   const [formData, setFormData] = useState({
     support_department: '',
     category: '',
