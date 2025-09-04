@@ -3069,10 +3069,26 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span className="truncate">{ticket.subject}</span>
-            <Badge variant="outline">{ticket.ticket_number}</Badge>
+            <div className="flex items-center gap-2">
+              {ticket.conversation_session_id && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(`${window.location.origin}/chat?session=${ticket.conversation_session_id}`, '_blank')}
+                  className="text-xs"
+                >
+                  <MessageCircle className="w-3 h-3 mr-1" />
+                  View Conversation
+                </Button>
+              )}
+              <Badge variant="outline">{ticket.ticket_number}</Badge>
+            </div>
           </DialogTitle>
           <DialogDescription>
             Created {new Date(ticket.created_at).toLocaleDateString()} by {ticket.requester_name}
+            {ticket.conversation_session_id && (
+              <span className="ml-2 text-emerald-600">• Created from chat conversation</span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
