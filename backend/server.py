@@ -861,14 +861,76 @@ async def get_rag_stats():
         }
 
 # Chat Routes
-@api_router.post("/chat/send", response_model=ChatResponse)
+@api_router.post("/chat/send")
 async def send_chat_message(request: ChatRequest):
-    """Send a message to RAG chat system"""
+    """Send a message to RAG chat system with optional streaming"""
     try:
-        # Process RAG query
-        result = await process_rag_query(request.message, request.document_ids, request.session_id)
+        if request.stream:
+            # Return streaming response
+            return StreamingResponse(
+                generate_streaming_response(request),
+                media_type="text/plain"
+            )
+        else:
+            # Original non-streaming response
+            return await send_chat_message_non_streaming(request)
         
-        # Save user message
+    except Exception as e:
+        logger.error(f"Error in chat: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process chat message")
+
+async def send_chat_message_non_streaming(request: ChatRequest):
+    """Original non-streaming chat message handler"""
+    # Process RAG query
+    result = await process_rag_query(request.message, request.document_ids, request.session_id)
+    
+    # Save user message
+    user_message = ChatMessage(
+        session_id=request.session_id,
+        role="user",
+        content=request.message,
+        attachments=request.document_ids
+    )
+    await db.chat_messages.insert_one(user_message.dict())
+    
+    # Save AI response (convert structured response to JSON string for storage)
+    ai_message = ChatMessage(
+        session_id=request.session_id,
+        role="assistant",
+        content=json.dumps(result["response"]) if isinstance(result["response"], dict) else result["response"]
+    )
+    await db.chat_messages.insert_one(ai_message.dict())
+    
+    # Update or create chat session
+    session_exists = await db.chat_sessions.find_one({"id": request.session_id})
+    if not session_exists:
+        session = ChatSession(
+            id=request.session_id,
+            title=request.message[:50] + "..." if len(request.message) > 50 else request.message,
+            messages_count=2
+        )
+        await db.chat_sessions.insert_one(session.dict())
+    else:
+        await db.chat_sessions.update_one(
+            {"id": request.session_id},
+            {
+                "$set": {"updated_at": datetime.now(timezone.utc)},
+                "$inc": {"messages_count": 2}
+            }
+        )
+    
+    return ChatResponse(
+        session_id=request.session_id,
+        response=result["response"],
+        suggested_ticket=result["suggested_ticket"],
+        documents_referenced=result.get("documents_referenced", 0),
+        response_type=result.get("response_type", "structured")
+    )
+
+async def generate_streaming_response(request: ChatRequest):
+    """Generate streaming response for chat messages"""
+    try:
+        # Save user message first
         user_message = ChatMessage(
             session_id=request.session_id,
             role="user",
@@ -877,7 +939,30 @@ async def send_chat_message(request: ChatRequest):
         )
         await db.chat_messages.insert_one(user_message.dict())
         
-        # Save AI response (convert structured response to JSON string for storage)
+        # Process RAG query
+        result = await process_rag_query(request.message, request.document_ids, request.session_id)
+        
+        # Stream the response
+        response_text = ""
+        if isinstance(result["response"], dict):
+            response_text = json.dumps(result["response"], indent=2)
+        else:
+            response_text = str(result["response"])
+        
+        # Send metadata first
+        yield f"data: {json.dumps({'type': 'metadata', 'documents_referenced': result.get('documents_referenced', 0)})}\n\n"
+        
+        # Stream content in chunks
+        chunk_size = 10  # characters per chunk
+        for i in range(0, len(response_text), chunk_size):
+            chunk = response_text[i:i+chunk_size]
+            yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
+            await asyncio.sleep(0.05)  # Small delay for streaming effect
+        
+        # Send completion signal
+        yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+        
+        # Save AI response to database
         ai_message = ChatMessage(
             session_id=request.session_id,
             role="assistant",
@@ -902,18 +987,10 @@ async def send_chat_message(request: ChatRequest):
                     "$inc": {"messages_count": 2}
                 }
             )
-        
-        return ChatResponse(
-            session_id=request.session_id,
-            response=result["response"],
-            suggested_ticket=result["suggested_ticket"],
-            documents_referenced=result.get("documents_referenced", 0),
-            response_type=result.get("response_type", "structured")
-        )
-        
+            
     except Exception as e:
-        logger.error(f"Error in chat: {e}")
-        raise HTTPException(status_code=500, detail="Failed to process chat message")
+        logger.error(f"Streaming error: {e}")
+        yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to process message'})}\n\n"
 
 @api_router.get("/chat/sessions", response_model=List[ChatSession])
 async def get_chat_sessions():
