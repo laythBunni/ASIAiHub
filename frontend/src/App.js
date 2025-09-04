@@ -938,13 +938,23 @@ const ChatInterface = () => {
               
               if (data.type === 'content') {
                 fullResponse += data.content;
+                
+                // Try to parse the accumulated response as JSON for structured display
+                let parsedResponse;
+                try {
+                  parsedResponse = JSON.parse(fullResponse);
+                } catch {
+                  // If not valid JSON yet, display as plain text temporarily
+                  parsedResponse = fullResponse;
+                }
+                
                 // Update the last message (assistant message) with streaming content
                 setMessages(prev => {
                   const newMessages = [...prev];
                   if (newMessages.length > 0) {
                     const lastMessage = newMessages[newMessages.length - 1];
                     if (lastMessage.role === 'assistant') {
-                      lastMessage.content = fullResponse;
+                      lastMessage.content = parsedResponse;
                     }
                   }
                   return newMessages;
