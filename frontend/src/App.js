@@ -2761,7 +2761,7 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
                               await apiCall('POST', `/boost/tickets/${ticket.id}/comments`, {
                                 body: newComment,
                                 is_internal: isInternal,
-                                author_name: currentUser.name
+                                author_name: currentUser.name || currentUser.email?.split('@')[0] || 'User'
                               });
                               setNewComment('');
                               setIsInternal(false);
