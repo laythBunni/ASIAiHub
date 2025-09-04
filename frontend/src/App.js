@@ -1247,6 +1247,168 @@ const ChatInterface = () => {
   );
 };
 
+// Ticket Creation Modal from Chat
+const TicketFromChatModal = ({ isOpen, onClose, userQuestion, aiResponse }) => {
+  const [formData, setFormData] = useState({
+    subject: '',
+    description: '',
+    priority: 'medium',
+    support_department: 'IT',
+    category: 'Other',
+    classification: 'ServiceRequest'
+  });
+  const [loading, setLoading] = useState(false);
+  const { apiCall } = useAPI();
+  const { toast } = useToast();
+  const { user: currentUser } = useAuth();
+
+  useEffect(() => {
+    if (isOpen && userQuestion) {
+      // Auto-fill form fields based on chat context
+      const subject = userQuestion.length > 50 
+        ? userQuestion.substring(0, 47) + '...' 
+        : userQuestion;
+      
+      const description = `Original Question: ${userQuestion}
+
+AI Response: ${typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiResponse)}
+
+Additional Details:
+[Please add any additional information or clarify what specifically you need help with]`;
+
+      setFormData(prev => ({
+        ...prev,
+        subject: subject || 'Support Request from Chat',
+        description: description
+      }));
+    }
+  }, [isOpen, userQuestion, aiResponse]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const ticketData = {
+        ...formData,
+        requester_name: currentUser.name || currentUser.email,
+        requester_email: currentUser.email,
+        requester_id: currentUser.id,
+        justification: 'Created from chat conversation - requires additional assistance',
+        channel: 'Hub'
+      };
+
+      await apiCall('POST', '/boost/tickets', ticketData);
+      
+      toast({
+        title: "✅ Ticket Created Successfully",
+        description: "Your support ticket has been created and assigned to the appropriate team.",
+        duration: 4000,
+      });
+
+      onClose();
+    } catch (error) {
+      console.error('Error creating ticket from chat:', error);
+      toast({
+        title: "❌ Failed to Create Ticket",
+        description: "Please try again or contact support.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Ticket className="w-5 h-5 text-emerald-600" />
+            Create Support Ticket
+          </DialogTitle>
+          <DialogDescription>
+            Create a support ticket based on your chat conversation. Review and edit the details below.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="subject">Subject</Label>
+            <Input
+              id="subject"
+              value={formData.subject}
+              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+              placeholder="Brief description of the issue"
+              required
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Detailed description of the issue"
+              rows={8}
+              required
+              className="mt-1"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Priority</Label>
+              <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">🟢 Low</SelectItem>
+                  <SelectItem value="medium">🟡 Medium</SelectItem>
+                  <SelectItem value="high">🟠 High</SelectItem>
+                  <SelectItem value="urgent">🔴 Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Department</Label>
+              <Select value={formData.support_department} onValueChange={(value) => setFormData({ ...formData, support_department: value })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IT">IT</SelectItem>
+                  <SelectItem value="Finance">Finance</SelectItem>
+                  <SelectItem value="HR/P&T">HR/P&T</SelectItem>
+                  <SelectItem value="OS Support">OS Support</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading} className="bg-emerald-600 hover:bg-emerald-700">
+              {loading ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Ticket className="w-4 h-4 mr-2" />
+              )}
+              Create Ticket
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Enhanced Document Management Component
 const DocumentManagement = () => {
   const [documents, setDocuments] = useState([]);
