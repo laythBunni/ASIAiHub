@@ -1931,6 +1931,7 @@ const BoostSupport = () => {
       'Finance': 'bg-blue-100 text-blue-700',
       'HR/P&T': 'bg-purple-100 text-purple-700',
       'IT': 'bg-indigo-100 text-indigo-700',
+      'LEC': 'bg-yellow-100 text-yellow-700',
       'DevOps': 'bg-red-100 text-red-700'
     };
     return colors[department] || colors['OS Support'];
