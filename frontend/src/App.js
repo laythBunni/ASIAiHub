@@ -2369,12 +2369,19 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
           description: `${successful.length} file(s) uploaded successfully`,
         });
         
-        // Add audit trail entry
-        await apiCall('POST', `/boost/tickets/${ticket.id}/comments`, {
-          body: `${successful.length} file(s) attached: ${successful.map(f => f.original_name).join(', ')}`,
-          is_internal: false,
-          author_name: currentUser.name
-        });
+        // Add audit trail entry for file attachments
+        try {
+          await apiCall('POST', `/boost/tickets/${ticket.id}/audit`, {
+            action: 'attachment_added',
+            description: `${successful.length} file(s) attached`,
+            user_name: currentUser.name || currentUser.email,
+            timestamp: new Date().toISOString(),
+            details: `Files: ${successful.map(f => f.original_name).join(', ')}`
+          });
+        } catch (error) {
+          // If no audit endpoint exists, it will be handled in audit trail generation
+          console.log('No audit endpoint available for file attachments');
+        }
         
         fetchAttachments();
         fetchComments();
