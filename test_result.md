@@ -250,12 +250,10 @@ metadata:
 test_plan:
   current_focus:
     - "Universal Authentication System"
-    - "Chat/LLM Integration"
-    - "Admin User Management APIs"
-    - "Admin Permissions & Navigation"
-    - "Error Handling & Stability"
+    - "Chat/LLM Integration" 
+    - "RAG System Integration"
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "critical_first"
 
 agent_communication:
