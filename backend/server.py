@@ -29,9 +29,26 @@ from rag_system import get_rag_system
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
+# MongoDB connection with deployment-ready configuration
 mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
+
+# Configure MongoDB client for deployment compatibility
+if mongo_url.startswith('mongodb+srv://'):
+    # Atlas connection - configure for deployment environment
+    client = AsyncIOMotorClient(
+        mongo_url,
+        tlsAllowInvalidCertificates=True,
+        tlsAllowInvalidHostnames=True,
+        serverSelectionTimeoutMS=30000,
+        connectTimeoutMS=30000,
+        socketTimeoutMS=30000,
+        maxPoolSize=10,
+        retryWrites=True
+    )
+else:
+    # Local MongoDB connection
+    client = AsyncIOMotorClient(mongo_url)
+
 db = client[os.environ['DB_NAME']]
 
 # Create the main app without a prefix
