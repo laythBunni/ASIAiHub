@@ -139,40 +139,9 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Login failed:', error);
-      if (error.response?.status === 401 && error.response?.data?.detail === 'User not found') {
-        return { 
-          success: false, 
-          error: 'User not found' 
-        };
-      }
       return { 
         success: false, 
         error: error.response?.data?.detail || 'Login failed' 
-      };
-    }
-  };
-
-  const register = async (name, email, accessCode) => {
-    try {
-      const response = await axios.post(`${API}/auth/register`, {
-        name,
-        email,
-        personal_code: accessCode
-      });
-      
-      const { access_token, user: userData } = response.data;
-      // Map new auth system to legacy BOOST system for backward compatibility
-      userData.boost_role = userData.role; // Add boost_role mapping for legacy components
-      
-      localStorage.setItem('auth_token', access_token);
-      setToken(access_token);
-      setUser(userData);
-      return { success: true };
-    } catch (error) {
-      console.error('Registration failed:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.detail || 'Registration failed' 
       };
     }
   };
@@ -188,7 +157,6 @@ export const AuthProvider = ({ children }) => {
     token,
     loading,
     login,
-    register,
     logout,
     isAuthenticated: !!user
   };
