@@ -1842,6 +1842,7 @@ async def get_ticket_audit_trail(ticket_id: str):
 class BetaUser(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: str
+    name: Optional[str] = None  # Added name field
     personal_code: str
     role: str = "User"  # Admin, Manager, Agent, User
     department: Optional[str] = None
