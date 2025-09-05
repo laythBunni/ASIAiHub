@@ -2168,17 +2168,10 @@ async def update_user_role(
 # Include the router in the main app
 app.include_router(api_router)
 
-# CORS setup
-origins = [
-    "http://localhost:3000",  # React development server
-    "https://ai-workspace-17.preview.emergentagent.com",  # Preview URL
-    "https://asiaihub.com",  # Production custom domain
-    # Add other allowed origins here
-]
-
+# CORS setup - Allow all origins for simplicity
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Allow all origins for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
