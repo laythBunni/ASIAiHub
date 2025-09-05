@@ -286,27 +286,47 @@ class RAGSystem:
     def search_similar_chunks(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
         """Search for similar document chunks"""
         try:
-            results = self.collection.query(
-                query_texts=[query],
-                n_results=n_results,
-                include=["documents", "metadatas", "distances"]
-            )
+            if self.rag_mode == "local" and ML_DEPENDENCIES_AVAILABLE:
+                # Use ChromaDB search
+                results = self.collection.query(
+                    query_texts=[query],
+                    n_results=n_results,
+                    include=['documents', 'metadatas', 'distances']
+                )
+                
+                chunks = []
+                if results['documents'][0]:  # Check if any results
+                    for i, doc in enumerate(results['documents'][0]):
+                        chunk = {
+                            'content': doc,
+                            'metadata': results['metadatas'][0][i],
+                            'similarity_score': 1 - results['distances'][0][i]  # Convert distance to similarity
+                        }
+                        chunks.append(chunk)
+                
+                return chunks
             
-            similar_chunks = []
-            if results['documents'] and results['documents'][0]:
-                for i, doc in enumerate(results['documents'][0]):
-                    chunk_data = {
-                        "content": doc,
-                        "metadata": results['metadatas'][0][i],
-                        "similarity_score": 1 - results['distances'][0][i],  # Convert distance to similarity
-                        "chunk_id": results['metadatas'][0][i]['chunk_id']
-                    }
-                    similar_chunks.append(chunk_data)
-            
-            return similar_chunks
-            
+            else:
+                # Use in-memory search with embeddings (cloud mode)
+                query_embedding = asyncio.run(self._get_openai_embedding(query))
+                
+                all_chunks = []
+                for doc_id, chunks in self.document_chunks.items():
+                    for chunk in chunks:
+                        if 'embedding' in chunk:
+                            similarity = self._calculate_similarity(query_embedding, chunk['embedding'])
+                            all_chunks.append({
+                                'content': chunk['chunk_text'],
+                                'metadata': {k: v for k, v in chunk.items() if k not in ['chunk_text', 'embedding']},
+                                'similarity_score': similarity
+                            })
+                
+                # Sort by similarity and return top results
+                all_chunks.sort(key=lambda x: x['similarity_score'], reverse=True)
+                return all_chunks[:n_results]
+                
         except Exception as e:
-            logger.error(f"Error searching chunks: {e}")
+            logger.error(f"Error searching similar chunks: {e}")
             return []
     
     def remove_document_chunks(self, document_id: str) -> bool:
