@@ -1983,68 +1983,20 @@ async def register_user(request: RegistrationRequest):
 
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login_user(request: LoginRequest):
-    """Universal login - any email + name + master code ASI2025 → Auto-register as Manager"""
+    """Login existing users - if user doesn't exist, return 'User not found'"""
     try:
         # Check if using master code
         MASTER_CODE = 'ASI2025'  # Hardcoded for now, change later via env
         
-        if request.personal_code == MASTER_CODE:
-            # Universal login with auto-registration
-            
-            # Check if user already exists in beta_users
-            existing_user = await db.beta_users.find_one({"email": request.email})
-            
-            if existing_user:
-                # Update existing user with new name if provided
-                user = BetaUser(**existing_user)
-                if request.name and request.name.strip():
-                    await db.beta_users.update_one(
-                        {"email": request.email},
-                        {"$set": {"name": request.name.strip()}}
-                    )
-                    user.name = request.name.strip()
-            else:
-                # Create new user with auto-registration
-                user_name = request.name.strip() if request.name else request.email.split('@')[0].replace('.', ' ').title()
-                
-                user = BetaUser(
-                    email=request.email,
-                    personal_code="***",  # Don't store master code
-                    name=user_name,
-                    role="Manager",
-                    department="Management",
-                    is_active=True,
-                    created_at=datetime.now(timezone.utc),
-                    last_login=datetime.now(timezone.utc)
-                )
-                
-                # Save new user to beta_users collection
-                user_dict = user.dict()
-                await db.beta_users.insert_one(user_dict)
-            
-            # Generate access token
-            access_token = generate_access_token(user.id, user.email)
-            
-            # Update last login and token
-            await db.beta_users.update_one(
-                {"email": request.email},
-                {"$set": {
-                    "last_login": datetime.now(timezone.utc),
-                    "access_token": access_token
-                }}
-            )
-            
-            # Return response without password hash
-            user_response = user.copy()
-            user_response.personal_code = "***"
-            user_response.access_token = None
-            
-            return LoginResponse(access_token=access_token, user=user_response)
+        if request.personal_code != MASTER_CODE:
+            raise HTTPException(status_code=401, detail="Invalid access code")
         
-        # Original beta user login logic (for existing users with personal codes)
+        # Look for existing user
         user_data = await db.beta_users.find_one({"email": request.email})
+        
         if not user_data:
-            raise HTTPException(status_code=401, detail="Invalid email or access code")
+            # User doesn't exist - frontend will show registration form
+            raise HTTPException(status_code=401, detail="User not found")
         
         user = BetaUser(**user_data)
         
@@ -2052,17 +2004,12 @@ async def login_user(request: LoginRequest):
         if not user.is_active:
             raise HTTPException(status_code=401, detail="User account is inactive")
         
-        # Validate personal code (for existing beta users)
-        hashed_code = hashlib.sha256(request.personal_code.encode()).hexdigest()
-        if user.personal_code != hashed_code:
-            raise HTTPException(status_code=401, detail="Invalid email or access code")
-        
         # Generate access token
         access_token = generate_access_token(user.id, user.email)
         
         # Update last login and token
         await db.beta_users.update_one(
-            {"id": user.id},
+            {"email": request.email},
             {"$set": {
                 "last_login": datetime.now(timezone.utc),
                 "access_token": access_token
