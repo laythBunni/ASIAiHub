@@ -4799,10 +4799,15 @@ const SystemAdmin = () => {
 
   const fetchUsers = async () => {
     try {
-      const boostUsers = await apiCall('GET', '/boost/users');
-      setUsers(boostUsers);
+      const users = await apiCall('GET', '/admin/users');
+      setUsers(users);
     } catch (error) {
       console.error('Error fetching users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch users. Admin access required.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -4817,24 +4822,29 @@ const SystemAdmin = () => {
 
   const fetchSystemStats = async () => {
     try {
-      // Get various statistics from different endpoints
-      const [tickets, documents, ragStats] = await Promise.all([
-        apiCall('GET', '/boost/tickets'),
-        apiCall('GET', '/documents?show_all=true'),
-        apiCall('GET', '/documents/rag-stats')
-      ]);
-
-      setSystemStats({
-        totalTickets: tickets.length,
-        openTickets: tickets.filter(t => t.status === 'open').length,
-        totalDocuments: documents.length,
-        approvedDocuments: documents.filter(d => d.approval_status === 'approved').length,
-        totalUsers: users.length,
-        totalBusinessUnits: businessUnits.length,
-        ragStats: ragStats
-      });
+      // Use new admin stats endpoint
+      const stats = await apiCall('GET', '/admin/stats');
+      setSystemStats(stats);
     } catch (error) {
       console.error('Error fetching system stats:', error);
+      // Fallback to manual calculation if admin endpoint fails
+      try {
+        const [tickets, documents] = await Promise.all([
+          apiCall('GET', '/boost/tickets'),
+          apiCall('GET', '/documents?show_all=true')
+        ]);
+
+        setSystemStats({
+          totalUsers: users.length,
+          activeUsers: users.filter(u => u.is_active).length,
+          totalTickets: tickets.length,
+          openTickets: tickets.filter(t => !['resolved', 'closed'].includes(t.status)).length,
+          totalDocuments: documents.length,
+          totalSessions: 0 // Will be available from admin endpoint
+        });
+      } catch (fallbackError) {
+        console.error('Error with fallback stats:', fallbackError);
+      }
     }
   };
 
