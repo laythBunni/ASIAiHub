@@ -6059,7 +6059,7 @@ const AuthenticatedApp = () => {
   if (!user) {
     return (
       <>
-        <AuthenticationForm />
+        <SimpleLoginForm />
         <Toaster />
       </>
     );
