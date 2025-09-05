@@ -1346,6 +1346,424 @@ class ASIOSAPITester:
             'issue_identified': len(user_assigned) == 0 and len(user_created_by_id) == 0 if 'user_assigned' in locals() else True
         }
 
+    def test_critical_authentication_system(self):
+        """Test universal authentication system as specified in review request"""
+        print("\n🔐 CRITICAL: Testing Universal Authentication System...")
+        print("=" * 60)
+        
+        # Test 1: Universal login with any email + ASI2025 should auto-create Manager users
+        print("\n📝 Test 1: Universal Login Auto-Creation...")
+        
+        test_email = "test.manager@example.com"
+        login_data = {
+            "email": test_email,
+            "personal_code": "ASI2025"  # Correct field name
+        }
+        
+        success, response = self.run_test(
+            "Universal Login (Any Email + ASI2025)", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            login_data
+        )
+        
+        if success:
+            user_data = response.get('user', {})
+            token = response.get('access_token')  # Correct field name
+            
+            print(f"   ✅ Auto-created user: {user_data.get('email')}")
+            print(f"   ✅ Role assigned: {user_data.get('role')}")
+            print(f"   ✅ Token generated: {token[:20] if token else 'None'}...")
+            
+            # Verify user was created as Manager
+            if user_data.get('role') == 'Manager':
+                print(f"   ✅ Correct role: Manager assigned to new user")
+            else:
+                print(f"   ❌ Wrong role: Expected 'Manager', got '{user_data.get('role')}'")
+                
+            # Store token for later tests
+            self.auth_token = token
+            return True, token, user_data
+        else:
+            print(f"   ❌ Universal login failed")
+            return False, None, {}
+
+    def test_admin_apis_with_auth(self):
+        """Test admin APIs with proper authentication as specified in review request"""
+        print("\n👑 CRITICAL: Testing Admin APIs with Authentication...")
+        print("=" * 60)
+        
+        # First, get admin authentication token
+        print("\n🔐 Step 1: Getting Admin Authentication Token...")
+        
+        admin_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "ASI2025"
+        }
+        
+        login_success, login_response = self.run_test(
+            "Admin Login for API Testing", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            admin_login_data
+        )
+        
+        if not login_success:
+            print("❌ Cannot get admin token - stopping admin API tests")
+            return False
+        
+        admin_token = login_response.get('access_token')
+        if not admin_token:
+            print("❌ No admin token received - stopping admin API tests")
+            return False
+        
+        print(f"   ✅ Admin token received: {admin_token[:20]}...")
+        
+        # Test 1: /api/admin/users endpoint
+        print("\n👥 Test 1: Admin Users Endpoint...")
+        
+        auth_headers = {'Authorization': f'Bearer {admin_token}'}
+        
+        users_success, users_response = self.run_test(
+            "GET /api/admin/users", 
+            "GET", 
+            "/admin/users", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if users_success:
+            users_list = users_response if isinstance(users_response, list) else []
+            print(f"   ✅ Retrieved {len(users_list)} users from admin endpoint")
+            
+            # Verify data structure
+            if users_list:
+                sample_user = users_list[0]
+                required_fields = ['id', 'email', 'role']
+                missing_fields = [field for field in required_fields if field not in sample_user]
+                
+                if not missing_fields:
+                    print(f"   ✅ User data structure correct: {list(sample_user.keys())}")
+                else:
+                    print(f"   ⚠️  Missing user fields: {missing_fields}")
+                
+                # Show sample user data
+                print(f"   📋 Sample user: {sample_user.get('email')} ({sample_user.get('role')})")
+        else:
+            print(f"   ❌ Admin users endpoint failed")
+        
+        # Test 2: /api/admin/stats endpoint
+        print("\n📊 Test 2: Admin Stats Endpoint...")
+        
+        stats_success, stats_response = self.run_test(
+            "GET /api/admin/stats", 
+            "GET", 
+            "/admin/stats", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if stats_success:
+            print(f"   ✅ Admin stats retrieved successfully")
+            
+            # Verify expected stats fields
+            expected_stats = ['totalUsers', 'activeUsers', 'totalTickets', 'openTickets', 'totalDocuments', 'totalSessions']
+            available_stats = list(stats_response.keys()) if isinstance(stats_response, dict) else []
+            
+            print(f"   📊 Available statistics:")
+            for stat in expected_stats:
+                value = stats_response.get(stat, 'N/A') if isinstance(stats_response, dict) else 'N/A'
+                status = "✅" if stat in available_stats else "❌"
+                print(f"      {status} {stat}: {value}")
+            
+            # Check if all expected stats are present
+            missing_stats = [stat for stat in expected_stats if stat not in available_stats]
+            if not missing_stats:
+                print(f"   ✅ All expected statistics present")
+            else:
+                print(f"   ⚠️  Missing statistics: {missing_stats}")
+        else:
+            print(f"   ❌ Admin stats endpoint failed")
+        
+        # Test 3: Admin authentication and authorization
+        print("\n🔒 Test 3: Admin Authentication & Authorization...")
+        
+        # Test without token (should fail)
+        no_auth_success, no_auth_response = self.run_test(
+            "Admin Users (No Auth)", 
+            "GET", 
+            "/admin/users", 
+            401  # Expecting unauthorized
+        )
+        
+        if no_auth_success:
+            print(f"   ✅ Properly rejected request without authentication")
+        else:
+            print(f"   ⚠️  Admin endpoint accessible without authentication (security issue)")
+        
+        # Test with invalid token (should fail)
+        invalid_headers = {'Authorization': 'Bearer invalid-token-12345'}
+        invalid_auth_success, invalid_auth_response = self.run_test(
+            "Admin Users (Invalid Token)", 
+            "GET", 
+            "/admin/users", 
+            401,  # Expecting unauthorized
+            headers=invalid_headers
+        )
+        
+        if invalid_auth_success:
+            print(f"   ✅ Properly rejected request with invalid token")
+        else:
+            print(f"   ⚠️  Admin endpoint accessible with invalid token (security issue)")
+        
+        return users_success and stats_success
+
+    def test_rag_document_search(self):
+        """Test RAG document search functionality as specified in review request"""
+        print("\n🔍 CRITICAL: Testing RAG Document Search System...")
+        print("=" * 60)
+        
+        # Test 1: Check RAG system statistics
+        print("\n📊 Test 1: RAG System Statistics...")
+        
+        stats_success, stats_response = self.run_test(
+            "RAG System Stats", 
+            "GET", 
+            "/documents/rag-stats", 
+            200
+        )
+        
+        if stats_success:
+            vector_db = stats_response.get('vector_database', {})
+            total_chunks = vector_db.get('total_chunks', 0)
+            unique_docs = vector_db.get('unique_documents', 0)
+            total_docs = stats_response.get('total_documents', 0)
+            processed_docs = stats_response.get('processed_documents', 0)
+            
+            print(f"   ✅ RAG Statistics Retrieved:")
+            print(f"      📄 Total Documents: {total_docs}")
+            print(f"      ✅ Processed Documents: {processed_docs}")
+            print(f"      🧩 Total Chunks: {total_chunks}")
+            print(f"      📚 Unique Documents in Vector DB: {unique_docs}")
+            
+            # Verify RAG system has documents
+            if total_chunks > 0:
+                print(f"   ✅ RAG system has {total_chunks} chunks ready for search")
+            else:
+                print(f"   ⚠️  RAG system has no chunks - document processing may be needed")
+                
+            return total_chunks > 0
+        else:
+            print(f"   ❌ Could not retrieve RAG statistics")
+            return False
+
+    def test_chat_with_rag_queries(self):
+        """Test specific RAG queries mentioned in review request"""
+        print("\n🤖 CRITICAL: Testing Chat/RAG with Specific Policy Queries...")
+        print("=" * 60)
+        
+        # Test queries from review request
+        test_queries = [
+            {
+                "query": "What is the travel policy?",
+                "expected_keywords": ["travel", "policy", "expense", "approval"]
+            },
+            {
+                "query": "What is the IT policy?", 
+                "expected_keywords": ["IT", "policy", "technology", "security", "access"]
+            },
+            {
+                "query": "What are the company leave policies?",
+                "expected_keywords": ["leave", "policy", "annual", "vacation", "days"]
+            }
+        ]
+        
+        all_tests_passed = True
+        
+        for i, test_case in enumerate(test_queries, 1):
+            print(f"\n💬 Test {i}: Query - '{test_case['query']}'")
+            
+            chat_data = {
+                "session_id": f"{self.session_id}-rag-test-{i}",
+                "message": test_case['query'],
+                "stream": False
+            }
+            
+            success, response = self.run_test(
+                f"RAG Query {i}", 
+                "POST", 
+                "/chat/send", 
+                200, 
+                chat_data
+            )
+            
+            if success:
+                ai_response = response.get('response')
+                documents_referenced = response.get('documents_referenced', 0)
+                response_type = response.get('response_type', 'unknown')
+                
+                print(f"   ✅ Response received")
+                print(f"   📄 Documents referenced: {documents_referenced}")
+                print(f"   🔧 Response type: {response_type}")
+                
+                # Analyze response content
+                if isinstance(ai_response, dict):
+                    # Structured response
+                    summary = ai_response.get('summary', '')
+                    details = ai_response.get('details', {})
+                    
+                    print(f"   📋 Structured response format confirmed")
+                    print(f"   📝 Summary length: {len(summary)} characters")
+                    print(f"   📊 Details sections: {len(details) if isinstance(details, dict) else 0}")
+                    
+                    # Check for relevant keywords
+                    response_text = json.dumps(ai_response).lower()
+                    found_keywords = [kw for kw in test_case['expected_keywords'] if kw.lower() in response_text]
+                    
+                    print(f"   🔍 Relevant keywords found: {found_keywords}")
+                    
+                    # Check if response indicates knowledge base access
+                    if documents_referenced > 0:
+                        print(f"   ✅ RAG system successfully found and referenced documents")
+                    else:
+                        print(f"   ⚠️  No documents referenced - may indicate RAG search issue")
+                        
+                    # Check response quality
+                    if len(summary) > 50 and found_keywords:
+                        print(f"   ✅ Response appears comprehensive and relevant")
+                    else:
+                        print(f"   ⚠️  Response may be incomplete or not relevant")
+                        all_tests_passed = False
+                        
+                else:
+                    # Simple text response
+                    response_text = str(ai_response).lower()
+                    found_keywords = [kw for kw in test_case['expected_keywords'] if kw.lower() in response_text]
+                    
+                    print(f"   📝 Text response: {str(ai_response)[:100]}...")
+                    print(f"   🔍 Relevant keywords found: {found_keywords}")
+                    
+                    if found_keywords and len(str(ai_response)) > 50:
+                        print(f"   ✅ Response appears relevant")
+                    else:
+                        print(f"   ⚠️  Response may not be relevant to query")
+                        all_tests_passed = False
+            else:
+                print(f"   ❌ RAG query failed")
+                all_tests_passed = False
+        
+        return all_tests_passed
+
+    def run_critical_production_tests(self):
+        """Run critical production backend tests as specified in review request"""
+        print("🚨 CRITICAL PRODUCTION BACKEND TESTING")
+        print("=" * 60)
+        print("Testing all backend systems reported as failing in production:")
+        print("1. Authentication System (/api/auth/login)")
+        print("2. Chat/RAG System (/api/chat/send)")  
+        print("3. RAG Document Search")
+        print("4. Admin APIs (/api/admin/users, /api/admin/stats)")
+        print("=" * 60)
+        
+        all_systems_working = True
+        
+        try:
+            # 1. AUTHENTICATION SYSTEM TESTING
+            print("\n🔐 SYSTEM 1: AUTHENTICATION SYSTEM")
+            print("-" * 40)
+            
+            auth_success = self.test_critical_authentication_system()
+            admin_auth_success = self.test_critical_admin_special_handling()
+            
+            auth_system_working = auth_success[0] and admin_auth_success[0]
+            
+            if auth_system_working:
+                print("✅ AUTHENTICATION SYSTEM: WORKING")
+            else:
+                print("❌ AUTHENTICATION SYSTEM: FAILED")
+                all_systems_working = False
+            
+            # 2. CHAT/RAG SYSTEM TESTING
+            print("\n🤖 SYSTEM 2: CHAT/RAG SYSTEM")
+            print("-" * 40)
+            
+            chat_basic_success = self.test_critical_chat_llm_integration()
+            chat_rag_success = self.test_chat_with_rag_queries()
+            
+            chat_system_working = chat_basic_success[0] and chat_rag_success
+            
+            if chat_system_working:
+                print("✅ CHAT/RAG SYSTEM: WORKING")
+            else:
+                print("❌ CHAT/RAG SYSTEM: FAILED")
+                all_systems_working = False
+            
+            # 3. RAG DOCUMENT SEARCH TESTING
+            print("\n🔍 SYSTEM 3: RAG DOCUMENT SEARCH")
+            print("-" * 40)
+            
+            rag_search_success = self.test_rag_document_search()
+            
+            if rag_search_success:
+                print("✅ RAG DOCUMENT SEARCH: WORKING")
+            else:
+                print("❌ RAG DOCUMENT SEARCH: FAILED")
+                all_systems_working = False
+            
+            # 4. ADMIN APIS TESTING
+            print("\n👑 SYSTEM 4: ADMIN APIS")
+            print("-" * 40)
+            
+            admin_apis_success = self.test_admin_apis_with_auth()
+            
+            if admin_apis_success:
+                print("✅ ADMIN APIS: WORKING")
+            else:
+                print("❌ ADMIN APIS: FAILED")
+                all_systems_working = False
+            
+        except KeyboardInterrupt:
+            print("\n⚠️  Testing interrupted by user")
+            all_systems_working = False
+        except Exception as e:
+            print(f"\n❌ Unexpected error during critical testing: {str(e)}")
+            all_systems_working = False
+        
+        # FINAL RESULTS
+        print("\n" + "=" * 60)
+        print("🎯 CRITICAL PRODUCTION TESTING COMPLETE")
+        print("=" * 60)
+        print(f"📊 Total Tests Run: {self.tests_run}")
+        print(f"✅ Tests Passed: {self.tests_passed}")
+        print(f"❌ Tests Failed: {self.tests_run - self.tests_passed}")
+        print(f"📈 Success Rate: {(self.tests_passed/self.tests_run*100):.1f}%" if self.tests_run > 0 else "No tests run")
+        
+        print("\n🔍 SYSTEM STATUS SUMMARY:")
+        print("-" * 30)
+        
+        # Re-test each system for final status
+        systems = [
+            ("Authentication System", auth_system_working),
+            ("Chat/RAG System", chat_system_working), 
+            ("RAG Document Search", rag_search_success),
+            ("Admin APIs", admin_apis_success)
+        ]
+        
+        for system_name, is_working in systems:
+            status = "✅ READY FOR PRODUCTION" if is_working else "❌ NEEDS ATTENTION"
+            print(f"{system_name}: {status}")
+        
+        if all_systems_working:
+            print("\n🎉 ALL CRITICAL SYSTEMS WORKING!")
+            print("🚀 BACKEND IS READY FOR PRODUCTION USE")
+        else:
+            print("\n⚠️  SOME CRITICAL SYSTEMS NEED ATTENTION")
+            print("🔧 PLEASE REVIEW FAILED TESTS ABOVE")
+        
+        return all_systems_working
+
     def test_boost_ticket_workflow(self):
         """Test comprehensive BOOST ticket workflow as requested in review"""
         print("\n🎯 BOOST TICKET WORKFLOW TESTING - Creating Test Tickets for Ticket Management")
