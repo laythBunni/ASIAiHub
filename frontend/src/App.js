@@ -206,27 +206,14 @@ const SimpleLoginForm = () => {
     email: '',
     accessCode: ''
   });
-  const [showRegistration, setShowRegistration] = useState(false);
-  const [registrationData, setRegistrationData] = useState({
-    name: '',
-    email: '',
-    accessCode: ''
-  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, register } = useAuth();
+  const { login } = useAuth();
   const { toast } = useToast();
 
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleRegistrationChange = (e) => {
-    setRegistrationData({
-      ...registrationData,
       [e.target.name]: e.target.value
     });
   };
@@ -241,156 +228,18 @@ const SimpleLoginForm = () => {
 
       if (result.success) {
         toast({
-          title: "✅ Login successful",
-          description: "Welcome back to ASI AiHub!",
+          title: "✅ Welcome to ASI AiHub!",
+          description: "Login successful",
         });
-      } else if (result.error === 'User not found') {
-        // Show registration form for new users
-        setRegistrationData({
-          name: '',
-          email: formData.email,
-          accessCode: formData.accessCode
-        });
-        setShowRegistration(true);
-        setError('');
       } else {
         setError(result.error);
       }
     } catch (error) {
-      setError('An unexpected error occurred');
+      setError('Connection failed. Please check your internet connection.');
     } finally {
       setLoading(false);
     }
   };
-
-  const handleRegisterSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const result = await register(registrationData.name, registrationData.email, registrationData.accessCode);
-
-      if (result.success) {
-        toast({
-          title: "✅ Account created successfully",
-          description: "Welcome to ASI AiHub!",
-        });
-        setShowRegistration(false);
-      } else {
-        setError(result.error);
-      }
-    } catch (error) {
-      setError('An unexpected error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (showRegistration) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="flex justify-center">
-            <div className="w-12 h-12 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <Bot className="w-8 h-8 text-white" />
-            </div>
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create Your Account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            We need a few more details to set up your account
-          </p>
-        </div>
-
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            <form className="space-y-6" onSubmit={handleRegisterSubmit}>
-              {error && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <div className="flex">
-                    <AlertCircle className="h-5 w-5 text-red-400" />
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-red-800">
-                        {error}
-                      </h3>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  autoComplete="name"
-                  required
-                  placeholder="Your full name"
-                  value={registrationData.name}
-                  onChange={handleRegistrationChange}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="email">Email address</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={registrationData.email}
-                  onChange={handleRegistrationChange}
-                  className="mt-1"
-                  disabled
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="accessCode">Access Code</Label>
-                <Input
-                  id="accessCode"
-                  name="accessCode"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={registrationData.accessCode}
-                  onChange={handleRegistrationChange}
-                  className="mt-1"
-                  disabled
-                />
-              </div>
-
-              <div className="flex space-x-4">
-                <Button 
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowRegistration(false);
-                    setError('');
-                  }}
-                >
-                  Back to Login
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                  disabled={loading}
-                >
-                  {loading ? 'Creating Account...' : 'Create Account'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -432,7 +281,7 @@ const SimpleLoginForm = () => {
                 type="email"
                 autoComplete="email"
                 required
-                placeholder="your.email@yourcompany.com"
+                placeholder="your.email@company.com"
                 value={formData.email}
                 onChange={handleInputChange}
                 className="mt-1"
@@ -467,6 +316,12 @@ const SimpleLoginForm = () => {
               </Button>
             </div>
           </form>
+          
+          <div className="mt-6 text-center">
+            <p className="text-xs text-gray-500">
+              New users will be automatically registered
+            </p>
+          </div>
         </div>
       </div>
     </div>
