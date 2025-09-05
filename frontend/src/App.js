@@ -6048,7 +6048,8 @@ const AuthenticatedApp = () => {
           <Route path="/boost/admin" element={<BoostAdmin />} />
           <Route path="/tickets" element={<TicketManagement />} />
           <Route path="/documents" element={<DocumentManagement />} />
-          <Route path="/admin" element={<SystemAdmin />} />
+          {/* Admin route only accessible to Admin users */}
+          {user?.role === 'Admin' && <Route path="/admin" element={<SystemAdmin />} />}
         </Routes>
       </main>
       <Toaster />
