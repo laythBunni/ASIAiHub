@@ -1924,54 +1924,52 @@ async def require_admin(current_user: BetaUser = Depends(get_current_user)) -> B
 # Beta Authentication Endpoints
 @api_router.post("/auth/register", response_model=LoginResponse)
 async def register_user(request: RegistrationRequest):
-    """Register new beta user"""
+    """Register new user with name + email + master code"""
     try:
-        # Validate email format
-        if not validate_email_format(request.email):
-            raise HTTPException(status_code=400, detail="Invalid email format")
+        # Check if using master code
+        MASTER_CODE = 'ASI2025'  # Hardcoded for now, change later via env
         
-        # Validate email domain
-        if not validate_email_domain(request.email):
-            raise HTTPException(status_code=400, detail="Only adamsmithinternational.com emails allowed")
+        if request.personal_code != MASTER_CODE:
+            raise HTTPException(status_code=401, detail="Invalid access code")
         
         # Check if user already exists
         existing_user = await db.beta_users.find_one({"email": request.email})
         if existing_user:
-            raise HTTPException(status_code=400, detail="User already registered")
+            raise HTTPException(status_code=400, detail="Email already exists. Please login instead.")
         
-        # Validate registration code
-        settings = await db.beta_settings.find_one({})
-        if not settings or settings.get('registration_code') != request.registration_code:
-            raise HTTPException(status_code=400, detail="Invalid registration code")
+        # Create new user with auto-registration
+        user_name = request.name.strip() if request.name else request.email.split('@')[0].replace('.', ' ').title()
         
-        # Check user limit
-        user_count = await db.beta_users.count_documents({"is_active": True})
-        if user_count >= settings.get('max_users', 20):
-            raise HTTPException(status_code=400, detail="Beta user limit reached")
-        
-        # Validate personal code
-        if len(request.personal_code) < 6:
-            raise HTTPException(status_code=400, detail="Personal code must be at least 6 characters")
-        
-        # Create new user
-        new_user = BetaUser(
+        user = BetaUser(
             email=request.email,
-            personal_code=hashlib.sha256(request.personal_code.encode()).hexdigest(),
-            department=request.department,
-            role="Manager" if request.email == "layth.bunni@adamsmithinternational.com" else "User"
+            personal_code="***",  # Don't store master code
+            name=user_name,
+            role="Manager",
+            department="Management",
+            is_active=True,
+            created_at=datetime.now(timezone.utc),
+            last_login=datetime.now(timezone.utc)
         )
         
+        # Save new user to beta_users collection
+        user_dict = user.dict()
+        await db.beta_users.insert_one(user_dict)
+        
         # Generate access token
-        access_token = generate_access_token(new_user.id, new_user.email)
-        new_user.access_token = access_token
+        access_token = generate_access_token(user.id, user.email)
         
-        # Save to database
-        await db.beta_users.insert_one(new_user.dict())
+        # Update token
+        await db.beta_users.update_one(
+            {"email": request.email},
+            {"$set": {
+                "access_token": access_token
+            }}
+        )
         
-        # Return response without password hash
-        user_response = new_user.copy()
+        # Return response
+        user_response = user.copy()
         user_response.personal_code = "***"
-        user_response.access_token = None  # Don't expose token in user object
+        user_response.access_token = None
         
         return LoginResponse(access_token=access_token, user=user_response)
         
