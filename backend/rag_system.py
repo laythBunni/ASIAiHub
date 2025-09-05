@@ -32,25 +32,15 @@ class RAGSystem:
     def __init__(self, emergent_llm_key: str):
         self.emergent_llm_key = emergent_llm_key
         
-        # Initialize ChromaDB with sentence transformers
-        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L6-v2"
-        )
+        # Use simpler embedding approach for production deployment
+        # Remove sentence transformers dependency
+        self.embedding_function = None  # Will use simple text matching instead
         
-        self.chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+        # Initialize in-memory document storage instead of ChromaDB
+        self.documents = {}  # Store documents in memory for simple retrieval
+        self.document_chunks = {}  # Store processed chunks
         
-        # Get or create collection
-        try:
-            self.collection = self.chroma_client.get_collection(
-                name="asi_os_documents",
-                embedding_function=self.embedding_function
-            )
-        except:
-            self.collection = self.chroma_client.create_collection(
-                name="asi_os_documents",
-                embedding_function=self.embedding_function,
-                metadata={"hnsw:space": "cosine"}
-            )
+        print("RAG System initialized with simple text matching (production mode)")
         
         # Initialize text splitter
         self.text_splitter = RecursiveCharacterTextSplitter(
