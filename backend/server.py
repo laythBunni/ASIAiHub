@@ -1999,8 +1999,8 @@ async def register_user(request: RegistrationRequest):
         raise HTTPException(status_code=500, detail="Registration failed")
 
 @api_router.post("/auth/login", response_model=LoginResponse)
-async def login_user(request: LoginRequest):
-    """Login existing users - if user doesn't exist, return 'User not found'"""
+async def universal_login(request: LoginRequest):
+    """Universal login - auto-creates users if they don't exist"""
     try:
         # Check if using master code
         MASTER_CODE = 'ASI2025'  # Hardcoded for now, change later via env
@@ -2008,18 +2008,37 @@ async def login_user(request: LoginRequest):
         if request.personal_code != MASTER_CODE:
             raise HTTPException(status_code=401, detail="Invalid access code")
         
-        # Look for existing user
+        # Look for existing user first
         user_data = await db.beta_users.find_one({"email": request.email})
         
-        if not user_data:
-            # User doesn't exist - frontend will show registration form
-            raise HTTPException(status_code=401, detail="User not found")
-        
-        user = BetaUser(**user_data)
-        
-        # Check if user is active
-        if not user.is_active:
-            raise HTTPException(status_code=401, detail="User account is inactive")
+        if user_data:
+            # Existing user - login directly
+            user = BetaUser(**user_data)
+            
+            # Check if user is active
+            if not user.is_active:
+                raise HTTPException(status_code=401, detail="User account is inactive")
+        else:
+            # New user - auto-create with smart name extraction
+            user_name = request.name if request.name else request.email.split('@')[0].replace('.', ' ').title()
+            
+            # Special handling for layth.bunni - make Admin
+            role = "Admin" if request.email == "layth.bunni@adamsmithinternational.com" else "Manager"
+            
+            user = BetaUser(
+                email=request.email,
+                personal_code="***",  # Don't store master code
+                name=user_name,
+                role=role,
+                department="Management",
+                is_active=True,
+                created_at=datetime.now(timezone.utc),
+                last_login=datetime.now(timezone.utc)
+            )
+            
+            # Save new user to database
+            user_dict = user.dict()
+            await db.beta_users.insert_one(user_dict)
         
         # Generate access token
         access_token = generate_access_token(user.id, user.email)
@@ -2033,7 +2052,7 @@ async def login_user(request: LoginRequest):
             }}
         )
         
-        # Return response without password hash
+        # Return response
         user_response = user.copy()
         user_response.personal_code = "***"
         user_response.access_token = None
