@@ -12,6 +12,7 @@ class ASIOSAPITester:
         self.tests_run = 0
         self.tests_passed = 0
         self.session_id = f"test-session-{int(time.time())}"
+        self.auth_token = None  # Store authentication token for admin tests
 
     def run_test(self, name, method, endpoint, expected_status, data=None, files=None):
         """Run a single API test"""
