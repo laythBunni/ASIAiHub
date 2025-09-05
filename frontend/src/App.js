@@ -6071,13 +6071,15 @@ const BusinessUnitManagementModal = ({ isOpen, onClose, unit, onSave }) => {
 // Main App Component
 function App() {
   return (
-    <AuthProvider>
-      <div className="App min-h-screen bg-gray-50">
-        <BrowserRouter>
-          <AuthenticatedApp />
-        </BrowserRouter>
-      </div>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <div className="App min-h-screen bg-gray-50">
+          <BrowserRouter>
+            <AuthenticatedApp />
+          </BrowserRouter>
+        </div>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
