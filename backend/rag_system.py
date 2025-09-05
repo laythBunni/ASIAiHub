@@ -202,7 +202,12 @@ class RAGSystem:
     
     def chunk_document(self, text: str, doc_metadata: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Split document into chunks with metadata"""
-        chunks = self.text_splitter.split_text(text)
+        if self.rag_mode == "local" and ML_DEPENDENCIES_AVAILABLE:
+            # Use langchain text splitter
+            chunks = self.text_splitter.split_text(text)
+        else:
+            # Use simple text splitter for production
+            chunks = self._simple_text_splitter(text)
         
         chunked_docs = []
         for i, chunk in enumerate(chunks):
