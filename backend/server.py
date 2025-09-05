@@ -2149,6 +2149,118 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ==========================================
+# SIMPLE UNIVERSAL AUTHENTICATION SYSTEM
+# ==========================================
+
+# Master login code from environment
+MASTER_CODE = os.environ.get('MASTER_LOGIN_CODE', 'ASI2025')
+
+class SimpleUser(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    role: str = "Manager"  # Everyone gets Manager role
+    department: str = "Management"
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_login: Optional[datetime] = None
+
+class SimpleLoginRequest(BaseModel):
+    email: str  
+    access_code: str
+
+class SimpleLoginResponse(BaseModel):
+    access_token: str
+    user: SimpleUser
+
+def generate_simple_token(email: str) -> str:
+    """Generate simple access token"""
+    token_data = f"{email}:simple_auth:{MASTER_CODE}"
+    return hashlib.sha256(token_data.encode()).hexdigest()
+
+async def get_simple_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> SimpleUser:
+    """Get current user for simple auth"""
+    try:
+        token = credentials.credentials
+        
+        # Validate token format - should contain email
+        # For simplicity, we'll decode from token
+        if len(token) == 64:  # SHA256 hash length
+            # Find user by token in simple_users collection
+            user_data = await db.simple_users.find_one({"access_token": token})
+            if user_data:
+                return SimpleUser(**user_data)
+        
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token"
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token"
+        )
+
+@api_router.post("/auth/simple-login", response_model=SimpleLoginResponse)
+async def simple_login(request: SimpleLoginRequest):
+    """Simple universal login - any email + master code"""
+    try:
+        # Validate access code
+        if request.access_code != MASTER_CODE:
+            raise HTTPException(status_code=401, detail="Invalid access code")
+        
+        # Validate email format (basic)
+        if '@' not in request.email or '.' not in request.email:
+            raise HTTPException(status_code=400, detail="Invalid email format")
+        
+        # Generate access token
+        access_token = generate_simple_token(request.email)
+        
+        # Create or update user
+        user = SimpleUser(
+            email=request.email,
+            last_login=datetime.now(timezone.utc)
+        )
+        
+        # Store in simple_users collection
+        await db.simple_users.update_one(
+            {"email": request.email},
+            {
+                "$set": {
+                    "id": user.id,
+                    "email": user.email,
+                    "role": user.role,
+                    "department": user.department,
+                    "is_active": user.is_active,
+                    "last_login": user.last_login,
+                    "access_token": access_token
+                }
+            },
+            upsert=True
+        )
+        
+        return SimpleLoginResponse(access_token=access_token, user=user)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Simple login error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Login failed")
+
+@api_router.get("/auth/simple-me", response_model=SimpleUser)
+async def get_simple_user_info(current_user: SimpleUser = Depends(get_simple_user)):
+    """Get current user information (simple auth)"""
+    return current_user
+
+@api_router.get("/auth/master-code")
+async def get_master_code():
+    """Get current master code for debugging (remove in production)"""
+    return {"master_code": MASTER_CODE}
+
+# ==========================================
+# END SIMPLE AUTHENTICATION SYSTEM  
+# ==========================================
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
