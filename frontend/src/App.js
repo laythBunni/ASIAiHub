@@ -4949,6 +4949,28 @@ const SystemAdmin = () => {
     }
   };
 
+  const updateUser = async (userId, userData) => {
+    try {
+      await apiCall('PUT', `/admin/users/${userId}`, userData);
+      
+      toast({
+        title: "✅ User Updated!",
+        description: `User details updated successfully`,
+        duration: 3000,
+      });
+      
+      // Refresh users list
+      fetchUsers();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user",
+        variant: "destructive"
+      });
+    }
+  };
+
   const createBusinessUnit = async (unitData) => {
     try {
       await apiCall('POST', '/boost/business-units', unitData);
