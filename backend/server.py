@@ -1859,10 +1859,9 @@ class BetaSettings(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class RegistrationRequest(BaseModel):
+    name: str
     email: str
-    registration_code: str
     personal_code: str
-    department: Optional[str] = None
 
 class LoginRequest(BaseModel):
     name: Optional[str] = None  # Added name field
