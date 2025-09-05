@@ -45,37 +45,71 @@ class RAGSystem:
     def __init__(self, emergent_llm_key: str):
         self.emergent_llm_key = emergent_llm_key
         
-        # Use OpenAI embeddings instead of sentence transformers for production deployment
+        if ML_DEPENDENCIES_AVAILABLE:
+            # Development mode: Use local ML dependencies
+            self._init_local_rag()
+        else:
+            # Production mode: Use cloud-based alternatives
+            self._init_cloud_rag()
+    
+    def _init_local_rag(self):
+        """Initialize RAG with local ML dependencies (development)"""
         try:
-            # Try to use sentence transformers first (for development)
+            # Initialize ChromaDB with sentence transformers
             self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
                 model_name="all-MiniLM-L6-v2"
             )
-            self.embedding_mode = "local"
-            print("RAG System using local sentence transformers")
+            
+            os.makedirs(CHROMA_DB_PATH, exist_ok=True)
+            self.chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+            
+            # Get or create collection
+            try:
+                self.collection = self.chroma_client.get_collection(
+                    name="asi_os_documents",
+                    embedding_function=self.embedding_function
+                )
+            except:
+                self.collection = self.chroma_client.create_collection(
+                    name="asi_os_documents",
+                    embedding_function=self.embedding_function,
+                    metadata={"hnsw:space": "cosine"}
+                )
+            
+            # Initialize text splitter
+            self.text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000,
+                chunk_overlap=200,
+                length_function=len,
+                separators=["\n\n", "\n", ". ", " ", ""]
+            )
+            
+            self.rag_mode = "local"
+            print("✅ RAG System initialized with local ML dependencies")
+            
         except Exception as e:
-            # Fall back to OpenAI embeddings (for production)
-            self.embedding_function = embedding_functions.OpenAIEmbeddingFunction(
-                api_key=emergent_llm_key,  # Use same emergent key
-                model_name="text-embedding-ada-002"
-            )
-            self.embedding_mode = "openai"
-            print("RAG System using OpenAI embeddings (production mode)")
-        
-        self.chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
-        
-        # Get or create collection
+            logger.error(f"Failed to initialize local RAG: {e}")
+            # Fallback to cloud mode
+            self._init_cloud_rag()
+    
+    def _init_cloud_rag(self):
+        """Initialize RAG with cloud-based alternatives (production)"""
         try:
-            self.collection = self.chroma_client.get_collection(
-                name="asi_os_documents",
-                embedding_function=self.embedding_function
-            )
-        except:
-            self.collection = self.chroma_client.create_collection(
-                name="asi_os_documents",
-                embedding_function=self.embedding_function,
-                metadata={"hnsw:space": "cosine"}
-            )
+            # Use in-memory document storage with OpenAI embeddings
+            self.documents = {}  # Store documents in memory
+            self.document_chunks = {}  # Store processed chunks
+            self.embedding_cache = {}  # Cache embeddings
+            
+            # Simple text splitter without ML dependencies
+            self.chunk_size = 1000
+            self.chunk_overlap = 200
+            
+            self.rag_mode = "cloud"
+            print("✅ RAG System initialized with cloud alternatives (production mode)")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize cloud RAG: {e}")
+            raise
         
         # Initialize text splitter
         self.text_splitter = RecursiveCharacterTextSplitter(
