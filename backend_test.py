@@ -14,10 +14,14 @@ class ASIOSAPITester:
         self.session_id = f"test-session-{int(time.time())}"
         self.auth_token = None  # Store authentication token for admin tests
 
-    def run_test(self, name, method, endpoint, expected_status, data=None, files=None):
+    def run_test(self, name, method, endpoint, expected_status, data=None, files=None, headers=None):
         """Run a single API test"""
         url = f"{self.api_url}{endpoint}"
-        headers = {'Content-Type': 'application/json'} if not files else {}
+        default_headers = {'Content-Type': 'application/json'} if not files else {}
+        
+        # Merge with provided headers
+        if headers:
+            default_headers.update(headers)
 
         self.tests_run += 1
         print(f"\n🔍 Testing {name}...")
@@ -25,16 +29,16 @@ class ASIOSAPITester:
         
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, headers=default_headers)
             elif method == 'POST':
                 if files:
-                    response = requests.post(url, files=files, data=data)
+                    response = requests.post(url, files=files, data=data, headers=headers or {})
                 else:
-                    response = requests.post(url, json=data, headers=headers)
+                    response = requests.post(url, json=data, headers=default_headers)
             elif method == 'PUT':
-                response = requests.put(url, json=data, headers=headers)
+                response = requests.put(url, json=data, headers=default_headers)
             elif method == 'DELETE':
-                response = requests.delete(url, headers=headers)
+                response = requests.delete(url, headers=default_headers)
 
             success = response.status_code == expected_status
             if success:
