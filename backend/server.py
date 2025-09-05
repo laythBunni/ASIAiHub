@@ -565,6 +565,13 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
         # Get RAG system instance
         rag = get_rag_system(EMERGENT_LLM_KEY)
         
+        # Debug: Test search before RAG response
+        logger.info(f"Testing RAG search for query: {message}")
+        search_results = rag.search_similar_chunks(message, n_results=3)
+        logger.info(f"RAG search returned {len(search_results)} results")
+        if search_results:
+            logger.info(f"Top result similarity: {search_results[0].get('similarity_score', 'N/A')}")
+        
         # Use the advanced RAG system for semantic search and response generation
         result = await rag.generate_rag_response(message, session_id)
         
