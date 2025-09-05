@@ -5066,23 +5066,7 @@ const SystemAdmin = () => {
     }
   };
 
-  const updateUser = async (userId, userData) => {
-    try {
-      await apiCall('PUT', `/boost/users/${userId}`, userData);
-      toast({
-        title: "Success",
-        description: "User updated successfully",
-      });
-      fetchUsers();
-    } catch (error) {
-      console.error('Error updating user:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update user",
-        variant: "destructive"
-      });
-    }
-  };
+
 
   return (
     <div className="space-y-6">
