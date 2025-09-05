@@ -15,9 +15,20 @@ from datetime import datetime, timezone
 # Document processing
 import PyPDF2
 from docx import Document as DocxDocument
-import chromadb
-from chromadb.utils import embedding_functions
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+# Try to import ML dependencies - if they fail, use cloud alternatives
+try:
+    import chromadb
+    from chromadb.utils import embedding_functions
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    ML_DEPENDENCIES_AVAILABLE = True
+    print("✅ Local ML dependencies available (development mode)")
+except ImportError as e:
+    print(f"⚠️ ML dependencies not available, using cloud alternatives: {e}")
+    ML_DEPENDENCIES_AVAILABLE = False
+
+# Import required packages
+import requests
 
 # AI integrations  
 from emergentintegrations.llm.chat import LlmChat, UserMessage
