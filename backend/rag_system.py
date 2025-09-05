@@ -31,6 +31,7 @@ except ImportError as e:
 
 # Import required packages
 import requests
+import tiktoken
 
 # AI integrations  
 from emergentintegrations.llm.chat import LlmChat, UserMessage
