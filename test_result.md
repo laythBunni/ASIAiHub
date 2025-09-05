@@ -107,11 +107,11 @@ user_problem_statement: "Critical pre-deployment testing needed: Comprehensive t
 backend:
   - task: "Universal Authentication System"
     implemented: true
-    working: true
+    working: false
     file: "/app/backend/server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "critical"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "unknown"
         agent: "main"
@@ -119,6 +119,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ UNIVERSAL AUTHENTICATION SYSTEM FULLY TESTED AND WORKING! Universal login tested successfully: any email + ASI2025 auto-creates Manager users correctly. Admin special handling verified: layth.bunni@adamsmithinternational.com gets Admin role as expected. Authentication flow complete: login → token generation → API access working perfectly. User auto-creation and database storage verified. All authentication requirements from review request met."
+      - working: false
+        agent: "user"
+        comment: "🚨 PRODUCTION LOGIN FAILURE: layth.bunni@adamsmithinternational.com login shows processing indicator but never completes in production (asiaihub.com). No error message displayed, just indefinite processing. Worked in preview/testing environments but failing in production."
 
   - task: "Chat/LLM Integration"
     implemented: true
