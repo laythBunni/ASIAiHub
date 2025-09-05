@@ -5468,9 +5468,9 @@ const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissi
     setLocalPermissions(permissions);
     if (user) {
       setUserForm({
-        name: user.name,
+        name: user.name || user.email.split('@')[0],
         email: user.email,
-        boost_role: user.boost_role,
+        boost_role: user.role || user.boost_role || 'User', // Fix role mapping
         department: user.department || '',
         business_unit_id: user.business_unit_id || ''
       });
