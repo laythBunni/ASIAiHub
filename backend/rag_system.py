@@ -250,20 +250,31 @@ class RAGSystem:
             # Chunk the document
             chunks = self.chunk_document(text, doc_metadata)
             
-            # Prepare data for ChromaDB
-            chunk_texts = [chunk['chunk_text'] for chunk in chunks]
-            chunk_ids = [chunk['chunk_id'] for chunk in chunks]
-            chunk_metadatas = [
-                {k: v for k, v in chunk.items() if k != 'chunk_text'}
-                for chunk in chunks
-            ]
-            
-            # Store in ChromaDB
-            self.collection.add(
-                documents=chunk_texts,
-                ids=chunk_ids,
-                metadatas=chunk_metadatas
-            )
+            if self.rag_mode == "local" and ML_DEPENDENCIES_AVAILABLE:
+                # Store in ChromaDB (local mode)
+                chunk_texts = [chunk['chunk_text'] for chunk in chunks]
+                chunk_ids = [chunk['chunk_id'] for chunk in chunks]
+                chunk_metadatas = [
+                    {k: v for k, v in chunk.items() if k != 'chunk_text'}
+                    for chunk in chunks
+                ]
+                
+                # Store in ChromaDB
+                self.collection.add(
+                    documents=chunk_texts,
+                    ids=chunk_ids,
+                    metadatas=chunk_metadatas
+                )
+            else:
+                # Store in memory (cloud mode)
+                document_id = document_data['id']
+                self.documents[document_id] = document_data
+                self.document_chunks[document_id] = chunks
+                
+                # Generate embeddings for chunks
+                for chunk in chunks:
+                    chunk_embedding = await self._get_openai_embedding(chunk['chunk_text'])
+                    chunk['embedding'] = chunk_embedding
             
             logger.info(f"Successfully processed and stored {len(chunks)} chunks from {document_data['original_name']}")
             return True
