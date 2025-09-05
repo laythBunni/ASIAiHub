@@ -38,9 +38,8 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 logger = logging.getLogger(__name__)
 
-# Initialize ChromaDB client
-CHROMA_DB_PATH = "/app/backend/chroma_db"
-os.makedirs(CHROMA_DB_PATH, exist_ok=True)
+# Constants
+CHROMA_DB_PATH = "backend/chroma_db"
 
 class RAGSystem:
     def __init__(self, emergent_llm_key: str):
