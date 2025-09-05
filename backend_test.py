@@ -1891,119 +1891,28 @@ def main():
     
     tester = ASIOSAPITester()
     
-    # Test basic connectivity
+    # Test basic connectivity first
     print("\n📡 Testing Basic Connectivity...")
     success, _ = tester.test_root_endpoint()
     if not success:
         print("❌ Cannot connect to API. Stopping tests.")
         return 1
     
-    # Test dashboard
-    print("\n📊 Testing Dashboard...")
-    tester.test_dashboard_stats()
-    
-    # Test document management
-    print("\n📄 Testing Document Management...")
-    doc_success, document_id = tester.test_document_upload()
-    tester.test_get_documents()
-    
-    # Test RAG chat functionality
-    print("\n🤖 Testing RAG Chat (GPT-5)...")
-    tester.test_chat_send(document_id if doc_success else None)
-    tester.test_get_chat_sessions()
-    tester.test_get_chat_messages()
-    
-    # Test ticket management
-    print("\n🎫 Testing Ticket Management...")
-    ticket_success, ticket_id = tester.test_create_ticket()
-    tester.test_get_tickets()
-    tester.test_get_ticket_by_id(ticket_id if ticket_success else None)
-    
-    # Test Finance SOP
-    print("\n💰 Testing Finance SOP...")
-    sop_success, sop_id = tester.test_finance_sop_create()
-    tester.test_get_finance_sops()
-    tester.test_update_finance_sop(sop_id if sop_success else None)
-    
-    # Test BOOST Support Ticketing System
-    print("\n🎯 Testing BOOST Support Ticketing System...")
-    
-    # Test categories first
-    print("\n📋 Testing BOOST Categories...")
-    tester.test_boost_categories()
-    tester.test_boost_department_categories()
-    
-    # Test business units
-    print("\n🏢 Testing Business Units Management...")
-    bu_success, business_unit_id = tester.test_create_business_unit()
-    tester.test_get_business_units()
-    tester.test_update_business_unit(business_unit_id if bu_success else None)
-    
-    # Test BOOST users
-    print("\n👥 Testing BOOST Users Management...")
-    user_success, boost_user_id = tester.test_create_boost_user(business_unit_id if bu_success else None)
-    tester.test_get_boost_users()
-    tester.test_update_boost_user(boost_user_id if user_success else None)
-    
-    # Test BOOST tickets
-    print("\n🎫 Testing BOOST Tickets Management...")
-    boost_ticket_success, boost_ticket_id = tester.test_create_boost_ticket(business_unit_id if bu_success else None)
-    tester.test_get_boost_tickets()
-    tester.test_get_boost_tickets_filtered()
-    tester.test_get_boost_ticket_by_id(boost_ticket_id if boost_ticket_success else None)
-    tester.test_update_boost_ticket(boost_ticket_id if boost_ticket_success else None)
-    
-    # Test BOOST comments
-    print("\n💬 Testing BOOST Comments Management...")
-    tester.test_add_boost_comment(boost_ticket_id if boost_ticket_success else None)
-    tester.test_get_boost_comments(boost_ticket_id if boost_ticket_success else None)
-    
-    # Test Beta Authentication System
-    print("\n🔐 Testing Beta Authentication System...")
-    
-    # Setup beta settings first
-    print("\n⚙️  Setting up Beta Configuration...")
-    tester.test_setup_beta_settings()
-    tester.test_mongodb_collections()
-    tester.test_email_domain_validation()
-    
-    # Test user registration
-    print("\n📝 Testing User Registration...")
-    reg_success, access_token, user_data = tester.test_auth_register_valid()
-    tester.test_auth_register_invalid_domain()
-    tester.test_auth_register_invalid_code()
-    tester.test_auth_register_duplicate_user()
-    
-    # Test user login
-    print("\n🔑 Testing User Login...")
-    login_success, login_token = tester.test_auth_login_valid()
-    tester.test_auth_login_invalid_email()
-    tester.test_auth_login_invalid_code()
-    
-    # Test authenticated endpoints
-    print("\n👤 Testing Authenticated Endpoints...")
-    tester.test_auth_me_with_token(login_token if login_success else access_token)
-    tester.test_auth_me_without_token()
-    
-    # SPECIAL DEBUG TEST - Ticket Allocation Issue
-    print("\n🔍 DEBUGGING TICKET ALLOCATION ISSUE...")
-    debug_results = tester.test_ticket_allocation_debugging()
-    
-    # Clean up test data (optional - delete created test records)
-    print("\n🧹 Cleaning up test data...")
-    tester.test_delete_boost_user(boost_user_id if user_success else None)
-    tester.test_delete_business_unit(business_unit_id if bu_success else None)
+    # RUN CRITICAL PRE-DEPLOYMENT TESTS AS REQUESTED
+    print("\n" + "🎯 RUNNING CRITICAL PRE-DEPLOYMENT TESTS" + "="*30)
+    critical_passed, critical_results = tester.run_critical_pre_deployment_tests()
     
     # Print final results
     print("\n" + "=" * 60)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
-    if tester.tests_passed == tester.tests_run:
-        print("🎉 All tests passed! Backend API is working correctly.")
+    if critical_passed:
+        print("🎉 All critical tests passed! Backend ready for colleague demo.")
         return 0
     else:
-        failed_tests = tester.tests_run - tester.tests_passed
-        print(f"⚠️  {failed_tests} test(s) failed. Please check the issues above.")
+        failed_critical = [name for name, result in critical_results.items() if not result]
+        print(f"⚠️  Critical issues found in: {', '.join(failed_critical)}")
+        print("❌ Backend not ready for deployment - fix critical issues first.")
         return 1
 
 if __name__ == "__main__":
