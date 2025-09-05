@@ -2015,6 +2015,15 @@ async def universal_login(request: LoginRequest):
             # Existing user - login directly
             user = BetaUser(**user_data)
             
+            # Special check: Always ensure layth.bunni is Admin
+            if user.email == "layth.bunni@adamsmithinternational.com" and user.role != "Admin":
+                # Update user role to Admin in database
+                await db.beta_users.update_one(
+                    {"email": user.email},
+                    {"$set": {"role": "Admin"}}
+                )
+                user.role = "Admin"
+            
             # Check if user is active
             if not user.is_active:
                 raise HTTPException(status_code=401, detail="User account is inactive")
