@@ -1782,16 +1782,27 @@ class ASIOSAPITester:
         # Test 1: Health endpoint
         print("\n💓 Test 1: Health Check Endpoint...")
         
-        health_success, health_response = self.run_test(
-            "Health Check", 
-            "GET", 
-            "/health", 
-            200
-        )
-        
-        if health_success:
-            print(f"   ✅ Health endpoint accessible")
-            print(f"   ✅ Health status: {health_response.get('status', 'unknown')}")
+        # Health endpoint is on main app, not /api
+        try:
+            url = f"{self.base_url}/health"  # Direct to base URL, not API URL
+            response = requests.get(url)
+            
+            self.tests_run += 1
+            print(f"   URL: {url}")
+            
+            if response.status_code == 200:
+                self.tests_passed += 1
+                health_data = response.json()
+                print(f"✅ Health endpoint accessible - Status: {response.status_code}")
+                print(f"   ✅ Health status: {health_data.get('status', 'unknown')}")
+                health_success = True
+            else:
+                print(f"❌ Health endpoint failed - Status: {response.status_code}")
+                health_success = False
+                
+        except Exception as e:
+            print(f"❌ Health endpoint error: {str(e)}")
+            health_success = False
         
         # Test 2: CORS headers
         print("\n🌐 Test 2: CORS Headers Verification...")
