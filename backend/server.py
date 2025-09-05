@@ -2181,6 +2181,15 @@ async def error_handling_middleware(request: Request, call_next):
             content={"detail": "Internal server error - service temporarily unavailable"}
         )
 
+# CORS setup - Allow all origins for simplicity  
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for now
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Add health check endpoint
 @app.get("/health")
 async def health_check():
