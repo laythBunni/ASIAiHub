@@ -2168,14 +2168,33 @@ async def update_user_role(
 # Include the router in the main app
 app.include_router(api_router)
 
-# CORS setup - Allow all origins for simplicity
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for now
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@app.middleware("http")
+async def error_handling_middleware(request: Request, call_next):
+    """Global error handling middleware to prevent crashes"""
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        logger.error(f"Unhandled error in {request.url}: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error - service temporarily unavailable"}
+        )
+
+# Add health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Test database connection
+        await client.admin.command('ping')
+        return {"status": "healthy", "timestamp": datetime.now(timezone.utc)}
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "error": str(e)}
+        )
 
 # Configure logging
 logging.basicConfig(
