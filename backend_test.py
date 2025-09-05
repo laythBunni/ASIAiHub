@@ -577,7 +577,214 @@ class ASIOSAPITester:
             print(f"   ❌ User auto-creation failed")
             return False
     
-    def test_setup_beta_settings(self):
+    # CRITICAL CHAT/LLM INTEGRATION TESTS
+    
+    def test_chat_send_endpoint(self):
+        """Test POST /api/chat/send endpoint with James AI responses"""
+        print("\n🤖 CRITICAL: Testing Chat/LLM Integration...")
+        print("=" * 60)
+        
+        # Test 1: Basic chat send with stream=false
+        print("\n💬 Test 1: Basic Chat Send (Non-Streaming)...")
+        
+        chat_data = {
+            "session_id": self.session_id,
+            "message": "Hello James, can you help me with company policies?",
+            "stream": False
+        }
+        
+        success, response = self.run_test(
+            "Chat Send (Non-Streaming)", 
+            "POST", 
+            "/chat/send", 
+            200, 
+            chat_data
+        )
+        
+        if success:
+            ai_response = response.get('response')
+            session_id = response.get('session_id')
+            
+            print(f"   ✅ Chat response received")
+            print(f"   ✅ Session ID: {session_id}")
+            print(f"   ✅ Response type: {type(ai_response)}")
+            
+            if isinstance(ai_response, dict):
+                print(f"   ✅ Structured response format detected")
+                summary = ai_response.get('summary', '')
+                print(f"   ✅ Response summary: {summary[:100]}...")
+            else:
+                print(f"   ✅ Response content: {str(ai_response)[:100]}...")
+            
+            return True, response
+        else:
+            print(f"   ❌ Chat send failed")
+            return False, {}
+    
+    def test_chat_streaming_functionality(self):
+        """Test streaming functionality with stream=true"""
+        print("\n🌊 Test 2: Chat Streaming Functionality...")
+        
+        chat_data = {
+            "session_id": f"{self.session_id}-stream",
+            "message": "Tell me about ASI company structure and departments",
+            "stream": True
+        }
+        
+        try:
+            url = f"{self.api_url}/chat/send"
+            response = requests.post(url, json=chat_data, headers={'Content-Type': 'application/json'}, stream=True)
+            
+            self.tests_run += 1
+            print(f"   URL: {url}")
+            
+            if response.status_code == 200:
+                self.tests_passed += 1
+                print(f"✅ Streaming response initiated - Status: {response.status_code}")
+                
+                # Read first few chunks to verify streaming
+                chunk_count = 0
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        chunk_count += 1
+                        if chunk_count == 1:
+                            print(f"   ✅ First chunk received: {chunk[:50]}...")
+                        if chunk_count >= 3:  # Read a few chunks then break
+                            break
+                
+                print(f"   ✅ Streaming working - received {chunk_count} chunks")
+                return True
+            else:
+                print(f"❌ Streaming failed - Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Streaming test error: {str(e)}")
+            return False
+    
+    def test_chat_session_management(self):
+        """Test session management and conversation history"""
+        print("\n📝 Test 3: Session Management & Conversation History...")
+        
+        # Send multiple messages in same session
+        session_id = f"{self.session_id}-history"
+        
+        messages = [
+            "What are the company leave policies?",
+            "How many days of annual leave do employees get?",
+            "What about emergency leave procedures?"
+        ]
+        
+        for i, message in enumerate(messages, 1):
+            chat_data = {
+                "session_id": session_id,
+                "message": message,
+                "stream": False
+            }
+            
+            success, response = self.run_test(
+                f"Chat Message {i}", 
+                "POST", 
+                "/chat/send", 
+                200, 
+                chat_data
+            )
+            
+            if not success:
+                print(f"   ❌ Message {i} failed")
+                return False
+        
+        # Test getting chat sessions
+        sessions_success, sessions_response = self.run_test(
+            "Get Chat Sessions", 
+            "GET", 
+            "/chat/sessions", 
+            200
+        )
+        
+        if sessions_success:
+            sessions = sessions_response if isinstance(sessions_response, list) else []
+            session_found = any(s.get('id') == session_id for s in sessions)
+            
+            if session_found:
+                print(f"   ✅ Session created and stored: {session_id}")
+            else:
+                print(f"   ⚠️  Session not found in sessions list")
+        
+        # Test getting messages for session
+        messages_success, messages_response = self.run_test(
+            "Get Session Messages", 
+            "GET", 
+            f"/chat/sessions/{session_id}/messages", 
+            200
+        )
+        
+        if messages_success:
+            messages_list = messages_response if isinstance(messages_response, list) else []
+            print(f"   ✅ Retrieved {len(messages_list)} messages from session")
+            
+            # Should have user messages + AI responses
+            user_messages = [m for m in messages_list if m.get('role') == 'user']
+            ai_messages = [m for m in messages_list if m.get('role') == 'assistant']
+            
+            print(f"   ✅ User messages: {len(user_messages)}")
+            print(f"   ✅ AI responses: {len(ai_messages)}")
+            
+            return len(user_messages) >= 3 and len(ai_messages) >= 3
+        
+        return False
+    
+    def test_james_ai_responses(self):
+        """Test that responses are generated using emergent LLM integration"""
+        print("\n🧠 Test 4: James AI Response Quality...")
+        
+        # Test with a specific question that should generate a structured response
+        chat_data = {
+            "session_id": f"{self.session_id}-quality",
+            "message": "I need help with IT support procedures. What should I do if I can't access my email?",
+            "stream": False
+        }
+        
+        success, response = self.run_test(
+            "James AI Quality Test", 
+            "POST", 
+            "/chat/send", 
+            200, 
+            chat_data
+        )
+        
+        if success:
+            ai_response = response.get('response')
+            documents_referenced = response.get('documents_referenced', 0)
+            response_type = response.get('response_type', 'unknown')
+            
+            print(f"   ✅ Response type: {response_type}")
+            print(f"   ✅ Documents referenced: {documents_referenced}")
+            
+            # Check if response is structured (should be dict with specific fields)
+            if isinstance(ai_response, dict):
+                summary = ai_response.get('summary', '')
+                details = ai_response.get('details', {})
+                action_required = ai_response.get('action_required', '')
+                
+                print(f"   ✅ Structured response format confirmed")
+                print(f"   ✅ Summary provided: {len(summary) > 0}")
+                print(f"   ✅ Details provided: {len(details) > 0}")
+                print(f"   ✅ Action guidance: {len(action_required) > 0}")
+                
+                # Check for IT-related content
+                response_text = json.dumps(ai_response).lower()
+                it_keywords = ['email', 'it', 'support', 'access', 'login', 'password']
+                relevant_keywords = [kw for kw in it_keywords if kw in response_text]
+                
+                print(f"   ✅ IT-relevant keywords found: {relevant_keywords}")
+                
+                return len(relevant_keywords) > 0
+            else:
+                print(f"   ⚠️  Response not in expected structured format")
+                return True  # Still working, just different format
+        
+        return False
         """Setup beta settings for testing"""
         try:
             # First check if settings exist
