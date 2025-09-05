@@ -1941,8 +1941,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     try:
         token = credentials.credentials
         
-        # Find user by token
+        # Find user by token in both collections
         user_data = await db.beta_users.find_one({"access_token": token})
+        if not user_data:
+            user_data = await db.simple_users.find_one({"access_token": token})
+        
         if user_data:
             return BetaUser(**user_data)
         
@@ -1950,6 +1953,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token"
         )
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
