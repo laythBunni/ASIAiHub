@@ -1909,21 +1909,19 @@ def main():
         print("❌ Cannot connect to API. Stopping tests.")
         return 1
     
-    # RUN CRITICAL PRE-DEPLOYMENT TESTS AS REQUESTED
-    print("\n" + "🎯 RUNNING CRITICAL PRE-DEPLOYMENT TESTS" + "="*30)
-    critical_passed, critical_results = tester.run_critical_pre_deployment_tests()
+    # RUN CRITICAL PRODUCTION TESTS AS REQUESTED IN REVIEW
+    print("\n" + "🎯 RUNNING CRITICAL PRODUCTION TESTS" + "="*30)
+    critical_passed = tester.run_critical_production_tests()
     
     # Print final results
     print("\n" + "=" * 60)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
     if critical_passed:
-        print("🎉 All critical tests passed! Backend ready for colleague demo.")
+        print("🎉 All critical tests passed! Backend ready for production use.")
         return 0
     else:
-        failed_critical = [name for name, result in critical_results.items() if not result]
-        print(f"⚠️  Critical issues found in: {', '.join(failed_critical)}")
-        print("❌ Backend not ready for deployment - fix critical issues first.")
+        print("⚠️  Critical issues found - backend needs attention before production.")
         return 1
 
 if __name__ == "__main__":
