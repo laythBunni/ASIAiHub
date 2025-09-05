@@ -29,7 +29,7 @@ async def migrate_to_atlas(atlas_connection_string):
     try:
         # Connect to both databases
         local_client = AsyncIOMotorClient(local_url)
-        atlas_client = AsyncIOMotorClient(atlas_url)
+        atlas_client = AsyncIOMotorClient(atlas_url, tlsAllowInvalidCertificates=True)
         
         local_db = local_client[local_db_name]
         atlas_db = atlas_client[atlas_db_name]
