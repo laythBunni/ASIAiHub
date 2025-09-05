@@ -120,7 +120,7 @@ async def migrate_to_atlas(atlas_connection_string):
 async def test_atlas_connection(atlas_connection_string):
     """Test Atlas connection"""
     try:
-        client = AsyncIOMotorClient(atlas_connection_string)
+        client = AsyncIOMotorClient(atlas_connection_string, tlsAllowInvalidCertificates=True)
         await client.admin.command('ping')
         print("✅ Atlas connection test successful")
         client.close()
