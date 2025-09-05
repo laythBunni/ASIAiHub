@@ -146,40 +146,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (email, registrationCode, personalCode, department) => {
-    try {
-      const response = await axios.post(`${API}/auth/register`, {
-        email,
-        registration_code: registrationCode,
-        personal_code: personalCode,
-        department
-      });
-      
-      const { access_token, user: userData } = response.data;
-      // Map new auth system to legacy BOOST system for backward compatibility
-      userData.boost_role = userData.role; // Add boost_role mapping for legacy components
-      
-      // Ensure user has a display name
-      if (!userData.name && userData.email) {
-        const emailPrefix = userData.email.split('@')[0];
-        userData.name = emailPrefix.split('.').map(part => 
-          part.charAt(0).toUpperCase() + part.slice(1)
-        ).join(' ');
-      }
-      
-      localStorage.setItem('auth_token', access_token);
-      setToken(access_token);
-      setUser(userData);
-      return { success: true };
-    } catch (error) {
-      console.error('Registration failed:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.detail || 'Registration failed' 
-      };
-    }
-  };
-
   const logout = () => {
     localStorage.removeItem('auth_token');
     setToken(null);
@@ -191,7 +157,6 @@ export const AuthProvider = ({ children }) => {
     token,
     loading,
     login,
-    register,
     logout,
     isAuthenticated: !!user
   };
