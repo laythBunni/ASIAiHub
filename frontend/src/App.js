@@ -114,9 +114,10 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = async (email, accessCode) => {
+  const login = async (name, email, accessCode) => {
     try {
       const response = await axios.post(`${API}/auth/login`, {
+        name,
         email,
         personal_code: accessCode
       });
@@ -125,12 +126,12 @@ export const AuthProvider = ({ children }) => {
       // Map new auth system to legacy BOOST system for backward compatibility
       userData.boost_role = userData.role; // Add boost_role mapping for legacy components
       
-      // Ensure user has a display name
-      if (!userData.name && userData.email) {
-        const emailPrefix = userData.email.split('@')[0];
-        userData.name = emailPrefix.split('.').map(part => 
-          part.charAt(0).toUpperCase() + part.slice(1)
-        ).join(' ');
+      // Use provided name or extract from email
+      if (!userData.name) {
+        userData.name = name || (userData.email ? 
+          userData.email.split('@')[0].split('.').map(part => 
+            part.charAt(0).toUpperCase() + part.slice(1)
+          ).join(' ') : 'User');
       }
       
       localStorage.setItem('auth_token', access_token);
