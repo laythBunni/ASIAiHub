@@ -2213,19 +2213,42 @@ async def get_all_users(current_user: BetaUser = Depends(get_current_user)):
         if current_user.role != 'Admin':
             raise HTTPException(status_code=403, detail="Admin access required")
         
-        users = await db.beta_users.find({}, {"access_token": 0}).to_list(length=None)
+        # Get users from both collections
+        beta_users = await db.beta_users.find({}, {"access_token": 0}).to_list(length=None)
+        simple_users = await db.simple_users.find({}, {"access_token": 0}).to_list(length=None)
         
-        # Convert ObjectId to string and ensure consistent format
-        for user in users:
+        # Combine all users
+        all_users = []
+        
+        # Process beta_users
+        for user in beta_users:
             if '_id' in user:
                 del user['_id']
-            # Ensure all users have required fields
             user.setdefault('role', 'User')
             user.setdefault('department', 'Unassigned')
             user.setdefault('is_active', True)
             user.setdefault('name', user.get('email', '').split('@')[0].title())
+            all_users.append(user)
         
-        return users
+        # Process simple_users
+        for user in simple_users:
+            if '_id' in user:
+                del user['_id']
+            user.setdefault('role', 'Manager')  # Default for simple users
+            user.setdefault('department', 'Management')
+            user.setdefault('is_active', True)
+            user.setdefault('name', user.get('name', user.get('email', '').split('@')[0].title()))
+            all_users.append(user)
+        
+        # Remove duplicates based on email
+        seen_emails = set()
+        unique_users = []
+        for user in all_users:
+            if user['email'] not in seen_emails:
+                seen_emails.add(user['email'])
+                unique_users.append(user)
+        
+        return unique_users
     except HTTPException:
         raise
     except Exception as e:
