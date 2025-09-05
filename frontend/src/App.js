@@ -481,39 +481,107 @@ const StructuredResponse = ({ response, documentsReferenced }) => {
   );
 };
 
-// Custom hook for API calls
-const useAPI = () => {
-  const { toast } = useToast();
-  const { token } = useAuth();
+// Error Boundary Component for React
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
 
-  const apiCall = async (method, endpoint, data = null, isFormData = false) => {
-    try {
-      const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
-      
-      // Add authentication header if token exists
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error: error };
+  }
 
-      const config = {
-        method,
-        url: `${API}${endpoint}`,
-        headers,
-      };
-      
-      if (data) config.data = data;
-      
-      const response = await axios(config);
-      return response.data;
-    } catch (error) {
-      console.error(`API Error (${method} ${endpoint}):`, error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.detail || error.message,
-        variant: "destructive"
-      });
-      throw error;
+  componentDidCatch(error, errorInfo) {
+    console.error('React Error Boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>
+            <p className="text-gray-600 mb-6">The application encountered an error. Please refresh the page.</p>
+            <Button onClick={() => window.location.reload()}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh Page
+            </Button>
+          </div>
+        </div>
+      );
     }
+
+    return this.props.children;
+  }
+}
+
+// Enhanced API hook with better error handling
+const useAPI = () => {
+  const { token } = useAuth();
+  const { toast } = useToast();
+
+  const apiCall = async (method, endpoint, data = null, options = {}) => {
+    const maxRetries = 3;
+    let lastError;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const config = {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          ...options
+        };
+
+        if (data && method !== 'GET') {
+          config.body = JSON.stringify(data);
+        }
+
+        const response = await fetch(`${API}${endpoint}`, config);
+        
+        if (!response.ok) {
+          if (response.status === 503) {
+            throw new Error('Service temporarily unavailable - retrying...');
+          }
+          if (response.status === 401) {
+            throw new Error('Authentication failed');
+          }
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || `Request failed with status ${response.status}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        lastError = error;
+        
+        if (attempt < maxRetries && (
+          error.message.includes('temporarily unavailable') || 
+          error.message.includes('fetch')
+        )) {
+          console.log(`API attempt ${attempt} failed, retrying in ${attempt}s...`);
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+          continue;
+        }
+        
+        console.error(`API call failed (${method} ${endpoint}):`, error);
+        
+        toast({
+          title: "⚠️ Connection Issue",
+          description: error.message.includes('temporarily unavailable') 
+            ? "Service is restarting, please try again in a moment"
+            : "Please check your connection and try again",
+          variant: "destructive"
+        });
+        
+        throw error;
+      }
+    }
+    
+    throw lastError;
   };
 
   return { apiCall };
