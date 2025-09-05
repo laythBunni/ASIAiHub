@@ -1815,16 +1815,22 @@ async def get_ticket_audit_trail(ticket_id: str):
         if ticket.get('due_at'):
             due_date = ticket['due_at']
             if isinstance(due_date, str):
+                # Parse string and ensure it's timezone-aware
                 due_date = datetime.fromisoformat(due_date.replace('Z', '+00:00'))
+            elif isinstance(due_date, datetime) and due_date.tzinfo is None:
+                # Make naive datetime timezone-aware (assume UTC)
+                due_date = due_date.replace(tzinfo=timezone.utc)
             
-            if due_date < datetime.now(timezone.utc) and ticket['status'] not in ['resolved', 'closed']:
+            # Now both datetimes are timezone-aware for safe comparison
+            current_time = datetime.now(timezone.utc)
+            if due_date < current_time and ticket['status'] not in ['resolved', 'closed']:
                 trail.append({
                     "id": str(uuid.uuid4()),
                     "action": "sla_breach",
                     "description": "SLA deadline exceeded",
                     "user_name": "System",
-                    "timestamp": due_date,
-                    "details": f"Due date: {due_date.isoformat()}"
+                    "timestamp": due_date.isoformat() if hasattr(due_date, 'isoformat') else str(due_date),
+                    "details": f"Due date: {due_date.isoformat() if hasattr(due_date, 'isoformat') else str(due_date)}"
                 })
         
         # Sort by timestamp (newest first)
