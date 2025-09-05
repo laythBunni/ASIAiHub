@@ -2291,6 +2291,76 @@ async def get_admin_stats(current_user: BetaUser = Depends(get_current_user)):
         logger.error(f"Error fetching admin stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch admin stats")
 
+@api_router.post("/admin/users")
+async def create_user_admin(
+    user_data: dict,
+    current_user: BetaUser = Depends(get_current_user)
+):
+    """Create a new user (admin only)"""
+    try:
+        # Verify admin access
+        if current_user.role != 'Admin':
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Validate required fields
+        if not user_data.get('email') or not user_data.get('name'):
+            raise HTTPException(status_code=400, detail="Email and name are required")
+        
+        # Check if user already exists
+        existing_user = await db.simple_users.find_one({"email": user_data['email']})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="User with this email already exists")
+        
+        # Create new user
+        new_user = {
+            "id": str(uuid.uuid4()),
+            "email": user_data['email'],
+            "name": user_data['name'],
+            "personal_code": "***",  # Will be set when user first logs in
+            "role": user_data.get('role', 'Manager'),
+            "department": user_data.get('department', 'Management'),
+            "is_active": user_data.get('is_active', True),
+            "created_at": datetime.now(timezone.utc),
+            "last_login": None,
+            "access_token": None
+        }
+        
+        # Insert into database
+        await db.simple_users.insert_one(new_user)
+        
+        # Remove sensitive fields from response
+        response_user = {k: v for k, v in new_user.items() if k != 'personal_code'}
+        
+        return {"message": "User created successfully", "user": response_user}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating user: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create user")
+
+@api_router.post("/auth/logout")
+async def logout(current_user: BetaUser = Depends(get_current_user)):
+    """Logout user and clear access token"""
+    try:
+        # Clear access token from database
+        await db.simple_users.update_one(
+            {"id": current_user.id},
+            {"$set": {"access_token": None}}
+        )
+        
+        # Also check beta_users collection
+        await db.beta_users.update_one(
+            {"id": current_user.id},
+            {"$set": {"access_token": None}}
+        )
+        
+        return {"message": "Logged out successfully"}
+        
+    except Exception as e:
+        logger.error(f"Logout error: {e}")
+        raise HTTPException(status_code=500, detail="Logout failed")
+
 # Include the router in the main app
 app.include_router(api_router)
 
