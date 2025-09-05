@@ -3801,7 +3801,9 @@ const Navigation = () => {
     { path: '/boost', label: 'BOOST Support', icon: Ticket },
     { path: '/tickets', label: 'Legacy Tickets', icon: Settings },
     { path: '/documents', label: 'Knowledge Base', icon: FileText },
-    { path: '/admin', label: 'Admin', icon: Shield },
+    // Admin tab only visible to Admin users
+    ...(user?.role === 'Admin' ? [{ path: '/admin', label: 'Admin', icon: Shield }] : []),
+  ];
   ];
 
   return (
