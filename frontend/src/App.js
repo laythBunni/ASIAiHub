@@ -116,9 +116,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, accessCode) => {
     try {
-      const response = await axios.post(`${API}/auth/simple-login`, {
+      const response = await axios.post(`${API}/auth/login`, {
         email,
-        access_code: accessCode
+        personal_code: accessCode
       });
       
       const { access_token, user: userData } = response.data;
