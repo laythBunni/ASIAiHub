@@ -2267,7 +2267,7 @@ async def update_user_admin(
         if current_user.role != 'Admin':
             raise HTTPException(status_code=403, detail="Admin access required")
         
-        # Update user in database
+        # Try to update user in beta_users first
         result = await db.beta_users.update_one(
             {"id": user_id},
             {"$set": {
@@ -2278,6 +2278,19 @@ async def update_user_admin(
                 "updated_at": datetime.now(timezone.utc)
             }}
         )
+        
+        # If not found in beta_users, try simple_users
+        if result.matched_count == 0:
+            result = await db.simple_users.update_one(
+                {"id": user_id},
+                {"$set": {
+                    "role": user_data.get('role'),
+                    "department": user_data.get('department'),
+                    "is_active": user_data.get('is_active', True),
+                    "name": user_data.get('name'),
+                    "updated_at": datetime.now(timezone.utc)
+                }}
+            )
         
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="User not found")
