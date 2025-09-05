@@ -1864,6 +1864,7 @@ class RegistrationRequest(BaseModel):
     department: Optional[str] = None
 
 class LoginRequest(BaseModel):
+    name: Optional[str] = None  # Added name field
     email: str  
     personal_code: str
 
