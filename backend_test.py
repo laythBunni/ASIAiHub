@@ -1604,7 +1604,7 @@ class ASIOSAPITester:
         test_email = "test.manager@example.com"
         login_data = {
             "email": test_email,
-            "access_code": "ASI2025"
+            "personal_code": "ASI2025"  # Correct field name
         }
         
         success, response = self.run_test(
@@ -1617,7 +1617,7 @@ class ASIOSAPITester:
         
         if success:
             user_data = response.get('user', {})
-            token = response.get('token')
+            token = response.get('access_token')  # Correct field name
             
             print(f"   ✅ Auto-created user: {user_data.get('email')}")
             print(f"   ✅ Role assigned: {user_data.get('role')}")
@@ -1642,7 +1642,7 @@ class ASIOSAPITester:
         
         admin_login_data = {
             "email": "layth.bunni@adamsmithinternational.com",
-            "access_code": "ASI2025"
+            "personal_code": "ASI2025"  # Correct field name
         }
         
         success, response = self.run_test(
@@ -1655,7 +1655,7 @@ class ASIOSAPITester:
         
         if success:
             user_data = response.get('user', {})
-            token = response.get('token')
+            token = response.get('access_token')  # Correct field name
             
             print(f"   ✅ Admin user logged in: {user_data.get('email')}")
             print(f"   ✅ Role assigned: {user_data.get('role')}")
