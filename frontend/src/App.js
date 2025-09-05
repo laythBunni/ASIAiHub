@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
       const storedToken = localStorage.getItem('auth_token');
       if (storedToken) {
         try {
-          const response = await axios.get(`${API}/auth/me`, {
+          const response = await axios.get(`${API}/auth/simple-me`, {
             headers: { Authorization: `Bearer ${storedToken}` }
           });
           // Map new auth system to legacy BOOST system for backward compatibility
