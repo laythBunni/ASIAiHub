@@ -204,29 +204,15 @@ export const AuthProvider = ({ children }) => {
 };
 
 // Authentication Forms Component
-const AuthenticationForm = () => {
-  const [isLogin, setIsLogin] = useState(true);
+const SimpleLoginForm = () => {
   const [formData, setFormData] = useState({
     email: '',
-    personalCode: '',
-    registrationCode: '',
-    department: ''
+    accessCode: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, register } = useAuth();
+  const { login } = useAuth();
   const { toast } = useToast();
-
-  const departments = [
-    'Finance',
-    'People and Talent', 
-    'Information Technology',
-    'Legal, Ethics and Compliance',
-    'Business Development',
-    'Project Management',
-    'Management',
-    'Other'
-  ];
 
   const handleInputChange = (e) => {
     setFormData({
@@ -241,21 +227,11 @@ const AuthenticationForm = () => {
     setLoading(true);
 
     try {
-      let result;
-      if (isLogin) {
-        result = await login(formData.email, formData.personalCode);
-      } else {
-        result = await register(
-          formData.email, 
-          formData.registrationCode, 
-          formData.personalCode, 
-          formData.department
-        );
-      }
+      const result = await login(formData.email, formData.accessCode);
 
       if (result.success) {
         toast({
-          title: isLogin ? "Login successful" : "Registration successful",
+          title: "✅ Login successful",
           description: "Welcome to ASI AiHub!",
         });
       } else {
@@ -280,7 +256,7 @@ const AuthenticationForm = () => {
           ASI AiHub
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          {isLogin ? 'Sign in to your account' : 'Create your beta account'}
+          Sign in to your account
         </p>
       </div>
 
@@ -308,7 +284,7 @@ const AuthenticationForm = () => {
                 type="email"
                 autoComplete="email"
                 required
-                placeholder="your.email@adamsmithinternational.com"
+                placeholder="your.email@yourcompany.com"
                 value={formData.email}
                 onChange={handleInputChange}
                 className="mt-1"
@@ -316,38 +292,38 @@ const AuthenticationForm = () => {
             </div>
 
             <div>
-              <Label htmlFor="personalCode">Personal Code</Label>
+              <Label htmlFor="accessCode">Access Code</Label>
               <Input
-                id="personalCode"
-                name="personalCode"
+                id="accessCode"
+                name="accessCode"
                 type="password"
                 autoComplete="current-password"
                 required
-                placeholder="Enter your personal access code"
-                value={formData.personalCode}
+                placeholder="Enter access code"
+                value={formData.accessCode}
                 onChange={handleInputChange}
                 className="mt-1"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Use: ASI2025
+              </p>
             </div>
 
-            {!isLogin && (
-              <>
-                <div>
-                  <Label htmlFor="registrationCode">Registration Code</Label>
-                  <Input
-                    id="registrationCode"
-                    name="registrationCode"
-                    type="text"
-                    required
-                    placeholder="Enter beta registration code"
-                    value={formData.registrationCode}
-                    onChange={handleInputChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="department">Department (Optional)</Label>
+            <div>
+              <Button 
+                type="submit" 
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={loading}
+              >
+                {loading ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
                   <Select onValueChange={(value) => setFormData({...formData, department: value})}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select your department" />
