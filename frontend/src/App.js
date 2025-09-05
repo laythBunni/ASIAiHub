@@ -3804,7 +3804,6 @@ const Navigation = () => {
     // Admin tab only visible to Admin users
     ...(user?.role === 'Admin' ? [{ path: '/admin', label: 'Admin', icon: Shield }] : []),
   ];
-  ];
 
   return (
     <nav className="bg-white border-b border-gray-200">
