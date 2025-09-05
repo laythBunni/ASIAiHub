@@ -7,6 +7,8 @@ This will fix the missing document chunks issue
 import asyncio
 import os
 import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent / 'backend'))
 from motor.motor_asyncio import AsyncIOMotorClient
 from rag_system import RAGSystem
 
