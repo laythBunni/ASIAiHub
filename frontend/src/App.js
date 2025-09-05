@@ -5600,8 +5600,15 @@ const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissi
           return;
         }
 
-        // Update user details first
-        await apiCall('PUT', `/boost/users/${user.id}`, userForm);
+        // Update user details using admin endpoint
+        const updateData = {
+          role: userForm.boost_role, // Map boost_role to role
+          department: userForm.department,
+          name: userForm.name,
+          is_active: true
+        };
+        
+        await apiCall('PUT', `/admin/users/${user.id}`, updateData);
         
         toast({
           title: "Success",
