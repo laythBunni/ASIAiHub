@@ -1981,8 +1981,46 @@ async def register_user(request: RegistrationRequest):
 
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login_user(request: LoginRequest):
-    """Login beta user"""
+    """Universal login - any email + master code ASI2025"""
     try:
+        # Check if using master code
+        MASTER_CODE = os.environ.get('MASTER_LOGIN_CODE', 'ASI2025')
+        
+        if request.personal_code == MASTER_CODE:
+            # Simple universal login
+            # Create a simple user with Manager role
+            user = BetaUser(
+                email=request.email,
+                personal_code="***",  # Don't store master code
+                role="Manager",
+                department="Management",
+                is_active=True,
+                last_login=datetime.now(timezone.utc)
+            )
+            
+            # Generate access token
+            access_token = generate_access_token(user.id, user.email)
+            
+            # Store in simple_users collection for session management
+            await db.simple_users.update_one(
+                {"email": request.email},
+                {
+                    "$set": {
+                        "id": user.id,
+                        "email": user.email,
+                        "role": user.role,
+                        "department": user.department,
+                        "is_active": user.is_active,
+                        "last_login": user.last_login,
+                        "access_token": access_token
+                    }
+                },
+                upsert=True
+            )
+            
+            return LoginResponse(access_token=access_token, user=user)
+        
+        # Original beta user login logic
         # Find user
         user_data = await db.beta_users.find_one({"email": request.email})
         if not user_data:
