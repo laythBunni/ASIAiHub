@@ -29,16 +29,19 @@ from rag_system import get_rag_system
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection with deployment-ready configuration
+# MongoDB connection with MongoDB's recommended Stable API configuration
 mongo_url = os.environ['MONGO_URL']
 
-# Configure MongoDB client for deployment compatibility
+# Configure MongoDB client with Stable API (MongoDB's recommended approach)
 if mongo_url.startswith('mongodb+srv://'):
-    # Atlas connection - configure for deployment environment
+    # Atlas connection using MongoDB's Stable API configuration
+    from pymongo import MongoClient
+    from pymongo.server_api import ServerApi
+    
     client = AsyncIOMotorClient(
         mongo_url,
-        tlsAllowInvalidCertificates=True,
-        tlsAllowInvalidHostnames=True,
+        server_api=ServerApi('1', strict=True, deprecation_errors=True),
+        tlsAllowInvalidCertificates=False,  # Use valid certificates with Stable API
         serverSelectionTimeoutMS=30000,
         connectTimeoutMS=30000,
         socketTimeoutMS=30000,
