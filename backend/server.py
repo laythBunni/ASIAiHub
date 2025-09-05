@@ -2165,6 +2165,98 @@ async def update_user_role(
         logger.error(f"Error updating user role: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update user role")
 
+# Admin User Management Endpoints
+@api_router.get("/admin/users")
+async def get_all_users(current_user: BetaUser = Depends(get_current_user)):
+    """Get all users for admin management"""
+    try:
+        # Verify admin access
+        if current_user.role != 'Admin':
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        users = await db.beta_users.find({}, {"access_token": 0}).to_list(length=None)
+        
+        # Convert ObjectId to string and ensure consistent format
+        for user in users:
+            if '_id' in user:
+                del user['_id']
+            # Ensure all users have required fields
+            user.setdefault('role', 'User')
+            user.setdefault('department', 'Unassigned')
+            user.setdefault('is_active', True)
+            user.setdefault('name', user.get('email', '').split('@')[0].title())
+        
+        return users
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching users: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch users")
+
+@api_router.put("/admin/users/{user_id}")
+async def update_user_admin(
+    user_id: str, 
+    user_data: dict,
+    current_user: BetaUser = Depends(get_current_user)
+):
+    """Update user details and permissions (admin only)"""
+    try:
+        # Verify admin access
+        if current_user.role != 'Admin':
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Update user in database
+        result = await db.beta_users.update_one(
+            {"id": user_id},
+            {"$set": {
+                "role": user_data.get('role'),
+                "department": user_data.get('department'),
+                "is_active": user_data.get('is_active', True),
+                "name": user_data.get('name'),
+                "updated_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {"message": "User updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update user")
+
+@api_router.get("/admin/stats")
+async def get_admin_stats(current_user: BetaUser = Depends(get_current_user)):
+    """Get system statistics for admin dashboard"""
+    try:
+        # Verify admin access
+        if current_user.role != 'Admin':
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Get counts from various collections
+        total_users = await db.beta_users.count_documents({})
+        active_users = await db.beta_users.count_documents({"is_active": True})
+        total_tickets = await db.boost_tickets.count_documents({})
+        open_tickets = await db.boost_tickets.count_documents({"status": {"$nin": ["resolved", "closed"]}})
+        total_documents = await db.documents.count_documents({})
+        total_sessions = await db.chat_sessions.count_documents({})
+        
+        return {
+            "totalUsers": total_users,
+            "activeUsers": active_users,
+            "totalTickets": total_tickets,
+            "openTickets": open_tickets,
+            "totalDocuments": total_documents,
+            "totalSessions": total_sessions
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching admin stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch admin stats")
+
 # Include the router in the main app
 app.include_router(api_router)
 
