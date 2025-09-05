@@ -4,13 +4,15 @@ Handles document processing, chunking, embeddings, and semantic search
 """
 
 import os
-import uuid
-import logging
-import asyncio
-from typing import List, Dict, Any, Optional, Tuple
-from pathlib import Path
 import json
+import logging
+from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
+import asyncio
+import hashlib
+import uuid
+import re
+from pathlib import Path
 
 # Document processing
 import PyPDF2
