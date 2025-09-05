@@ -1833,8 +1833,22 @@ async def get_ticket_audit_trail(ticket_id: str):
                     "details": f"Due date: {due_date.isoformat() if hasattr(due_date, 'isoformat') else str(due_date)}"
                 })
         
-        # Sort by timestamp (newest first)
-        trail.sort(key=lambda x: x['timestamp'], reverse=True)
+        # Sort by timestamp (newest first) - handle mixed datetime types safely
+        def safe_timestamp_sort(item):
+            timestamp = item['timestamp']
+            if isinstance(timestamp, str):
+                try:
+                    return datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                except:
+                    return datetime.min.replace(tzinfo=timezone.utc)
+            elif isinstance(timestamp, datetime):
+                if timestamp.tzinfo is None:
+                    return timestamp.replace(tzinfo=timezone.utc)
+                return timestamp
+            else:
+                return datetime.min.replace(tzinfo=timezone.utc)
+                
+        trail.sort(key=safe_timestamp_sort, reverse=True)
         
         return trail
         
