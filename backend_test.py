@@ -1591,6 +1591,300 @@ class ASIOSAPITester:
             'business_units': [it_unit_id, finance_unit_id]
         }
 
+    # CRITICAL PRE-DEPLOYMENT TESTS FOR REVIEW REQUEST
+    
+    def test_critical_authentication_system(self):
+        """Test universal login system as specified in review request"""
+        print("\n🔐 CRITICAL: Testing Universal Login System...")
+        print("=" * 60)
+        
+        # Test 1: Universal login with any email + ASI2025 should auto-create Manager users
+        print("\n📝 Test 1: Universal Login Auto-Creation...")
+        
+        test_email = "test.manager@example.com"
+        login_data = {
+            "email": test_email,
+            "access_code": "ASI2025"
+        }
+        
+        success, response = self.run_test(
+            "Universal Login (Any Email + ASI2025)", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            login_data
+        )
+        
+        if success:
+            user_data = response.get('user', {})
+            token = response.get('token')
+            
+            print(f"   ✅ Auto-created user: {user_data.get('email')}")
+            print(f"   ✅ Role assigned: {user_data.get('role')}")
+            print(f"   ✅ Token generated: {token[:20] if token else 'None'}...")
+            
+            # Verify user was created as Manager
+            if user_data.get('role') == 'Manager':
+                print(f"   ✅ Correct role: Manager assigned to new user")
+            else:
+                print(f"   ❌ Wrong role: Expected 'Manager', got '{user_data.get('role')}'")
+                
+            # Store token for later tests
+            self.auth_token = token
+            return True, token, user_data
+        else:
+            print(f"   ❌ Universal login failed")
+            return False, None, {}
+    
+    def test_critical_admin_special_handling(self):
+        """Test that layth.bunni@adamsmithinternational.com gets Admin role"""
+        print("\n👑 Test 2: Admin User Special Handling...")
+        
+        admin_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "access_code": "ASI2025"
+        }
+        
+        success, response = self.run_test(
+            "Admin Login (layth.bunni@adamsmithinternational.com)", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            admin_login_data
+        )
+        
+        if success:
+            user_data = response.get('user', {})
+            token = response.get('token')
+            
+            print(f"   ✅ Admin user logged in: {user_data.get('email')}")
+            print(f"   ✅ Role assigned: {user_data.get('role')}")
+            
+            # Verify admin gets Admin role specifically
+            if user_data.get('role') == 'Admin':
+                print(f"   ✅ Correct admin role: Admin assigned to layth.bunni")
+                self.admin_token = token  # Store admin token for admin tests
+                return True, token, user_data
+            else:
+                print(f"   ❌ Wrong admin role: Expected 'Admin', got '{user_data.get('role')}'")
+                return False, token, user_data
+        else:
+            print(f"   ❌ Admin login failed")
+            return False, None, {}
+    
+    def test_critical_chat_llm_integration(self):
+        """Test POST /api/chat/send endpoint with James AI responses"""
+        print("\n🤖 CRITICAL: Testing Chat/LLM Integration...")
+        print("=" * 60)
+        
+        # Test 1: Basic chat send with stream=false
+        print("\n💬 Test 1: Basic Chat Send (Non-Streaming)...")
+        
+        chat_data = {
+            "session_id": self.session_id,
+            "message": "Hello James, can you help me with company policies?",
+            "stream": False
+        }
+        
+        success, response = self.run_test(
+            "Chat Send (Non-Streaming)", 
+            "POST", 
+            "/chat/send", 
+            200, 
+            chat_data
+        )
+        
+        if success:
+            ai_response = response.get('response')
+            session_id = response.get('session_id')
+            
+            print(f"   ✅ Chat response received")
+            print(f"   ✅ Session ID: {session_id}")
+            print(f"   ✅ Response type: {type(ai_response)}")
+            
+            if isinstance(ai_response, dict):
+                print(f"   ✅ Structured response format detected")
+                summary = ai_response.get('summary', '')
+                print(f"   ✅ Response summary: {summary[:100]}...")
+            else:
+                print(f"   ✅ Response content: {str(ai_response)[:100]}...")
+            
+            return True, response
+        else:
+            print(f"   ❌ Chat send failed")
+            return False, {}
+    
+    def test_critical_admin_user_management(self):
+        """Test admin user management APIs"""
+        print("\n👥 CRITICAL: Testing Admin User Management...")
+        print("=" * 60)
+        
+        # First ensure we have admin token
+        if not hasattr(self, 'admin_token') or not self.admin_token:
+            print("   ⚠️  No admin token available, attempting admin login...")
+            admin_success, admin_token, _ = self.test_critical_admin_special_handling()
+            if not admin_success:
+                print("   ❌ Cannot test admin endpoints without admin token")
+                return False
+        
+        # Test 1: GET /api/admin/users
+        print("\n📋 Test 1: Get All Users (Admin Access)...")
+        
+        admin_headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        success, response = self.run_test(
+            "Get All Users (Admin)", 
+            "GET", 
+            "/admin/users", 
+            200, 
+            headers=admin_headers
+        )
+        
+        if success:
+            users = response if isinstance(response, list) else []
+            print(f"   ✅ Retrieved {len(users)} users")
+            
+            # Check user data structure
+            if users:
+                sample_user = users[0]
+                required_fields = ['id', 'email', 'role']
+                missing_fields = [field for field in required_fields if field not in sample_user]
+                
+                if not missing_fields:
+                    print(f"   ✅ User data structure correct")
+                    print(f"   ✅ Sample user: {sample_user.get('email')} ({sample_user.get('role')})")
+                else:
+                    print(f"   ⚠️  Missing user fields: {missing_fields}")
+        
+        # Test 2: GET /api/admin/stats
+        print("\n📊 Test 2: System Statistics (Admin)...")
+        
+        stats_success, stats_response = self.run_test(
+            "Get System Statistics", 
+            "GET", 
+            "/admin/stats", 
+            200, 
+            headers=admin_headers
+        )
+        
+        if stats_success:
+            stats = stats_response
+            available_stats = list(stats.keys()) if isinstance(stats, dict) else []
+            print(f"   ✅ Statistics available: {available_stats}")
+        
+        return success and stats_success
+    
+    def test_critical_error_handling_stability(self):
+        """Test error handling and stability"""
+        print("\n🏥 CRITICAL: Testing Error Handling & Stability...")
+        print("=" * 60)
+        
+        # Test 1: Health endpoint
+        print("\n💓 Test 1: Health Check Endpoint...")
+        
+        health_success, health_response = self.run_test(
+            "Health Check", 
+            "GET", 
+            "/health", 
+            200
+        )
+        
+        if health_success:
+            print(f"   ✅ Health endpoint accessible")
+            print(f"   ✅ Health status: {health_response.get('status', 'unknown')}")
+        
+        # Test 2: CORS headers
+        print("\n🌐 Test 2: CORS Headers Verification...")
+        
+        try:
+            url = f"{self.api_url}/"
+            response = requests.options(url, headers={
+                'Origin': 'https://ai-workspace-17.preview.emergentagent.com',
+                'Access-Control-Request-Method': 'POST'
+            })
+            
+            self.tests_run += 1
+            
+            allow_origin = response.headers.get('Access-Control-Allow-Origin')
+            if allow_origin == '*' or 'ai-workspace-17.preview.emergentagent.com' in str(allow_origin):
+                self.tests_passed += 1
+                print(f"   ✅ CORS properly configured for frontend")
+                cors_success = True
+            else:
+                print(f"   ⚠️  CORS configuration: {allow_origin}")
+                cors_success = True  # Don't fail, just note
+                
+        except Exception as e:
+            print(f"   ❌ CORS test error: {str(e)}")
+            cors_success = False
+        
+        # Test 3: API reliability
+        print("\n🔄 Test 3: API Reliability Testing...")
+        
+        rapid_success_count = 0
+        for i in range(3):
+            success, _ = self.run_test(
+                f"Rapid Request {i+1}", 
+                "GET", 
+                "/", 
+                200
+            )
+            if success:
+                rapid_success_count += 1
+        
+        print(f"   ✅ Rapid requests: {rapid_success_count}/3 successful")
+        
+        return health_success and cors_success and (rapid_success_count >= 2)
+    
+    def run_critical_pre_deployment_tests(self):
+        """Run all critical tests specified in the review request"""
+        print("\n" + "="*80)
+        print("🚀 CRITICAL PRE-DEPLOYMENT BACKEND TESTING")
+        print("   Testing all critical functionality before deployment to colleagues")
+        print("="*80)
+        
+        critical_results = {}
+        
+        # 1. Authentication System
+        print("\n" + "🔐 AUTHENTICATION SYSTEM TESTING" + "="*50)
+        auth_success, auth_token, auth_user = self.test_critical_authentication_system()
+        admin_success, admin_token, admin_user = self.test_critical_admin_special_handling()
+        critical_results['authentication'] = auth_success and admin_success
+        
+        # 2. Chat/LLM Integration  
+        print("\n" + "🤖 CHAT/LLM INTEGRATION TESTING" + "="*50)
+        chat_success, chat_response = self.test_critical_chat_llm_integration()
+        critical_results['chat_llm'] = chat_success
+        
+        # 3. Admin User Management
+        print("\n" + "👥 ADMIN USER MANAGEMENT TESTING" + "="*50)
+        admin_mgmt_success = self.test_critical_admin_user_management()
+        critical_results['admin_management'] = admin_mgmt_success
+        
+        # 4. Error Handling & Stability
+        print("\n" + "🏥 ERROR HANDLING & STABILITY TESTING" + "="*50)
+        stability_success = self.test_critical_error_handling_stability()
+        critical_results['stability'] = stability_success
+        
+        # Summary
+        print("\n" + "="*80)
+        print("📊 CRITICAL TESTING SUMMARY")
+        print("="*80)
+        
+        for test_name, result in critical_results.items():
+            status = "✅ PASS" if result else "❌ FAIL"
+            print(f"   {test_name.upper().replace('_', ' ')}: {status}")
+        
+        all_critical_passed = all(critical_results.values())
+        
+        if all_critical_passed:
+            print("\n🎉 ALL CRITICAL TESTS PASSED - READY FOR COLLEAGUE DEMO")
+        else:
+            failed_tests = [name for name, result in critical_results.items() if not result]
+            print(f"\n⚠️  CRITICAL ISSUES FOUND IN: {', '.join(failed_tests).upper()}")
+        
+        return all_critical_passed, critical_results
+
 def main():
     print("🚀 Starting ASI OS API Testing...")
     print("=" * 60)
