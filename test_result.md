@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Critical pre-deployment testing needed: Comprehensive testing of simplified universal authentication system, chat functionality with LLM integration, user creation and admin management system, error handling improvements, and stability fixes before sharing with colleagues for demo."
+user_problem_statement: "PRODUCTION ENVIRONMENT CRITICAL ISSUES: User reported three critical failures on asiaihub.com production: 1) Login failure for layth.bunni@adamsmithinternational.com - shows processing but never completes, 2) Chat failure - James AI shows processing but responses never appear/save, 3) RAG system failure - James returns 'no information in knowledge base' despite 20 documents uploaded. All systems worked in preview/testing but failing in production."
 
 backend:
   - task: "Universal Authentication System"
