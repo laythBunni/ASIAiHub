@@ -1984,7 +1984,7 @@ async def login_user(request: LoginRequest):
     """Universal login - any email + master code ASI2025"""
     try:
         # Check if using master code
-        MASTER_CODE = os.environ.get('MASTER_LOGIN_CODE', 'ASI2025')
+        MASTER_CODE = 'ASI2025'  # Hardcoded for now, change later via env
         
         if request.personal_code == MASTER_CODE:
             # Simple universal login
