@@ -2347,14 +2347,19 @@ async def create_user_admin(
         if not user_data.get('email') or not user_data.get('name'):
             raise HTTPException(status_code=400, detail="Email and name are required")
         
-        # Check if user already exists
-        existing_user = await db.simple_users.find_one({"email": user_data['email']})
-        if existing_user:
+        # Check if user already exists in both collections
+        existing_simple = await db.simple_users.find_one({"email": user_data['email']})
+        existing_beta = await db.beta_users.find_one({"email": user_data['email']})
+        
+        if existing_simple or existing_beta:
             raise HTTPException(status_code=400, detail="User with this email already exists")
         
-        # Create new user
-        new_user = {
-            "id": str(uuid.uuid4()),
+        # Create new user ID
+        user_id = str(uuid.uuid4())
+        
+        # Create new user document
+        new_user_doc = {
+            "id": user_id,
             "email": user_data['email'],
             "name": user_data['name'],
             "personal_code": "***",  # Will be set when user first logs in
@@ -2366,18 +2371,20 @@ async def create_user_admin(
             "access_token": None
         }
         
-        # Insert into database
-        await db.simple_users.insert_one(new_user)
+        # Insert into simple_users collection
+        result = await db.simple_users.insert_one(new_user_doc)
         
-        # Remove sensitive fields from response
-        response_user = {k: v for k, v in new_user.items() if k != 'personal_code'}
-        
-        return {"message": "User created successfully", "user": response_user}
+        if result.inserted_id:
+            # Return success without sensitive data
+            response_user = {k: v for k, v in new_user_doc.items() if k not in ['personal_code', 'access_token']}
+            return {"message": "User created successfully", "user": response_user}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create user")
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating user: {e}")
+        logger.error(f"Error creating user: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create user")
 
 @api_router.post("/auth/logout")
