@@ -125,11 +125,11 @@ backend:
 
   - task: "Chat/LLM Integration"
     implemented: true
-    working: true
+    working: false
     file: "/app/backend/server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "critical"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "unknown"
         agent: "main"
@@ -137,6 +137,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ CHAT/LLM INTEGRATION FULLY TESTED AND WORKING! POST /api/chat/send endpoint working perfectly with James AI responses. Structured response format confirmed with summary, details, and action guidance. Session management working correctly. Emergent LLM integration operational. RAG system generating contextual responses. All chat functionality requirements from review request met."
+      - working: false
+        agent: "user"
+        comment: "🚨 PRODUCTION CHAT FAILURE: James AI chat shows processing indicator but responses never appear/save in production (asiaihub.com). Processing occurs but results disappear. Worked in preview/testing environments but failing in production."
 
   - task: "Admin User Management APIs"
     implemented: true
