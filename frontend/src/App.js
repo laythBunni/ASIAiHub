@@ -171,6 +171,7 @@ export const AuthProvider = ({ children }) => {
 // Authentication Forms Component
 const SimpleLoginForm = () => {
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     accessCode: ''
   });
@@ -192,7 +193,7 @@ const SimpleLoginForm = () => {
     setLoading(true);
 
     try {
-      const result = await login(formData.email, formData.accessCode);
+      const result = await login(formData.name, formData.email, formData.accessCode);
 
       if (result.success) {
         toast({
@@ -240,6 +241,21 @@ const SimpleLoginForm = () => {
                 </div>
               </div>
             )}
+
+            <div>
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                placeholder="Your full name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="mt-1"
+              />
+            </div>
 
             <div>
               <Label htmlFor="email">Email address</Label>
