@@ -5186,12 +5186,12 @@ const SystemAdmin = () => {
                         </td>
                         <td className="p-3">
                           <Badge className={`${
-                            user.boost_role === 'Admin' ? 'bg-red-100 text-red-700' :
-                            user.boost_role === 'Manager' ? 'bg-orange-100 text-orange-700' :
-                            user.boost_role === 'Agent' ? 'bg-blue-100 text-blue-700' :
+                            (user.role || user.boost_role) === 'Admin' ? 'bg-red-100 text-red-700' :
+                            (user.role || user.boost_role) === 'Manager' ? 'bg-orange-100 text-orange-700' :
+                            (user.role || user.boost_role) === 'Agent' ? 'bg-blue-100 text-blue-700' :
                             'bg-gray-100 text-gray-700'
                           }`}>
-                            {user.boost_role}
+                            {user.role || user.boost_role || 'User'}
                           </Badge>
                         </td>
                         <td className="p-3 text-gray-600">{user.department || 'None'}</td>
