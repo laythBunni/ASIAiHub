@@ -32,10 +32,22 @@ class RAGSystem:
     def __init__(self, emergent_llm_key: str):
         self.emergent_llm_key = emergent_llm_key
         
-        # Initialize ChromaDB with sentence transformers
-        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L6-v2"
-        )
+        # Use OpenAI embeddings instead of sentence transformers for production deployment
+        try:
+            # Try to use sentence transformers first (for development)
+            self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
+                model_name="all-MiniLM-L6-v2"
+            )
+            self.embedding_mode = "local"
+            print("RAG System using local sentence transformers")
+        except Exception as e:
+            # Fall back to OpenAI embeddings (for production)
+            self.embedding_function = embedding_functions.OpenAIEmbeddingFunction(
+                api_key=emergent_llm_key,  # Use same emergent key
+                model_name="text-embedding-ada-002"
+            )
+            self.embedding_mode = "openai"
+            print("RAG System using OpenAI embeddings (production mode)")
         
         self.chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
         
