@@ -395,7 +395,187 @@ class ASIOSAPITester:
         
         return self.run_test("Delete Business Unit", "DELETE", f"/boost/business-units/{unit_id}", 200)
 
-    # Beta Authentication System Tests
+    # CRITICAL PRE-DEPLOYMENT AUTHENTICATION TESTS
+    
+    def test_universal_login_system(self):
+        """Test universal login system as specified in review request"""
+        print("\n🔐 CRITICAL: Testing Universal Login System...")
+        print("=" * 60)
+        
+        # Test 1: Universal login with any email + ASI2025 should auto-create Manager users
+        print("\n📝 Test 1: Universal Login Auto-Creation...")
+        
+        test_email = "test.manager@example.com"
+        login_data = {
+            "email": test_email,
+            "access_code": "ASI2025"
+        }
+        
+        success, response = self.run_test(
+            "Universal Login (Any Email + ASI2025)", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            login_data
+        )
+        
+        if success:
+            user_data = response.get('user', {})
+            token = response.get('token')
+            
+            print(f"   ✅ Auto-created user: {user_data.get('email')}")
+            print(f"   ✅ Role assigned: {user_data.get('role')}")
+            print(f"   ✅ Token generated: {token[:20] if token else 'None'}...")
+            
+            # Verify user was created as Manager
+            if user_data.get('role') == 'Manager':
+                print(f"   ✅ Correct role: Manager assigned to new user")
+            else:
+                print(f"   ❌ Wrong role: Expected 'Manager', got '{user_data.get('role')}'")
+                
+            # Store token for later tests
+            self.auth_token = token
+            return True, token, user_data
+        else:
+            print(f"   ❌ Universal login failed")
+            return False, None, {}
+    
+    def test_admin_user_special_handling(self):
+        """Test that layth.bunni@adamsmithinternational.com gets Admin role"""
+        print("\n👑 Test 2: Admin User Special Handling...")
+        
+        admin_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "access_code": "ASI2025"
+        }
+        
+        success, response = self.run_test(
+            "Admin Login (layth.bunni@adamsmithinternational.com)", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            admin_login_data
+        )
+        
+        if success:
+            user_data = response.get('user', {})
+            token = response.get('token')
+            
+            print(f"   ✅ Admin user logged in: {user_data.get('email')}")
+            print(f"   ✅ Role assigned: {user_data.get('role')}")
+            
+            # Verify admin gets Admin role specifically
+            if user_data.get('role') == 'Admin':
+                print(f"   ✅ Correct admin role: Admin assigned to layth.bunni")
+                self.admin_token = token  # Store admin token for admin tests
+                return True, token, user_data
+            else:
+                print(f"   ❌ Wrong admin role: Expected 'Admin', got '{user_data.get('role')}'")
+                return False, token, user_data
+        else:
+            print(f"   ❌ Admin login failed")
+            return False, None, {}
+    
+    def test_authentication_flow(self):
+        """Test complete authentication flow: login → get token → use token for API calls"""
+        print("\n🔄 Test 3: Complete Authentication Flow...")
+        
+        # Step 1: Login
+        login_data = {
+            "email": "flow.test@company.com",
+            "access_code": "ASI2025"
+        }
+        
+        login_success, login_response = self.run_test(
+            "Authentication Flow - Login", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            login_data
+        )
+        
+        if not login_success:
+            print("   ❌ Authentication flow failed at login step")
+            return False
+        
+        token = login_response.get('token')
+        if not token:
+            print("   ❌ No token received from login")
+            return False
+        
+        print(f"   ✅ Step 1: Login successful, token received")
+        
+        # Step 2: Use token for authenticated API call
+        auth_headers = {'Authorization': f'Bearer {token}'}
+        
+        # Test with a protected endpoint (assuming /auth/me exists)
+        me_success, me_response = self.run_test(
+            "Authentication Flow - Use Token", 
+            "GET", 
+            "/auth/me", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if me_success:
+            print(f"   ✅ Step 2: Token authentication successful")
+            print(f"   ✅ User info retrieved: {me_response.get('email')}")
+            return True
+        else:
+            print(f"   ❌ Step 2: Token authentication failed")
+            return False
+    
+    def test_user_auto_creation_storage(self):
+        """Test that auto-created users are stored correctly in database"""
+        print("\n💾 Test 4: User Auto-Creation Database Storage...")
+        
+        # Create a new user via login
+        unique_email = f"storage.test.{int(time.time())}@company.com"
+        login_data = {
+            "email": unique_email,
+            "access_code": "ASI2025"
+        }
+        
+        success, response = self.run_test(
+            "Auto-Creation Storage Test", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            login_data
+        )
+        
+        if success:
+            user_data = response.get('user', {})
+            user_id = user_data.get('id')
+            
+            print(f"   ✅ User auto-created with ID: {user_id}")
+            print(f"   ✅ Email stored: {user_data.get('email')}")
+            print(f"   ✅ Role stored: {user_data.get('role')}")
+            print(f"   ✅ Created timestamp: {user_data.get('created_at')}")
+            
+            # Verify user persists by logging in again
+            second_login_success, second_response = self.run_test(
+                "Verify User Persistence", 
+                "POST", 
+                "/auth/login", 
+                200, 
+                login_data
+            )
+            
+            if second_login_success:
+                second_user_data = second_response.get('user', {})
+                if second_user_data.get('id') == user_id:
+                    print(f"   ✅ User persistence verified - same ID on second login")
+                    return True
+                else:
+                    print(f"   ❌ User persistence failed - different ID on second login")
+                    return False
+            else:
+                print(f"   ❌ Second login failed - user not persisted")
+                return False
+        else:
+            print(f"   ❌ User auto-creation failed")
+            return False
     
     def test_setup_beta_settings(self):
         """Setup beta settings for testing"""
