@@ -36,9 +36,6 @@ mongo_url = os.environ['MONGO_URL']
 # Configure MongoDB client with Stable API (MongoDB's recommended approach)
 if mongo_url.startswith('mongodb+srv://'):
     # Atlas connection using MongoDB's Stable API configuration
-    from pymongo import MongoClient
-    from pymongo.server_api import ServerApi
-    
     client = AsyncIOMotorClient(
         mongo_url,
         server_api=ServerApi('1', strict=True, deprecation_errors=True),
