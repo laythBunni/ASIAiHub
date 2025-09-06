@@ -2570,13 +2570,13 @@ async def create_user_admin(
         
         if result.inserted_id:
             # Return success without sensitive data and ensure JSON serializable
-            response_user = {k: v for k, v in new_user_doc.items() if k not in ['personal_code', 'access_token']}
+            response_user = {k: v for k, v in new_user_doc.items() if k not in ['personal_code', 'access_token', '_id']}
             # Convert datetime to string for JSON serialization
             if 'created_at' in response_user:
                 response_user['created_at'] = response_user['created_at'].isoformat()
             
             logger.info(f"Returning user creation response with ID: {response_user.get('id')}")
-            return {"message": "User created successfully", "user": response_user, "personal_code": personal_code}
+            return response_user
         else:
             raise HTTPException(status_code=500, detail="Failed to create user")
         
