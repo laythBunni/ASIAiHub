@@ -3476,8 +3476,10 @@ class ASIOSAPITester:
         print(f"\n👤 Step 2: Test User Creation Restriction...")
         
         # Test that Layth can create users
+        import time
+        unique_email = f"test.newuser.{int(time.time())}@example.com"
         new_user_data = {
-            "email": "test.newuser@example.com",
+            "email": unique_email,
             "name": "Test New User",
             "role": "User",
             "department": "IT",
