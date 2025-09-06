@@ -3868,16 +3868,29 @@ def main():
         test_mode = sys.argv[1]
         
         if test_mode == "layth-credentials":
+            # Run Layth credentials retrieval test as per review request
+            print("\n🔐 RUNNING LAYTH CREDENTIALS RETRIEVAL TEST")
+            print("=" * 60)
+            success, credentials = tester.test_layth_credentials_retrieval()
+            
+            if success:
+                print("\n🎉 LAYTH CREDENTIALS RETRIEVAL TEST COMPLETED SUCCESSFULLY!")
+                return 0
+            else:
+                print("\n❌ LAYTH CREDENTIALS RETRIEVAL TEST FAILED!")
+                return 1
+        
+        elif test_mode == "layth-phase1":
             # Run Layth credentials Phase 1 test
             print("\n🔐 RUNNING LAYTH CREDENTIALS PHASE 1 TEST")
             print("=" * 60)
             success, credentials = tester.test_layth_credentials_phase1()
             
             if success:
-                print("\n🎉 LAYTH CREDENTIALS TEST COMPLETED SUCCESSFULLY!")
+                print("\n🎉 LAYTH CREDENTIALS PHASE 1 TEST COMPLETED SUCCESSFULLY!")
                 return 0
             else:
-                print("\n❌ LAYTH CREDENTIALS TEST FAILED!")
+                print("\n❌ LAYTH CREDENTIALS PHASE 1 TEST FAILED!")
                 return 1
         
         elif test_mode == "phase1":
