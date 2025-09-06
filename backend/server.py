@@ -1561,16 +1561,58 @@ async def get_boost_ticket(ticket_id: str):
 async def update_boost_ticket(ticket_id: str, update_data: BoostTicketUpdate):
     """Update a BOOST ticket"""
     try:
+        # Get the current ticket to compare changes
+        current_ticket = await db.boost_tickets.find_one({"id": ticket_id})
+        if not current_ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
         update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
         update_dict["updated_at"] = datetime.now(timezone.utc)
         
+        # Track changes for audit trail
+        changes_made = []
+        user_name = update_dict.get("updated_by", "System")  # Get user name from frontend
+        
         # Handle status transitions
-        if update_data.status:
+        if update_data.status and update_data.status != current_ticket.get("status"):
+            old_status = current_ticket.get("status", "unknown")
+            new_status = update_data.status
+            changes_made.append({
+                "action": "status_changed",
+                "description": f"Status changed from {old_status.replace('_', ' ')} to {new_status.replace('_', ' ')}",
+                "old_value": old_status,
+                "new_value": new_status
+            })
+            
             if update_data.status == TicketStatus.RESOLVED:
                 update_dict["resolved_at"] = datetime.now(timezone.utc)
             elif update_data.status == TicketStatus.CLOSED:
                 update_dict["closed_at"] = datetime.now(timezone.utc)
         
+        # Handle priority changes
+        if update_data.priority and update_data.priority != current_ticket.get("priority"):
+            old_priority = current_ticket.get("priority", "unknown")
+            new_priority = update_data.priority
+            changes_made.append({
+                "action": "priority_changed",
+                "description": f"Priority changed from {old_priority} to {new_priority}",
+                "old_value": old_priority,
+                "new_value": new_priority
+            })
+        
+        # Handle assignment changes
+        if "owner_id" in update_dict:
+            old_owner = current_ticket.get("owner_name", "Unassigned")
+            new_owner = update_data.owner_name or "Unassigned"
+            if old_owner != new_owner:
+                changes_made.append({
+                    "action": "assigned",
+                    "description": f"Assigned from {old_owner} to {new_owner}",
+                    "old_value": old_owner,
+                    "new_value": new_owner
+                })
+        
+        # Update the ticket
         result = await db.boost_tickets.update_one(
             {"id": ticket_id},
             {"$set": update_dict}
@@ -1579,6 +1621,19 @@ async def update_boost_ticket(ticket_id: str, update_data: BoostTicketUpdate):
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Ticket not found")
         
+        # Log audit entries for all changes
+        for change in changes_made:
+            await log_audit_entry(
+                ticket_id=ticket_id,
+                action=change["action"],
+                description=change["description"],
+                user_name=user_name,
+                details=f"Changed from '{change['old_value']}' to '{change['new_value']}'",
+                old_value=change["old_value"],
+                new_value=change["new_value"]
+            )
+        
+        # Get and return updated ticket
         updated_ticket = await db.boost_tickets.find_one({"id": ticket_id})
         return BoostTicket(**updated_ticket)
         
