@@ -409,6 +409,18 @@ class BoostUserUpdate(BaseModel):
     boost_role: Optional[BoostRole] = None
     business_unit_id: Optional[str] = None
     department: Optional[SupportDepartment] = None
+
+class BoostAuditEntry(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    ticket_id: str
+    action: str  # "created", "status_changed", "priority_changed", "assigned", etc.
+    description: str
+    user_name: str
+    user_id: Optional[str] = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    details: Optional[str] = None
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
     active: Optional[bool] = None
 
 # Utility Functions
