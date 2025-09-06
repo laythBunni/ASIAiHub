@@ -4111,11 +4111,25 @@ def main():
                 print("⚠️  Phase 1 issues found - system needs attention.")
                 return 1
         
+        elif test_mode == "phase2":
+            # Run Phase 2 new authentication system tests
+            print("\n🔐 RUNNING PHASE 2 NEW AUTHENTICATION SYSTEM TESTS")
+            print("=" * 60)
+            phase2_passed = tester.test_phase2_authentication_system()
+            
+            if phase2_passed:
+                print("🎉 Phase 2 New Authentication System tests passed!")
+                return 0
+            else:
+                print("⚠️  Phase 2 issues found - system needs attention.")
+                return 1
+        
         else:
             print("Available test modes:")
             print("  layth-credentials - Get Layth's actual credentials via secure endpoint")
             print("  layth-phase1 - Get Layth's Phase 1 credentials")
             print("  phase1 - Run Phase 1 admin-managed authentication tests")
+            print("  phase2 - Run Phase 2 new authentication system tests")
             return 1
     
     # Default: Test basic connectivity first
