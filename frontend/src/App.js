@@ -5077,6 +5077,29 @@ const SystemAdmin = () => {
     }
   };
 
+  const regenerateUserCode = async (userId) => {
+    if (!confirm('Generate a new personal code for this user? The old code will no longer work.')) return;
+    
+    try {
+      const response = await apiCall('POST', `/admin/users/${userId}/regenerate-code`);
+      toast({
+        title: "✅ New Code Generated!",
+        description: `New personal code: ${response.new_code}`,
+        duration: 10000, // Show for 10 seconds so admin can copy it
+      });
+      
+      // Refresh users list to show new code
+      fetchUsers();
+    } catch (error) {
+      console.error('Error regenerating code:', error);
+      toast({
+        title: "Error",
+        description: "Failed to regenerate personal code",
+        variant: "destructive"
+      });
+    }
+  };
+
 
 
   return (
