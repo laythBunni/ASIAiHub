@@ -4795,14 +4795,14 @@ const SystemAdmin = () => {
     const initializeAdminData = async () => {
       try {
         // First fetch users (required for permissions)
-        await fetchUsers();
+        const usersData = await fetchUsers();
         // Then fetch other data concurrently
         await Promise.all([
           fetchBusinessUnits(),
           fetchSystemStats(),
         ]);
-        // Finally fetch permissions (needs users to be loaded)
-        await fetchPermissions();
+        // Finally fetch permissions with the users data
+        await fetchPermissions(usersData);
       } catch (error) {
         console.error('Error initializing admin data:', error);
         toast({
