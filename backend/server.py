@@ -2632,6 +2632,37 @@ async def regenerate_user_code(
         logger.error(f"Error regenerating code: {e}")
         raise HTTPException(status_code=500, detail="Failed to regenerate code")
 
+@api_router.get("/admin/layth-credentials")
+async def get_layth_credentials(
+    current_user: BetaUser = Depends(get_current_user)
+):
+    """Get Layth's credentials for Phase 1 testing (temp endpoint)"""
+    try:
+        # Verify this is Layth himself requesting
+        if current_user.email != "layth.bunni@adamsmithinternational.com":
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Get Layth's user record to show his personal code
+        layth_user = await db.simple_users.find_one({"email": "layth.bunni@adamsmithinternational.com"})
+        if not layth_user:
+            layth_user = await db.beta_users.find_one({"email": "layth.bunni@adamsmithinternational.com"})
+        
+        if layth_user:
+            return {
+                "email": layth_user["email"],
+                "personal_code": layth_user.get("personal_code", "Not found"),
+                "role": layth_user.get("role", "Unknown"),
+                "id": layth_user.get("id")
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Layth not found")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting Layth credentials: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get credentials")
+
 @api_router.post("/auth/logout")
 async def logout(current_user: BetaUser = Depends(get_current_user)):
     """Logout user and clear access token"""
