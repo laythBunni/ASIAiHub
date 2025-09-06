@@ -55,6 +55,12 @@ db = client[os.environ['DB_NAME']]
 # Create the main app without a prefix
 app = FastAPI(title="ASI AiHub - AI-Powered Knowledge Management Platform")
 
+# Add startup event to ensure all users have personal codes
+@app.on_event("startup")
+async def startup_event():
+    """Run startup tasks"""
+    await ensure_all_users_have_codes()
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
