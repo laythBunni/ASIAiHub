@@ -284,6 +284,37 @@ frontend:
         agent: "testing"
         comment: "🎉 COMPREHENSIVE ADMIN USER MANAGEMENT API TESTING COMPLETED SUCCESSFULLY! Conducted exhaustive testing of specific issues reported in review request: ✅ ROLE UPDATE CONSISTENCY: Tested multiple role changes (Manager→Agent→Manager→Agent) with both 'role' and 'boost_role' field names - all updates persist correctly in database. ✅ BUSINESS UNIT UPDATES: Verified business_unit_id updates with automatic business_unit_name resolution working perfectly. Tested edge cases (business_unit_id='none' and null) - all handled correctly. ✅ FIELD MAPPING VERIFICATION: Both 'role' and 'boost_role' field names supported in PUT /api/admin/users/{user_id} endpoint. All 20 test cases passed (100% success rate). The specific issues mentioned in review request (role working once then failing, business unit not updating) have been COMPLETELY RESOLVED. Backend Admin User Management APIs are production-ready and working consistently."
 
+backend:
+  - task: "Chat Ticket Creation Bug"
+    implemented: false  
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Create Ticket button in chat conversation presents the form which can be filled out, but the ticket is not actually created and doesn't appear in the support ticket queue."
+      - working: "unknown"
+        agent: "main"
+        comment: "INVESTIGATING: Need to trace the chat ticket creation flow from frontend button → form submission → backend API → database storage → ticket queue display."
+
+  - task: "Activity Log Missing for Quick Actions"
+    implemented: false
+    working: false  
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user" 
+        comment: "Quick actions (status/priority updates) work correctly but no record/log is created in the activity panel. Changes persist but audit trail is missing."
+      - working: "unknown"
+        agent: "main"
+        comment: "INVESTIGATING: Need to check if quick action updates are calling audit trail creation endpoints and verify activity log backend implementation."
+
 agent_communication:
   - agent: "main"
     message: "CRITICAL PRE-DEPLOYMENT TESTING SETUP: Applied comprehensive stability fixes including error boundaries, retry logic, global error handling, and simplified authentication. Need thorough testing of all critical features before sharing with colleagues: 1) Universal login (any email + ASI2025), 2) Chat functionality with James AI, 3) Admin user management and permissions, 4) Error handling and recovery, 5) System stability. All core features must work reliably for colleague demo."
