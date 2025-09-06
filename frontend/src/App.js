@@ -5181,6 +5181,7 @@ const SystemAdmin = () => {
                       <th className="text-left p-3">Role</th>
                       <th className="text-left p-3">Department</th>
                       <th className="text-left p-3">Business Unit</th>
+                      <th className="text-left p-3">Personal Code</th>
                       <th className="text-left p-3">Permissions</th>
                       <th className="text-left p-3">Actions</th>
                     </tr>
