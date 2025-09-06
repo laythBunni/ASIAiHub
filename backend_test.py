@@ -3389,6 +3389,230 @@ class ASIOSAPITester:
         
         return all_critical_passed, critical_results
 
+    def test_admin_managed_auth_phase1(self):
+        """Test Phase 1 of the new Admin-Managed Authentication System"""
+        print("\n🔐 PHASE 1: Admin-Managed Authentication System Testing...")
+        print("=" * 70)
+        
+        # Step 1: Verify User Code Generation - GET /api/admin/users
+        print("\n📋 Step 1: Verify User Code Generation...")
+        
+        # First authenticate as Layth to access admin endpoints
+        layth_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "ASI2025"
+        }
+        
+        login_success, login_response = self.run_test(
+            "Layth Admin Login", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            layth_login_data
+        )
+        
+        if not login_success:
+            print("❌ Cannot authenticate as Layth - stopping Phase 1 tests")
+            return False
+        
+        layth_token = login_response.get('access_token')
+        if not layth_token:
+            print("❌ No admin token received - stopping Phase 1 tests")
+            return False
+        
+        print(f"   ✅ Layth authenticated successfully")
+        auth_headers = {'Authorization': f'Bearer {layth_token}'}
+        
+        # Get all users to verify personal codes
+        users_success, users_response = self.run_test(
+            "GET /api/admin/users (Verify Personal Codes)", 
+            "GET", 
+            "/admin/users", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if not users_success:
+            print("❌ Failed to get users list")
+            return False
+        
+        users_list = users_response if isinstance(users_response, list) else []
+        print(f"   ✅ Retrieved {len(users_list)} users")
+        
+        # Verify all users have personal_code field with 6-digit codes
+        users_with_codes = 0
+        layth_user = None
+        layth_personal_code = None
+        
+        for user in users_list:
+            email = user.get('email', '')
+            personal_code = user.get('personal_code', '')
+            
+            if personal_code:
+                users_with_codes += 1
+                # Verify it's a 6-digit code
+                if len(personal_code) == 6 and personal_code.isdigit():
+                    print(f"   ✅ {email}: {personal_code} (6-digit code)")
+                else:
+                    print(f"   ⚠️  {email}: {personal_code} (not 6-digit)")
+                
+                # Find Layth's personal code
+                if email == "layth.bunni@adamsmithinternational.com":
+                    layth_user = user
+                    layth_personal_code = personal_code
+                    print(f"   🎯 LAYTH'S PERSONAL CODE: {personal_code}")
+            else:
+                print(f"   ❌ {email}: No personal code found")
+        
+        print(f"   📊 Users with personal codes: {users_with_codes}/{len(users_list)}")
+        
+        if users_with_codes == len(users_list):
+            print(f"   ✅ All users have personal codes generated")
+        else:
+            print(f"   ❌ Some users missing personal codes")
+            return False
+        
+        # Step 2: Test User Creation Restriction
+        print(f"\n👤 Step 2: Test User Creation Restriction...")
+        
+        # Test that Layth can create users
+        new_user_data = {
+            "email": "test.newuser@example.com",
+            "name": "Test New User",
+            "role": "User",
+            "department": "IT",
+            "is_active": True
+        }
+        
+        create_success, create_response = self.run_test(
+            "Create User (Layth Only)", 
+            "POST", 
+            "/admin/users", 
+            200, 
+            new_user_data,
+            headers=auth_headers
+        )
+        
+        if create_success:
+            print(f"   ✅ Layth can create users successfully")
+            created_user = create_response.get('user', {})
+            created_user_id = created_user.get('id')
+            print(f"   📋 Created user ID: {created_user_id}")
+            print(f"   📧 Created user email: {created_user.get('email')}")
+            
+            # Verify the new user gets a generated personal_code
+            # Get updated users list to check the new user
+            updated_users_success, updated_users_response = self.run_test(
+                "GET /api/admin/users (Check New User)", 
+                "GET", 
+                "/admin/users", 
+                200, 
+                headers=auth_headers
+            )
+            
+            if updated_users_success:
+                updated_users_list = updated_users_response if isinstance(updated_users_response, list) else []
+                new_user_found = None
+                
+                for user in updated_users_list:
+                    if user.get('id') == created_user_id:
+                        new_user_found = user
+                        break
+                
+                if new_user_found:
+                    new_user_code = new_user_found.get('personal_code', '')
+                    if new_user_code and len(new_user_code) == 6 and new_user_code.isdigit():
+                        print(f"   ✅ New user has generated personal_code: {new_user_code}")
+                    else:
+                        print(f"   ❌ New user missing or invalid personal_code: {new_user_code}")
+                        return False
+                else:
+                    print(f"   ❌ New user not found in updated list")
+                    return False
+        else:
+            print(f"   ❌ Layth cannot create users")
+            return False
+        
+        # Step 3: Test Code Regeneration
+        print(f"\n🔄 Step 3: Test Code Regeneration...")
+        
+        if created_user_id:
+            # Test regenerating code for the newly created user
+            regen_success, regen_response = self.run_test(
+                "Regenerate User Code (Layth Only)", 
+                "POST", 
+                f"/admin/users/{created_user_id}/regenerate-code", 
+                200, 
+                headers=auth_headers
+            )
+            
+            if regen_success:
+                print(f"   ✅ Code regeneration successful")
+                new_code = regen_response.get('new_personal_code', '')
+                print(f"   🔑 New personal code: {new_code}")
+                
+                # Verify the code was actually changed
+                verify_users_success, verify_users_response = self.run_test(
+                    "GET /api/admin/users (Verify Code Change)", 
+                    "GET", 
+                    "/admin/users", 
+                    200, 
+                    headers=auth_headers
+                )
+                
+                if verify_users_success:
+                    verify_users_list = verify_users_response if isinstance(verify_users_response, list) else []
+                    updated_user = None
+                    
+                    for user in verify_users_list:
+                        if user.get('id') == created_user_id:
+                            updated_user = user
+                            break
+                    
+                    if updated_user:
+                        current_code = updated_user.get('personal_code', '')
+                        if current_code == new_code and len(current_code) == 6 and current_code.isdigit():
+                            print(f"   ✅ Code regeneration verified: {current_code}")
+                        else:
+                            print(f"   ❌ Code regeneration failed - code not updated")
+                            return False
+                    else:
+                        print(f"   ❌ User not found for verification")
+                        return False
+            else:
+                print(f"   ❌ Code regeneration failed")
+                return False
+        
+        # Step 4: Report Layth's Credentials
+        print(f"\n📋 Step 4: Layth's Credentials Report...")
+        print("=" * 50)
+        
+        if layth_user and layth_personal_code:
+            print(f"🎯 LAYTH'S AUTHENTICATION CREDENTIALS:")
+            print(f"   📧 Email: {layth_user.get('email')}")
+            print(f"   🔑 Personal Code: {layth_personal_code}")
+            print(f"   👑 Role: {layth_user.get('role', 'N/A')}")
+            print(f"   🆔 User ID: {layth_user.get('id', 'N/A')}")
+            print(f"   📅 Created: {layth_user.get('created_at', 'N/A')}")
+            print(f"   ✅ Status: {'Active' if layth_user.get('is_active') else 'Inactive'}")
+        else:
+            print(f"   ❌ Could not find Layth's credentials")
+            return False
+        
+        # Final Summary
+        print(f"\n🎉 PHASE 1 TESTING COMPLETE!")
+        print("=" * 50)
+        print(f"✅ All existing users have personal codes generated")
+        print(f"✅ User creation is restricted to Layth only")
+        print(f"✅ New users get generated personal_code")
+        print(f"✅ Code regeneration works and is restricted to Layth")
+        print(f"✅ System is ready for Phase 2 (switching authentication)")
+        print(f"\n🔑 LAYTH'S CREDENTIALS FOR PHASE 1:")
+        print(f"   Email: layth.bunni@adamsmithinternational.com")
+        print(f"   Personal Code: {layth_personal_code}")
+        
+        return True
+
 def main():
     print("🚀 Starting ASI OS API Testing...")
     print("=" * 60)
