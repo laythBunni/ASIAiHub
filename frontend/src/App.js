@@ -4792,10 +4792,28 @@ const SystemAdmin = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
-    fetchBusinessUnits();
-    fetchSystemStats();
-    fetchPermissions();
+    const initializeAdminData = async () => {
+      try {
+        // First fetch users (required for permissions)
+        await fetchUsers();
+        // Then fetch other data concurrently
+        await Promise.all([
+          fetchBusinessUnits(),
+          fetchSystemStats(),
+        ]);
+        // Finally fetch permissions (needs users to be loaded)
+        await fetchPermissions();
+      } catch (error) {
+        console.error('Error initializing admin data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load admin data",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    initializeAdminData();
   }, []);
 
   const fetchUsers = async () => {
