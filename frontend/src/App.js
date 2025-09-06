@@ -4868,10 +4868,16 @@ const SystemAdmin = () => {
   };
 
   const fetchPermissions = async () => {
-    // For now, create default permissions structure
+    // Safety check: ensure users are loaded before creating permissions
+    if (!users || users.length === 0) {
+      console.log('Users not loaded yet, skipping permissions initialization');
+      return;
+    }
+    
+    // Create default permissions structure
     const defaultPermissions = {};
     users.forEach(user => {
-      defaultPermissions[user.id] = getDefaultPermissions(user.boost_role);
+      defaultPermissions[user.id] = getDefaultPermissions(user.boost_role || user.role);
     });
     setPermissions(defaultPermissions);
   };
