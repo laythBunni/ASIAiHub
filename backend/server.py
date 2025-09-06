@@ -495,6 +495,25 @@ def calculate_boost_sla_due(priority: TicketPriority, created_at: datetime) -> d
     
     hours = sla_hours.get(priority, 24)
     return created_at + timedelta(hours=hours)
+async def log_audit_entry(ticket_id: str, action: str, description: str, user_name: str, 
+                         user_id: str = None, details: str = None, old_value: str = None, new_value: str = None):
+    """Log an audit entry for a ticket"""
+    try:
+        audit_entry = BoostAuditEntry(
+            ticket_id=ticket_id,
+            action=action,
+            description=description,
+            user_name=user_name,
+            user_id=user_id,
+            details=details,
+            old_value=old_value,
+            new_value=new_value
+        )
+        await db.boost_audit_trail.insert_one(audit_entry.dict())
+        logger.info(f"Audit entry logged: {action} for ticket {ticket_id} by {user_name}")
+    except Exception as e:
+        logger.error(f"Failed to log audit entry: {e}")
+        # Don't raise exception to avoid breaking the main operation
 
 def auto_prefix_subject(department: SupportDepartment, category: str, subject: str) -> str:
     """Auto-prefix subject with department and category"""
