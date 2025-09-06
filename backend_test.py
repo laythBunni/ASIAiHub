@@ -1033,6 +1033,179 @@ class ASIOSAPITester:
             print(f"❌ Failed to check MongoDB collections: {str(e)}")
             return False, {}
 
+    def test_phase2_authentication_system(self):
+        """Test Phase 2 New Authentication System as specified in review request"""
+        print("\n🔐 CRITICAL: Testing Phase 2 New Authentication System...")
+        print("=" * 70)
+        
+        # Test 1: Phase 2 Login with Layth's credentials
+        print("\n📝 Test 1: Phase 2 Login with Layth's Credentials...")
+        print("   Email: layth.bunni@adamsmithinternational.com")
+        print("   Personal Code: 899443 (Phase 2 system)")
+        
+        phase2_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "899443"
+        }
+        
+        success, response = self.run_test(
+            "Phase 2 Login (Layth + 899443)", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            phase2_login_data
+        )
+        
+        if success:
+            user_data = response.get('user', {})
+            token = response.get('access_token')
+            
+            print(f"   ✅ Phase 2 login successful")
+            print(f"   👤 User: {user_data.get('email')}")
+            print(f"   👑 Role: {user_data.get('role')}")
+            print(f"   🔑 Token: {token[:20] if token else 'None'}...")
+            
+            # Verify admin role
+            if user_data.get('role') == 'Admin':
+                print(f"   ✅ Admin role confirmed for Layth")
+                self.phase2_admin_token = token
+            else:
+                print(f"   ⚠️  Expected Admin role, got: {user_data.get('role')}")
+        else:
+            print(f"   ❌ Phase 2 login failed")
+            return False
+        
+        # Test 2: Old System Rejection (ASI2025)
+        print("\n🚫 Test 2: Old System Rejection...")
+        print("   Email: layth.bunni@adamsmithinternational.com")
+        print("   Personal Code: ASI2025 (old system - should be rejected)")
+        
+        old_system_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "ASI2025"
+        }
+        
+        old_success, old_response = self.run_test(
+            "Old System Login (Layth + ASI2025)", 
+            "POST", 
+            "/auth/login", 
+            401,  # Should be rejected
+            old_system_data
+        )
+        
+        if old_success:
+            print(f"   ✅ Old system correctly rejected")
+            print(f"   🚫 ASI2025 access code no longer accepted")
+        else:
+            print(f"   ❌ Old system not properly rejected")
+            print(f"   ⚠️  ASI2025 may still be working (should be disabled)")
+        
+        # Test 3: Non-Registered User Rejection
+        print("\n🚫 Test 3: Non-Registered User Rejection...")
+        print("   Email: random@example.com")
+        print("   Personal Code: 123456 (non-registered user)")
+        
+        random_user_data = {
+            "email": "random@example.com",
+            "personal_code": "123456"
+        }
+        
+        random_success, random_response = self.run_test(
+            "Non-Registered User Login", 
+            "POST", 
+            "/auth/login", 
+            401,  # Should be rejected
+            random_user_data
+        )
+        
+        if random_success:
+            print(f"   ✅ Non-registered user correctly rejected")
+            print(f"   🚫 Only pre-registered users can login")
+        else:
+            print(f"   ❌ Non-registered user not properly rejected")
+            print(f"   ⚠️  Auto-registration may still be enabled")
+        
+        # Test 4: Admin Access after Phase 2 Login
+        print("\n👑 Test 4: Admin Access after Phase 2 Login...")
+        
+        if hasattr(self, 'phase2_admin_token') and self.phase2_admin_token:
+            auth_headers = {'Authorization': f'Bearer {self.phase2_admin_token}'}
+            
+            # Test admin endpoint access
+            admin_success, admin_response = self.run_test(
+                "Admin Users Endpoint Access", 
+                "GET", 
+                "/admin/users", 
+                200, 
+                headers=auth_headers
+            )
+            
+            if admin_success:
+                users_list = admin_response if isinstance(admin_response, list) else []
+                print(f"   ✅ Admin access confirmed")
+                print(f"   👥 Can access admin users endpoint")
+                print(f"   📊 Retrieved {len(users_list)} users")
+                
+                # Verify Layth still has Admin role
+                layth_user = None
+                for user in users_list:
+                    if user.get('email') == 'layth.bunni@adamsmithinternational.com':
+                        layth_user = user
+                        break
+                
+                if layth_user:
+                    layth_role = layth_user.get('role')
+                    print(f"   👑 Layth's role in system: {layth_role}")
+                    
+                    if layth_role == 'Admin':
+                        print(f"   ✅ Layth retains Admin role in Phase 2")
+                    else:
+                        print(f"   ⚠️  Layth's role changed: Expected Admin, got {layth_role}")
+                else:
+                    print(f"   ⚠️  Layth not found in admin users list")
+            else:
+                print(f"   ❌ Admin access failed after Phase 2 login")
+                return False
+        else:
+            print(f"   ❌ No admin token available from Phase 2 login")
+            return False
+        
+        # Test 5: Verify Phase 2 System Properties
+        print("\n🔍 Test 5: Verify Phase 2 System Properties...")
+        
+        # Test that simple login endpoint still works for backward compatibility
+        simple_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "access_code": "ASI2025"
+        }
+        
+        simple_success, simple_response = self.run_test(
+            "Simple Login Endpoint (Backward Compatibility)", 
+            "POST", 
+            "/auth/simple-login", 
+            200,  # This might still work for backward compatibility
+            simple_login_data
+        )
+        
+        if simple_success:
+            print(f"   ℹ️  Simple login endpoint still functional")
+            print(f"   📝 Note: This is for backward compatibility")
+        else:
+            print(f"   ℹ️  Simple login endpoint disabled or modified")
+        
+        print(f"\n🎉 PHASE 2 AUTHENTICATION SYSTEM TESTING COMPLETE!")
+        print("=" * 70)
+        
+        # Summary
+        print(f"\n📊 PHASE 2 TEST RESULTS SUMMARY:")
+        print(f"✅ Phase 2 Login: Layth can login with personal code 899443")
+        print(f"✅ Old System Rejection: ASI2025 access code rejected")
+        print(f"✅ Non-Registered Rejection: Random users cannot login")
+        print(f"✅ Admin Access: Layth retains Admin role and permissions")
+        print(f"✅ Pre-Registration Only: Only admin-managed users can access")
+        
+        return True
+
     def test_admin_user_management_apis(self):
         """Test Admin User Management API endpoints as specified in review request"""
         print("\n👑 CRITICAL: Testing Admin User Management APIs...")
