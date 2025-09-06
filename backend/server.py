@@ -2517,6 +2517,8 @@ async def create_user_admin(
 ):
     """Create a new user (Layth only)"""
     try:
+        logger.info(f"User creation attempt by: {current_user.email}")
+        
         # Verify admin access
         if current_user.role != 'Admin':
             raise HTTPException(status_code=403, detail="Admin access required")
@@ -2524,6 +2526,8 @@ async def create_user_admin(
         # Restrict user creation to only Layth
         if current_user.email != "layth.bunni@adamsmithinternational.com":
             raise HTTPException(status_code=403, detail="Only Layth can create new users")
+        
+        logger.info(f"Creating user with data: {user_data}")
         
         # Validate required fields
         if not user_data.get('email') or not user_data.get('name'):
@@ -2540,6 +2544,8 @@ async def create_user_admin(
         user_id = str(uuid.uuid4())
         personal_code = generate_personal_code()
         
+        logger.info(f"Generated user_id: {user_id}, personal_code: {personal_code}")
+        
         # Create new user document
         new_user_doc = {
             "id": user_id,
@@ -2555,8 +2561,12 @@ async def create_user_admin(
             "access_token": None
         }
         
+        logger.info(f"About to insert user document: {new_user_doc}")
+        
         # Insert into simple_users collection
         result = await db.simple_users.insert_one(new_user_doc)
+        
+        logger.info(f"Insert result: {result.inserted_id}")
         
         if result.inserted_id:
             # Return success without sensitive data and ensure JSON serializable
@@ -2564,6 +2574,8 @@ async def create_user_admin(
             # Convert datetime to string for JSON serialization
             if 'created_at' in response_user:
                 response_user['created_at'] = response_user['created_at'].isoformat()
+            
+            logger.info(f"About to return response: {response_user}")
             return {"message": "User created successfully", "user": response_user}
         else:
             raise HTTPException(status_code=500, detail="Failed to create user")
@@ -2572,6 +2584,9 @@ async def create_user_admin(
         raise
     except Exception as e:
         logger.error(f"Error creating user: {str(e)}")
+        logger.error(f"Error type: {type(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Failed to create user")
 
 @api_router.post("/admin/users/{user_id}/regenerate-code")
