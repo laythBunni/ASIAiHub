@@ -287,7 +287,7 @@ const SimpleLoginForm = () => {
           
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
-              New users will be automatically registered
+              Only registered users can access the system
             </p>
           </div>
         </div>
