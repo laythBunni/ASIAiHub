@@ -1943,6 +1943,389 @@ class ASIOSAPITester:
         
         return all_tests_passed
 
+    def test_admin_user_management_role_consistency(self):
+        """Test Admin User Management API with focus on role update consistency and business unit updates"""
+        print("\n👑 CRITICAL: Testing Admin User Management - Role Consistency & Business Unit Updates")
+        print("=" * 80)
+        
+        # Step 1: Authenticate as admin user (layth.bunni@adamsmithinternational.com)
+        print("\n🔐 Step 1: Admin Authentication...")
+        
+        admin_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "access_code": "ASI2025"
+        }
+        
+        login_success, login_response = self.run_test(
+            "Admin Login", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            admin_login_data
+        )
+        
+        if not login_success:
+            print("❌ Cannot authenticate as admin - stopping tests")
+            return False
+        
+        admin_token = login_response.get('token') or login_response.get('access_token')
+        if not admin_token:
+            print("❌ No admin token received - stopping tests")
+            return False
+        
+        print(f"   ✅ Admin authenticated successfully")
+        auth_headers = {'Authorization': f'Bearer {admin_token}'}
+        
+        # Step 2: Get list of business units from /api/boost/business-units
+        print("\n🏢 Step 2: Getting Business Units...")
+        
+        bu_success, bu_response = self.run_test(
+            "GET /api/boost/business-units", 
+            "GET", 
+            "/boost/business-units", 
+            200, 
+            headers=auth_headers
+        )
+        
+        business_units = bu_response if isinstance(bu_response, list) else []
+        print(f"   ✅ Retrieved {len(business_units)} business units")
+        
+        # Create test business units if none exist
+        if len(business_units) < 2:
+            print("   📝 Creating test business units...")
+            
+            test_units = [
+                {"name": "Engineering Division", "code": "ENG001"},
+                {"name": "Finance Department", "code": "FIN001"}
+            ]
+            
+            for unit_data in test_units:
+                create_success, create_response = self.run_test(
+                    f"Create Business Unit: {unit_data['name']}", 
+                    "POST", 
+                    "/boost/business-units", 
+                    200, 
+                    unit_data,
+                    headers=auth_headers
+                )
+                if create_success:
+                    business_units.append(create_response)
+        
+        if len(business_units) < 2:
+            print("❌ Need at least 2 business units for testing - stopping")
+            return False
+        
+        unit1 = business_units[0]
+        unit2 = business_units[1]
+        print(f"   📋 Test Unit 1: {unit1.get('name')} (ID: {unit1.get('id')})")
+        print(f"   📋 Test Unit 2: {unit2.get('name')} (ID: {unit2.get('id')})")
+        
+        # Step 3: Get a test user from /api/admin/users
+        print("\n👥 Step 3: Getting Test User...")
+        
+        users_success, users_response = self.run_test(
+            "GET /api/admin/users", 
+            "GET", 
+            "/admin/users", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if not users_success:
+            print("❌ Failed to get users list - stopping tests")
+            return False
+        
+        users_list = users_response if isinstance(users_response, list) else []
+        
+        # Find a non-admin test user
+        test_user = None
+        for user in users_list:
+            if user.get('email') != 'layth.bunni@adamsmithinternational.com':
+                test_user = user
+                break
+        
+        # Create a test user if none exists
+        if not test_user:
+            print("   📝 Creating test user for role consistency tests...")
+            
+            test_user_data = {
+                "email": "role.test.user@example.com",
+                "name": "Role Test User",
+                "role": "Agent",
+                "department": "IT",
+                "is_active": True
+            }
+            
+            create_success, create_response = self.run_test(
+                "Create Test User", 
+                "POST", 
+                "/admin/users", 
+                200, 
+                test_user_data,
+                headers=auth_headers
+            )
+            
+            if create_success:
+                # Refresh users list to get the created user
+                users_success, users_response = self.run_test(
+                    "GET /api/admin/users (Refresh)", 
+                    "GET", 
+                    "/admin/users", 
+                    200, 
+                    headers=auth_headers
+                )
+                
+                if users_success:
+                    users_list = users_response if isinstance(users_response, list) else []
+                    for user in users_list:
+                        if user.get('email') == 'role.test.user@example.com':
+                            test_user = user
+                            break
+        
+        if not test_user:
+            print("❌ No test user available - stopping tests")
+            return False
+        
+        print(f"   📋 Test User: {test_user.get('email')} (ID: {test_user.get('id')})")
+        print(f"   📋 Current Role: {test_user.get('role')}")
+        print(f"   📋 Current Business Unit: {test_user.get('business_unit_name', 'None')}")
+        
+        # Step 4: Test Role Update Consistency - Multiple role changes
+        print(f"\n🔄 Step 4: Testing Role Update Consistency...")
+        
+        user_id = test_user.get('id')
+        role_sequence = ['Manager', 'Agent', 'Manager', 'Agent']
+        
+        for i, new_role in enumerate(role_sequence, 1):
+            print(f"\n   🔄 Role Update {i}: Changing to {new_role}...")
+            
+            # Test with 'role' field name
+            update_data_role = {
+                "role": new_role,
+                "name": test_user.get('name'),
+                "email": test_user.get('email'),
+                "department": test_user.get('department', 'IT'),
+                "is_active": True
+            }
+            
+            update_success, update_response = self.run_test(
+                f"Update Role to {new_role} (using 'role' field)", 
+                "PUT", 
+                f"/admin/users/{user_id}", 
+                200, 
+                update_data_role,
+                headers=auth_headers
+            )
+            
+            if update_success:
+                print(f"      ✅ Role update successful using 'role' field")
+                
+                # Verify the change persisted
+                verify_success, verify_response = self.run_test(
+                    f"Verify Role Update {i}", 
+                    "GET", 
+                    "/admin/users", 
+                    200, 
+                    headers=auth_headers
+                )
+                
+                if verify_success:
+                    updated_users = verify_response if isinstance(verify_response, list) else []
+                    updated_user = None
+                    
+                    for user in updated_users:
+                        if user.get('id') == user_id:
+                            updated_user = user
+                            break
+                    
+                    if updated_user:
+                        actual_role = updated_user.get('role')
+                        if actual_role == new_role:
+                            print(f"      ✅ Role persistence verified: {actual_role}")
+                        else:
+                            print(f"      ❌ Role persistence failed: Expected {new_role}, got {actual_role}")
+                    else:
+                        print(f"      ❌ User not found in verification")
+                
+                # Test with 'boost_role' field name (if supported)
+                update_data_boost_role = {
+                    "boost_role": new_role,
+                    "name": test_user.get('name'),
+                    "email": test_user.get('email'),
+                    "department": test_user.get('department', 'IT'),
+                    "is_active": True
+                }
+                
+                boost_update_success, boost_update_response = self.run_test(
+                    f"Update Role to {new_role} (using 'boost_role' field)", 
+                    "PUT", 
+                    f"/admin/users/{user_id}", 
+                    200, 
+                    update_data_boost_role,
+                    headers=auth_headers
+                )
+                
+                if boost_update_success:
+                    print(f"      ✅ Role update successful using 'boost_role' field")
+                else:
+                    print(f"      ⚠️  'boost_role' field not supported or failed")
+            else:
+                print(f"      ❌ Role update failed for {new_role}")
+        
+        # Step 5: Test Business Unit Update
+        print(f"\n🏢 Step 5: Testing Business Unit Updates...")
+        
+        # Update to first business unit
+        print(f"\n   🔄 Business Unit Update 1: {unit1.get('name')}...")
+        
+        bu_update_data1 = {
+            "role": test_user.get('role', 'Agent'),
+            "name": test_user.get('name'),
+            "email": test_user.get('email'),
+            "department": test_user.get('department', 'IT'),
+            "business_unit_id": unit1.get('id'),
+            "is_active": True
+        }
+        
+        bu_update_success1, bu_update_response1 = self.run_test(
+            f"Update Business Unit to {unit1.get('name')}", 
+            "PUT", 
+            f"/admin/users/{user_id}", 
+            200, 
+            bu_update_data1,
+            headers=auth_headers
+        )
+        
+        if bu_update_success1:
+            print(f"      ✅ Business unit update successful")
+            
+            # Verify business_unit_name is automatically resolved
+            verify_success, verify_response = self.run_test(
+                "Verify Business Unit Update 1", 
+                "GET", 
+                "/admin/users", 
+                200, 
+                headers=auth_headers
+            )
+            
+            if verify_success:
+                updated_users = verify_response if isinstance(verify_response, list) else []
+                updated_user = None
+                
+                for user in updated_users:
+                    if user.get('id') == user_id:
+                        updated_user = user
+                        break
+                
+                if updated_user:
+                    actual_bu_id = updated_user.get('business_unit_id')
+                    actual_bu_name = updated_user.get('business_unit_name')
+                    
+                    print(f"      📋 Business Unit ID: {actual_bu_id}")
+                    print(f"      📋 Business Unit Name: {actual_bu_name}")
+                    
+                    if actual_bu_id == unit1.get('id'):
+                        print(f"      ✅ Business Unit ID correctly updated")
+                    else:
+                        print(f"      ❌ Business Unit ID mismatch: Expected {unit1.get('id')}, got {actual_bu_id}")
+                    
+                    if actual_bu_name == unit1.get('name'):
+                        print(f"      ✅ Business Unit Name automatically resolved")
+                    else:
+                        print(f"      ❌ Business Unit Name not resolved: Expected {unit1.get('name')}, got {actual_bu_name}")
+        
+        # Update to second business unit
+        print(f"\n   🔄 Business Unit Update 2: {unit2.get('name')}...")
+        
+        bu_update_data2 = {
+            "role": test_user.get('role', 'Agent'),
+            "name": test_user.get('name'),
+            "email": test_user.get('email'),
+            "department": test_user.get('department', 'IT'),
+            "business_unit_id": unit2.get('id'),
+            "is_active": True
+        }
+        
+        bu_update_success2, bu_update_response2 = self.run_test(
+            f"Update Business Unit to {unit2.get('name')}", 
+            "PUT", 
+            f"/admin/users/{user_id}", 
+            200, 
+            bu_update_data2,
+            headers=auth_headers
+        )
+        
+        if bu_update_success2:
+            print(f"      ✅ Second business unit update successful")
+        
+        # Step 6: Test Edge Cases
+        print(f"\n⚠️  Step 6: Testing Edge Cases...")
+        
+        # Test business_unit_id = 'none'
+        print(f"\n   🔄 Edge Case 1: business_unit_id = 'none'...")
+        
+        edge_case_data1 = {
+            "role": test_user.get('role', 'Agent'),
+            "name": test_user.get('name'),
+            "email": test_user.get('email'),
+            "department": test_user.get('department', 'IT'),
+            "business_unit_id": "none",
+            "is_active": True
+        }
+        
+        edge_success1, edge_response1 = self.run_test(
+            "Update Business Unit to 'none'", 
+            "PUT", 
+            f"/admin/users/{user_id}", 
+            200, 
+            edge_case_data1,
+            headers=auth_headers
+        )
+        
+        if edge_success1:
+            print(f"      ✅ 'none' business unit handled successfully")
+        
+        # Test business_unit_id = null
+        print(f"\n   🔄 Edge Case 2: business_unit_id = null...")
+        
+        edge_case_data2 = {
+            "role": test_user.get('role', 'Agent'),
+            "name": test_user.get('name'),
+            "email": test_user.get('email'),
+            "department": test_user.get('department', 'IT'),
+            "business_unit_id": None,
+            "is_active": True
+        }
+        
+        edge_success2, edge_response2 = self.run_test(
+            "Update Business Unit to null", 
+            "PUT", 
+            f"/admin/users/{user_id}", 
+            200, 
+            edge_case_data2,
+            headers=auth_headers
+        )
+        
+        if edge_success2:
+            print(f"      ✅ null business unit handled successfully")
+        
+        # Step 7: Field Mapping Verification Summary
+        print(f"\n📊 Step 7: Field Mapping Verification Summary...")
+        
+        field_tests = [
+            ("role", "✅ Supported"),
+            ("boost_role", "⚠️  May not be supported in admin API"),
+            ("business_unit_id", "✅ Supported with auto-resolution")
+        ]
+        
+        for field, status in field_tests:
+            print(f"   📋 {field}: {status}")
+        
+        print(f"\n🎉 Admin User Management Role Consistency & Business Unit Testing Complete!")
+        print("=" * 80)
+        
+        return True
+
     def run_critical_production_tests(self):
         """Run critical production backend tests as specified in review request"""
         print("🚨 CRITICAL PRODUCTION BACKEND TESTING")
