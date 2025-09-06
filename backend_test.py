@@ -3402,19 +3402,19 @@ def main():
         print("❌ Cannot connect to API. Stopping tests.")
         return 1
     
-    # RUN CRITICAL PRODUCTION TESTS AS REQUESTED IN REVIEW
-    print("\n" + "🎯 RUNNING CRITICAL PRODUCTION TESTS" + "="*30)
-    critical_passed = tester.run_critical_production_tests()
+    # RUN BUG FIX TESTS AS REQUESTED IN REVIEW
+    print("\n" + "🐛 RUNNING BUG FIX TESTS" + "="*50)
+    bug_fix_passed = tester.run_bug_fix_tests()
     
     # Print final results
     print("\n" + "=" * 60)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
-    if critical_passed:
-        print("🎉 All critical tests passed! Backend ready for production use.")
+    if bug_fix_passed:
+        print("🎉 All bug fix tests passed! Both fixes are working correctly.")
         return 0
     else:
-        print("⚠️  Critical issues found - backend needs attention before production.")
+        print("⚠️  Bug fix issues found - fixes need attention.")
         return 1
 
 if __name__ == "__main__":
