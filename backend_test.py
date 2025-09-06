@@ -3615,6 +3615,128 @@ class ASIOSAPITester:
         
         return True
 
+    def test_layth_credentials_phase1(self):
+        """Test getting Layth's credentials for Phase 1 as specified in review request"""
+        print("\n🔐 PHASE 1 CREDENTIALS TEST: Getting Layth's Credentials...")
+        print("=" * 70)
+        
+        # Step 1: Authenticate as Layth using current system
+        print("\n👑 Step 1: Authenticate as Layth (email + ASI2025)...")
+        
+        layth_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "ASI2025"
+        }
+        
+        login_success, login_response = self.run_test(
+            "Layth Authentication (Current System)", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            layth_login_data
+        )
+        
+        if not login_success:
+            print("❌ Cannot authenticate as Layth - stopping test")
+            return False, {}
+        
+        layth_token = login_response.get('access_token') or login_response.get('token')
+        layth_user = login_response.get('user', {})
+        
+        print(f"   ✅ Layth authenticated successfully")
+        print(f"   📧 Email: {layth_user.get('email')}")
+        print(f"   👑 Role: {layth_user.get('role')}")
+        print(f"   🆔 User ID: {layth_user.get('id')}")
+        
+        if not layth_token:
+            print("❌ No authentication token received")
+            return False, {}
+        
+        auth_headers = {'Authorization': f'Bearer {layth_token}'}
+        
+        # Step 2: Get Layth's Personal Code via GET /api/admin/layth-credentials
+        print(f"\n🔑 Step 2: Get Layth's Personal Code via GET /api/admin/layth-credentials...")
+        
+        credentials_success, credentials_response = self.run_test(
+            "GET /api/admin/layth-credentials", 
+            "GET", 
+            "/admin/layth-credentials", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if credentials_success:
+            print(f"   ✅ Layth's credentials retrieved successfully")
+            
+            # Extract credentials from response
+            email = credentials_response.get('email', 'N/A')
+            personal_code = credentials_response.get('personal_code', 'N/A')
+            role = credentials_response.get('role', 'N/A')
+            
+            print(f"   📧 Email: {email}")
+            print(f"   🔑 Personal Code: {personal_code}")
+            print(f"   👑 Role: {role}")
+            
+            layth_credentials = {
+                'email': email,
+                'personal_code': personal_code,
+                'role': role
+            }
+        else:
+            print(f"   ❌ Failed to retrieve Layth's credentials")
+            layth_credentials = {
+                'email': layth_user.get('email', 'layth.bunni@adamsmithinternational.com'),
+                'personal_code': 'Unknown - API call failed',
+                'role': layth_user.get('role', 'Unknown')
+            }
+        
+        # Step 3: Test User Creation Fix (POST /api/admin/users)
+        print(f"\n👥 Step 3: Test User Creation Fix (POST /api/admin/users)...")
+        
+        test_user_data = {
+            "name": "Test User Phase1",
+            "email": "test.phase1@example.com",
+            "role": "Agent",
+            "department": "IT",
+            "is_active": True
+        }
+        
+        print(f"   Creating test user: {test_user_data['email']}")
+        
+        create_success, create_response = self.run_test(
+            "Create Test User (ObjectId Fix Test)", 
+            "POST", 
+            "/admin/users", 
+            200, 
+            test_user_data,
+            headers=auth_headers
+        )
+        
+        user_creation_status = "✅ WORKING" if create_success else "❌ FAILED"
+        
+        if create_success:
+            created_user = create_response
+            print(f"   ✅ User creation successful - ObjectId serialization fix working")
+            print(f"   🆔 Created User ID: {created_user.get('id', 'N/A')}")
+            print(f"   📧 Created User Email: {created_user.get('email', 'N/A')}")
+            print(f"   👤 Created User Role: {created_user.get('role', 'N/A')}")
+        else:
+            print(f"   ❌ User creation failed - ObjectId serialization issue may persist")
+            print(f"   📋 Error details available in test output above")
+        
+        # Step 4: Report Summary
+        print(f"\n📋 PHASE 1 CREDENTIALS REPORT")
+        print("=" * 50)
+        print(f"🔐 LAYTH'S CREDENTIALS FOR PHASE 1:")
+        print(f"   📧 Email: {layth_credentials['email']}")
+        print(f"   🔑 Personal Code: {layth_credentials['personal_code']}")
+        print(f"   👑 Role: {layth_credentials['role']}")
+        print(f"")
+        print(f"🛠️  USER CREATION FIX STATUS: {user_creation_status}")
+        print(f"   POST /api/admin/users endpoint working: {create_success}")
+        
+        return True, layth_credentials
+
 def main():
     print("🚀 Starting ASI OS API Testing...")
     print("=" * 60)
