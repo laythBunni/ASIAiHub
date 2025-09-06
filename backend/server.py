@@ -376,6 +376,7 @@ class BoostTicketCreate(BaseModel):
     justification: str = ""
     requester_name: str = "System User"
     requester_email: str = "user@company.com"
+    requester_id: str = "default_user"  # Add requester_id field
     business_unit_id: Optional[str] = None
     channel: TicketChannel = TicketChannel.HUB
     conversation_session_id: Optional[str] = None  # For tickets created from chat conversations
