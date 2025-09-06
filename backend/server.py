@@ -2559,8 +2559,11 @@ async def create_user_admin(
         result = await db.simple_users.insert_one(new_user_doc)
         
         if result.inserted_id:
-            # Return success without sensitive data
+            # Return success without sensitive data and ensure JSON serializable
             response_user = {k: v for k, v in new_user_doc.items() if k not in ['personal_code', 'access_token']}
+            # Convert datetime to string for JSON serialization
+            if 'created_at' in response_user:
+                response_user['created_at'] = response_user['created_at'].isoformat()
             return {"message": "User created successfully", "user": response_user}
         else:
             raise HTTPException(status_code=500, detail="Failed to create user")
