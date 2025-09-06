@@ -2509,11 +2509,15 @@ async def create_user_admin(
     user_data: dict,
     current_user: BetaUser = Depends(get_current_user)
 ):
-    """Create a new user (admin only)"""
+    """Create a new user (Layth only)"""
     try:
         # Verify admin access
         if current_user.role != 'Admin':
             raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Restrict user creation to only Layth
+        if current_user.email != "layth.bunni@adamsmithinternational.com":
+            raise HTTPException(status_code=403, detail="Only Layth can create new users")
         
         # Validate required fields
         if not user_data.get('email') or not user_data.get('name'):
@@ -2526,17 +2530,19 @@ async def create_user_admin(
         if existing_simple or existing_beta:
             raise HTTPException(status_code=400, detail="User with this email already exists")
         
-        # Create new user ID
+        # Create new user ID and generate personal code
         user_id = str(uuid.uuid4())
+        personal_code = generate_personal_code()
         
         # Create new user document
         new_user_doc = {
             "id": user_id,
             "email": user_data['email'],
             "name": user_data['name'],
-            "personal_code": "***",  # Will be set when user first logs in
-            "role": user_data.get('role', 'Manager'),
-            "department": user_data.get('department', 'Management'),
+            "personal_code": personal_code,  # Generate 6-digit code
+            "role": user_data.get('role', 'User'),  # Default to 'User' role
+            "department": user_data.get('department'),
+            "business_unit_id": user_data.get('business_unit_id'),
             "is_active": user_data.get('is_active', True),
             "created_at": datetime.now(timezone.utc),
             "last_login": None,
