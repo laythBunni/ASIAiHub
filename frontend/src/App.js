@@ -6142,7 +6142,7 @@ const AuthenticatedApp = () => {
           <Route path="/tickets" element={<TicketManagement />} />
           <Route path="/documents" element={<DocumentManagement />} />
           {/* Admin route only accessible to Admin users */}
-          {user?.role === 'Admin' && <Route path="/admin" element={<SystemAdmin />} />}
+          {(user?.role === 'Admin' || user?.boost_role === 'Admin') && <Route path="/admin" element={<SystemAdmin />} />}
         </Routes>
       </main>
       <Toaster />
