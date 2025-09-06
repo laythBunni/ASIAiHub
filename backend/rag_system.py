@@ -173,6 +173,15 @@ class RAGSystem:
     def extract_text_from_file(self, file_path: str, mime_type: str) -> str:
         """Extract text from various file formats"""
         try:
+            # Ensure absolute path
+            if not os.path.isabs(file_path):
+                # If relative path, make it relative to backend directory
+                file_path = os.path.join(os.path.dirname(__file__), file_path)
+            
+            if not os.path.exists(file_path):
+                logger.error(f"File not found: {file_path}")
+                return ""
+            
             if mime_type == "text/plain":
                 with open(file_path, 'r', encoding='utf-8') as f:
                     return f.read()
