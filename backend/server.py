@@ -2575,8 +2575,8 @@ async def create_user_admin(
             if 'created_at' in response_user:
                 response_user['created_at'] = response_user['created_at'].isoformat()
             
-            logger.info(f"About to return response: {response_user}")
-            return {"message": "User created successfully", "user": response_user}
+            logger.info(f"Returning user creation response with ID: {response_user.get('id')}")
+            return {"message": "User created successfully", "user": response_user, "personal_code": personal_code}
         else:
             raise HTTPException(status_code=500, detail="Failed to create user")
         
