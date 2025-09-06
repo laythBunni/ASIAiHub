@@ -2303,6 +2303,40 @@ async def update_user_admin(
         logger.error(f"Error updating user: {e}")
         raise HTTPException(status_code=500, detail="Failed to update user")
 
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user_admin(
+    user_id: str,
+    current_user: BetaUser = Depends(get_current_user)
+):
+    """Delete a user (admin only)"""
+    try:
+        # Verify admin access
+        if current_user.role != 'Admin':
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Prevent admin from deleting themselves
+        if current_user.id == user_id:
+            raise HTTPException(status_code=400, detail="Cannot delete your own account")
+        
+        # Try to delete from beta_users first
+        result = await db.beta_users.delete_one({"id": user_id})
+        
+        # If not found in beta_users, try simple_users
+        if result.deleted_count == 0:
+            result = await db.simple_users.delete_one({"id": user_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        logger.info(f"Admin {current_user.email} deleted user {user_id}")
+        return {"message": "User deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting user: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete user")
+
 @api_router.get("/admin/stats")
 async def get_admin_stats(current_user: BetaUser = Depends(get_current_user)):
     """Get system statistics for admin dashboard"""
