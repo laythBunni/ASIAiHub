@@ -1033,6 +1033,293 @@ class ASIOSAPITester:
             print(f"❌ Failed to check MongoDB collections: {str(e)}")
             return False, {}
 
+    def test_admin_user_management_apis(self):
+        """Test Admin User Management API endpoints as specified in review request"""
+        print("\n👑 CRITICAL: Testing Admin User Management APIs...")
+        print("=" * 60)
+        
+        # Step 1: Authenticate as admin user
+        print("\n🔐 Step 1: Admin Authentication...")
+        
+        admin_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "ASI2025"
+        }
+        
+        login_success, login_response = self.run_test(
+            "Admin Login", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            admin_login_data
+        )
+        
+        if not login_success:
+            print("❌ Cannot authenticate as admin - stopping tests")
+            return False
+        
+        admin_token = login_response.get('access_token')
+        if not admin_token:
+            print("❌ No admin token received - stopping tests")
+            return False
+        
+        print(f"   ✅ Admin authenticated successfully")
+        auth_headers = {'Authorization': f'Bearer {admin_token}'}
+        
+        # Step 2: Test GET /api/admin/users - Get list of users
+        print("\n👥 Step 2: Testing GET /api/admin/users...")
+        
+        users_success, users_response = self.run_test(
+            "GET /api/admin/users", 
+            "GET", 
+            "/admin/users", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if not users_success:
+            print("❌ Failed to get users list - stopping tests")
+            return False
+        
+        users_list = users_response if isinstance(users_response, list) else []
+        print(f"   ✅ Retrieved {len(users_list)} users")
+        
+        # Find a test user (not the admin) for deletion and role update tests
+        test_user = None
+        admin_user = None
+        
+        for user in users_list:
+            if user.get('email') == 'layth.bunni@adamsmithinternational.com':
+                admin_user = user
+            elif user.get('email') != 'layth.bunni@adamsmithinternational.com':
+                test_user = user
+                break
+        
+        if not test_user:
+            # Create a test user first
+            print("\n   📝 Creating test user for management tests...")
+            
+            test_user_data = {
+                "email": "test.user.management@example.com",
+                "name": "Test User Management",
+                "role": "Agent",
+                "department": "IT",
+                "is_active": True
+            }
+            
+            create_success, create_response = self.run_test(
+                "Create Test User", 
+                "POST", 
+                "/admin/users", 
+                200, 
+                test_user_data,
+                headers=auth_headers
+            )
+            
+            if create_success:
+                # Get updated users list to find the created user
+                users_success, users_response = self.run_test(
+                    "GET /api/admin/users (Updated)", 
+                    "GET", 
+                    "/admin/users", 
+                    200, 
+                    headers=auth_headers
+                )
+                
+                if users_success:
+                    users_list = users_response if isinstance(users_response, list) else []
+                    for user in users_list:
+                        if user.get('email') == 'test.user.management@example.com':
+                            test_user = user
+                            break
+        
+        if not test_user:
+            print("❌ No test user available for management tests")
+            return False
+        
+        print(f"   📋 Test user: {test_user.get('email')} (ID: {test_user.get('id')})")
+        print(f"   📋 Current role: {test_user.get('role')}")
+        
+        # Step 3: Test PUT /api/admin/users/{user_id} - Update user role
+        print(f"\n🔄 Step 3: Testing PUT /api/admin/users/{test_user.get('id')}...")
+        
+        # Change role from Agent to Manager (or vice versa)
+        current_role = test_user.get('role', 'Agent')
+        new_role = 'Manager' if current_role == 'Agent' else 'Agent'
+        
+        update_data = {
+            "role": new_role,
+            "department": test_user.get('department', 'IT'),
+            "name": test_user.get('name', 'Test User'),
+            "is_active": True
+        }
+        
+        update_success, update_response = self.run_test(
+            f"Update User Role ({current_role} → {new_role})", 
+            "PUT", 
+            f"/admin/users/{test_user.get('id')}", 
+            200, 
+            update_data,
+            headers=auth_headers
+        )
+        
+        if update_success:
+            print(f"   ✅ User role updated successfully")
+            print(f"   📋 Response: {update_response}")
+        else:
+            print(f"   ❌ Failed to update user role")
+        
+        # Step 4: Verify role update persisted - Get user again
+        print(f"\n🔍 Step 4: Verifying role update persistence...")
+        
+        users_success, users_response = self.run_test(
+            "GET /api/admin/users (Verify Update)", 
+            "GET", 
+            "/admin/users", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if users_success:
+            users_list = users_response if isinstance(users_response, list) else []
+            updated_user = None
+            
+            for user in users_list:
+                if user.get('id') == test_user.get('id'):
+                    updated_user = user
+                    break
+            
+            if updated_user:
+                updated_role = updated_user.get('role')
+                if updated_role == new_role:
+                    print(f"   ✅ Role update persisted: {updated_role}")
+                else:
+                    print(f"   ❌ Role update not persisted: Expected {new_role}, got {updated_role}")
+            else:
+                print(f"   ❌ Updated user not found in users list")
+        
+        # Step 5: Test error cases for role updates
+        print(f"\n⚠️  Step 5: Testing error cases for role updates...")
+        
+        # Test updating non-existent user
+        fake_user_id = "non-existent-user-id-12345"
+        error_update_success, error_update_response = self.run_test(
+            "Update Non-existent User", 
+            "PUT", 
+            f"/admin/users/{fake_user_id}", 
+            404,  # Expecting not found
+            update_data,
+            headers=auth_headers
+        )
+        
+        if error_update_success:
+            print(f"   ✅ Correctly returned 404 for non-existent user")
+        else:
+            print(f"   ⚠️  Unexpected response for non-existent user update")
+        
+        # Step 6: Test DELETE /api/admin/users/{user_id} - Delete user
+        print(f"\n🗑️  Step 6: Testing DELETE /api/admin/users/{test_user.get('id')}...")
+        
+        delete_success, delete_response = self.run_test(
+            "Delete Test User", 
+            "DELETE", 
+            f"/admin/users/{test_user.get('id')}", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if delete_success:
+            print(f"   ✅ User deleted successfully")
+            print(f"   📋 Response: {delete_response}")
+        else:
+            print(f"   ❌ Failed to delete user")
+        
+        # Step 7: Verify user deletion - Check user is removed from database
+        print(f"\n🔍 Step 7: Verifying user deletion...")
+        
+        users_success, users_response = self.run_test(
+            "GET /api/admin/users (Verify Deletion)", 
+            "GET", 
+            "/admin/users", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if users_success:
+            users_list = users_response if isinstance(users_response, list) else []
+            deleted_user_found = any(user.get('id') == test_user.get('id') for user in users_list)
+            
+            if not deleted_user_found:
+                print(f"   ✅ User successfully removed from database")
+            else:
+                print(f"   ❌ User still exists in database after deletion")
+        
+        # Step 8: Test error cases for user deletion
+        print(f"\n⚠️  Step 8: Testing error cases for user deletion...")
+        
+        # Test deleting non-existent user
+        error_delete_success, error_delete_response = self.run_test(
+            "Delete Non-existent User", 
+            "DELETE", 
+            f"/admin/users/{fake_user_id}", 
+            404,  # Expecting not found
+            headers=auth_headers
+        )
+        
+        if error_delete_success:
+            print(f"   ✅ Correctly returned 404 for non-existent user deletion")
+        else:
+            print(f"   ⚠️  Unexpected response for non-existent user deletion")
+        
+        # Test admin trying to delete themselves
+        if admin_user:
+            admin_self_delete_success, admin_self_delete_response = self.run_test(
+                "Admin Self-Delete (Should Fail)", 
+                "DELETE", 
+                f"/admin/users/{admin_user.get('id')}", 
+                400,  # Expecting bad request
+                headers=auth_headers
+            )
+            
+            if admin_self_delete_success:
+                print(f"   ✅ Correctly prevented admin from deleting themselves")
+            else:
+                print(f"   ⚠️  Admin self-deletion not properly prevented")
+        
+        # Step 9: Final verification - Get users list reflects all changes
+        print(f"\n📊 Step 9: Final verification of user list...")
+        
+        final_users_success, final_users_response = self.run_test(
+            "GET /api/admin/users (Final Check)", 
+            "GET", 
+            "/admin/users", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if final_users_success:
+            final_users_list = final_users_response if isinstance(final_users_response, list) else []
+            print(f"   ✅ Final user count: {len(final_users_list)}")
+            
+            # Verify admin user still exists
+            admin_still_exists = any(user.get('email') == 'layth.bunni@adamsmithinternational.com' for user in final_users_list)
+            if admin_still_exists:
+                print(f"   ✅ Admin user still exists after all operations")
+            else:
+                print(f"   ❌ Admin user missing after operations")
+            
+            # Verify test user is gone
+            test_user_gone = not any(user.get('id') == test_user.get('id') for user in final_users_list)
+            if test_user_gone:
+                print(f"   ✅ Test user properly removed")
+            else:
+                print(f"   ❌ Test user still exists")
+        
+        print(f"\n🎉 Admin User Management API Testing Complete!")
+        print("=" * 60)
+        
+        return True
+
     def test_ticket_allocation_debugging(self):
         """DEBUG TICKET ALLOCATION ISSUE - Specific debugging for layth.bunni@adamsmithinternational.com"""
         print("\n🔍 TICKET ALLOCATION DEBUGGING - Investigating ID Format Mismatch")
