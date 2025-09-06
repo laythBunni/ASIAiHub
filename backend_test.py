@@ -3626,19 +3626,20 @@ def main():
         print("❌ Cannot connect to API. Stopping tests.")
         return 1
     
-    # RUN BUG FIX TESTS AS REQUESTED IN REVIEW
-    print("\n" + "🐛 RUNNING BUG FIX TESTS" + "="*50)
-    bug_fix_passed = tester.run_bug_fix_tests()
+    # RUN PHASE 1 ADMIN-MANAGED AUTHENTICATION SYSTEM TESTS
+    print("\n" + "🔐 RUNNING PHASE 1 ADMIN-MANAGED AUTHENTICATION TESTS" + "="*30)
+    phase1_passed = tester.test_admin_managed_auth_phase1()
     
     # Print final results
     print("\n" + "=" * 60)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
-    if bug_fix_passed:
-        print("🎉 All bug fix tests passed! Both fixes are working correctly.")
+    if phase1_passed:
+        print("🎉 Phase 1 Admin-Managed Authentication System tests passed!")
+        print("✅ System is ready for Phase 2 (switching authentication)")
         return 0
     else:
-        print("⚠️  Bug fix issues found - fixes need attention.")
+        print("⚠️  Phase 1 issues found - system needs attention before Phase 2.")
         return 1
 
 if __name__ == "__main__":
