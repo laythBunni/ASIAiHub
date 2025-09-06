@@ -264,13 +264,13 @@ const SimpleLoginForm = () => {
                 type="password"
                 autoComplete="current-password"
                 required
-                placeholder="Enter access code"
+                placeholder="Enter personal code"
                 value={formData.accessCode}
                 onChange={handleInputChange}
                 className="mt-1"
               />
               <p className="mt-1 text-xs text-gray-500">
-                Use: ASI2025
+                Contact admin for your personal code
               </p>
             </div>
 
