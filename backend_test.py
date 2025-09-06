@@ -2394,6 +2394,12 @@ class ASIOSAPITester:
             
             admin_user_mgmt_success = self.test_admin_user_management_apis()
             
+            # 6. ADMIN USER MANAGEMENT ROLE CONSISTENCY (SPECIFIC REVIEW REQUEST)
+            print("\n🔄 SYSTEM 6: ADMIN USER ROLE CONSISTENCY & BUSINESS UNITS")
+            print("-" * 40)
+            
+            admin_role_consistency_success = self.test_admin_user_management_role_consistency()
+            
             if admin_apis_success and admin_user_mgmt_success:
                 print("✅ ADMIN SYSTEMS: WORKING")
             else:
