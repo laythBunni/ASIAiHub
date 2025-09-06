@@ -2041,7 +2041,8 @@ class ASIOSAPITester:
             ("Authentication System", auth_system_working),
             ("Chat/RAG System", chat_system_working), 
             ("RAG Document Search", rag_search_success),
-            ("Admin APIs", admin_apis_success)
+            ("Admin APIs", admin_apis_success),
+            ("Admin User Management", admin_user_mgmt_success)
         ]
         
         for system_name, is_working in systems:
