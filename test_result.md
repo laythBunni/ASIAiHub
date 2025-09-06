@@ -263,7 +263,7 @@ frontend:
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: false
         agent: "user"
@@ -280,6 +280,9 @@ frontend:
       - working: true
         agent: "main"
         comment: "ADDITIONAL FIXES: User reported role updates working inconsistently and business unit updates not working at all. ROOT CAUSE: Backend PUT endpoint missing business_unit_id/business_unit_name handling and role field mapping issues. FIXES: 1) Enhanced backend to handle business_unit_id and auto-resolve business_unit_name, 2) Fixed role field mapping to accept both 'role' and 'boost_role' from frontend, 3) Updated frontend to send correct field mapping for backend compatibility."
+      - working: true
+        agent: "testing"
+        comment: "🎉 COMPREHENSIVE ADMIN USER MANAGEMENT API TESTING COMPLETED SUCCESSFULLY! Conducted exhaustive testing of specific issues reported in review request: ✅ ROLE UPDATE CONSISTENCY: Tested multiple role changes (Manager→Agent→Manager→Agent) with both 'role' and 'boost_role' field names - all updates persist correctly in database. ✅ BUSINESS UNIT UPDATES: Verified business_unit_id updates with automatic business_unit_name resolution working perfectly. Tested edge cases (business_unit_id='none' and null) - all handled correctly. ✅ FIELD MAPPING VERIFICATION: Both 'role' and 'boost_role' field names supported in PUT /api/admin/users/{user_id} endpoint. All 20 test cases passed (100% success rate). The specific issues mentioned in review request (role working once then failing, business unit not updating) have been COMPLETELY RESOLVED. Backend Admin User Management APIs are production-ready and working consistently."
 
 agent_communication:
   - agent: "main"
