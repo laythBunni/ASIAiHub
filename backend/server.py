@@ -2068,6 +2068,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             user_data = await db.simple_users.find_one({"access_token": token})
         
         if user_data:
+            # Remove MongoDB _id field to avoid ObjectId serialization issues
+            if '_id' in user_data:
+                del user_data['_id']
             return BetaUser(**user_data)
         
         raise HTTPException(
