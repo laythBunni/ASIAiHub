@@ -285,6 +285,18 @@ frontend:
         comment: "🎉 COMPREHENSIVE ADMIN USER MANAGEMENT API TESTING COMPLETED SUCCESSFULLY! Conducted exhaustive testing of specific issues reported in review request: ✅ ROLE UPDATE CONSISTENCY: Tested multiple role changes (Manager→Agent→Manager→Agent) with both 'role' and 'boost_role' field names - all updates persist correctly in database. ✅ BUSINESS UNIT UPDATES: Verified business_unit_id updates with automatic business_unit_name resolution working perfectly. Tested edge cases (business_unit_id='none' and null) - all handled correctly. ✅ FIELD MAPPING VERIFICATION: Both 'role' and 'boost_role' field names supported in PUT /api/admin/users/{user_id} endpoint. All 20 test cases passed (100% success rate). The specific issues mentioned in review request (role working once then failing, business unit not updating) have been COMPLETELY RESOLVED. Backend Admin User Management APIs are production-ready and working consistently."
 
 backend:
+  - task: "New Admin-Managed Authentication System - Phase 1"
+    implemented: false  
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "PHASE 1 IMPLEMENTATION: 1) Add personal_code field to user database, 2) Auto-generate 6-digit codes for all existing users, 3) Restrict user creation to only layth.bunni@adamsmithinternational.com, 4) Prepare for new authentication system (email + personal code validation). Keep current authentication working during transition."
+
   - task: "Chat Ticket Creation Bug"
     implemented: true  
     working: true
