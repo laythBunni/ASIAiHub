@@ -1860,6 +1860,9 @@ async def get_ticket_audit_trail(ticket_id: str):
         if not ticket:
             raise HTTPException(status_code=404, detail="Ticket not found")
         
+        # Get real audit entries from database
+        audit_entries = await db.boost_audit_trail.find({"ticket_id": ticket_id}).to_list(length=None)
+        
         # Get comments
         comments = await db.boost_comments.find({"ticket_id": ticket_id}).to_list(length=None)
         
@@ -1869,36 +1872,27 @@ async def get_ticket_audit_trail(ticket_id: str):
         # Build comprehensive audit trail
         trail = []
         
-        # Ticket creation
-        trail.append({
-            "id": str(uuid.uuid4()),
-            "action": "created",
-            "description": f"Ticket created by {ticket['requester_name']}",
-            "user_name": ticket['requester_name'],
-            "timestamp": ticket['created_at'],
-            "details": f"Priority: {ticket['priority'].upper()}, Department: {ticket['support_department']}, Category: {ticket['category']}"
-        })
-        
-        # Assignment
-        if ticket.get('owner_name'):
+        # Add real audit entries first (these are the actual change logs)
+        for entry in audit_entries:
             trail.append({
-                "id": str(uuid.uuid4()),
-                "action": "assigned",
-                "description": f"Assigned to {ticket['owner_name']}",
-                "user_name": "System",
-                "timestamp": ticket['updated_at'],
-                "details": f"Owner: {ticket['owner_name']} ({ticket['support_department']})"
+                "id": entry["id"],
+                "action": entry["action"],
+                "description": entry["description"],
+                "user_name": entry["user_name"],
+                "timestamp": entry["timestamp"],
+                "details": entry.get("details", "")
             })
         
-        # Status changes
-        if ticket['status'] != 'open':
+        # Add ticket creation (fallback if no audit entry exists)
+        has_creation_entry = any(entry["action"] == "created" for entry in audit_entries)
+        if not has_creation_entry:
             trail.append({
                 "id": str(uuid.uuid4()),
-                "action": "status_changed", 
-                "description": f"Status changed to {ticket['status'].replace('_', ' ')}",
-                "user_name": ticket.get('owner_name', 'System'),
-                "timestamp": ticket['updated_at'],
-                "details": f"New status: {ticket['status'].upper().replace('_', ' ')}"
+                "action": "created",
+                "description": f"Ticket created by {ticket['requester_name']}",
+                "user_name": ticket['requester_name'],
+                "timestamp": ticket['created_at'],
+                "details": f"Priority: {ticket['priority'].upper()}, Department: {ticket['support_department']}, Category: {ticket['category']}"
             })
         
         # Comments
