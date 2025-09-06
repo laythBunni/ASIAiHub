@@ -5208,6 +5208,24 @@ const SystemAdmin = () => {
                         <td className="p-3 text-gray-600">{user.department || 'None'}</td>
                         <td className="p-3 text-gray-600">{user.business_unit_name || 'None'}</td>
                         <td className="p-3">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                              {user.personal_code || '------'}
+                            </span>
+                            {(currentUser?.email === 'layth.bunni@adamsmithinternational.com') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => regenerateUserCode(user.id)}
+                                title="Generate new personal code"
+                                className="text-xs"
+                              >
+                                🔄
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3">
                           <Button
                             size="sm"
                             variant="outline"
