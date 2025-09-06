@@ -1227,6 +1227,7 @@ const TicketFromChatModal = ({ isOpen, onClose, userQuestion, aiResponse, sessio
   const { apiCall } = useAPI();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
 
   // Fetch business units and categories when modal opens
   useEffect(() => {
