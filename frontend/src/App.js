@@ -4753,6 +4753,7 @@ const SystemAdmin = () => {
   
   const { apiCall } = useAPI();
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
 
   // Permission categories and their specific permissions
   const permissionCategories = {
