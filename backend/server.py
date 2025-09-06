@@ -2565,6 +2565,49 @@ async def create_user_admin(
         logger.error(f"Error creating user: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create user")
 
+@api_router.post("/admin/users/{user_id}/regenerate-code")
+async def regenerate_user_code(
+    user_id: str,
+    current_user: BetaUser = Depends(get_current_user)
+):
+    """Regenerate personal code for a user (Layth only)"""
+    try:
+        # Verify admin access
+        if current_user.role != 'Admin':
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Restrict to only Layth
+        if current_user.email != "layth.bunni@adamsmithinternational.com":
+            raise HTTPException(status_code=403, detail="Only Layth can regenerate codes")
+        
+        # Generate new personal code
+        new_personal_code = generate_personal_code()
+        
+        # Try to update user in beta_users first
+        result = await db.beta_users.update_one(
+            {"id": user_id},
+            {"$set": {"personal_code": new_personal_code}}
+        )
+        
+        # If not found in beta_users, try simple_users
+        if result.matched_count == 0:
+            result = await db.simple_users.update_one(
+                {"id": user_id},
+                {"$set": {"personal_code": new_personal_code}}
+            )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        logger.info(f"Personal code regenerated for user {user_id} by {current_user.email}")
+        return {"message": "Personal code regenerated successfully", "new_code": new_personal_code}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error regenerating code: {e}")
+        raise HTTPException(status_code=500, detail="Failed to regenerate code")
+
 @api_router.post("/auth/logout")
 async def logout(current_user: BetaUser = Depends(get_current_user)):
     """Logout user and clear access token"""
