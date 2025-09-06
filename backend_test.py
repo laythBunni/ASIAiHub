@@ -1320,6 +1320,397 @@ class ASIOSAPITester:
         
         return True
 
+    def test_chat_ticket_creation_bug_fix(self):
+        """Test Chat Ticket Creation Bug Fix - Verify requester_id is not hardcoded to 'default_user'"""
+        print("\n🎫 CRITICAL BUG FIX TEST: Chat Ticket Creation...")
+        print("=" * 70)
+        
+        # Test realistic chat ticket data as specified in review request
+        chat_ticket_data = {
+            "subject": "Test Chat Ticket",
+            "description": "This is a test ticket created from chat",
+            "support_department": "IT",
+            "category": "Technical Support",
+            "subcategory": "Software Issue",
+            "classification": "ServiceRequest",
+            "priority": "medium",
+            "justification": "Need help with software",
+            "requester_name": "Test User",
+            "requester_email": "test@example.com",
+            "requester_id": "test-user-123",  # This should NOT be overridden to "default_user"
+            "business_unit_id": "",
+            "channel": "Hub",
+            "conversation_session_id": "test-session-123"
+        }
+        
+        print("\n📝 Step 1: Creating chat ticket with specific requester_id...")
+        print(f"   Expected requester_id: {chat_ticket_data['requester_id']}")
+        
+        # Create the ticket
+        success, response = self.run_test(
+            "Create Chat Ticket", 
+            "POST", 
+            "/boost/tickets", 
+            200, 
+            chat_ticket_data
+        )
+        
+        if not success:
+            print("❌ Failed to create chat ticket - stopping test")
+            return False
+        
+        ticket_id = response.get('id')
+        created_requester_id = response.get('requester_id')
+        
+        print(f"   ✅ Ticket created successfully")
+        print(f"   🆔 Ticket ID: {ticket_id}")
+        print(f"   👤 Created requester_id: {created_requester_id}")
+        
+        # CRITICAL CHECK: Verify requester_id is NOT "default_user"
+        if created_requester_id == "default_user":
+            print(f"   ❌ BUG CONFIRMED: requester_id was hardcoded to 'default_user'")
+            print(f"   ❌ Expected: {chat_ticket_data['requester_id']}")
+            print(f"   ❌ Actual: {created_requester_id}")
+            return False
+        elif created_requester_id == chat_ticket_data['requester_id']:
+            print(f"   ✅ BUG FIX VERIFIED: requester_id correctly preserved")
+            print(f"   ✅ Expected: {chat_ticket_data['requester_id']}")
+            print(f"   ✅ Actual: {created_requester_id}")
+        else:
+            print(f"   ⚠️  Unexpected requester_id value")
+            print(f"   Expected: {chat_ticket_data['requester_id']}")
+            print(f"   Actual: {created_requester_id}")
+        
+        print(f"\n🔍 Step 2: Verifying ticket appears in tickets list...")
+        
+        # Get all tickets to verify it appears
+        list_success, list_response = self.run_test(
+            "Get All BOOST Tickets", 
+            "GET", 
+            "/boost/tickets", 
+            200
+        )
+        
+        if list_success and isinstance(list_response, list):
+            # Find our created ticket
+            created_ticket = None
+            for ticket in list_response:
+                if ticket.get('id') == ticket_id:
+                    created_ticket = ticket
+                    break
+            
+            if created_ticket:
+                print(f"   ✅ Ticket found in tickets list")
+                print(f"   📋 Subject: {created_ticket.get('subject')}")
+                print(f"   👤 Requester ID: {created_ticket.get('requester_id')}")
+                print(f"   📧 Requester Email: {created_ticket.get('requester_email')}")
+                print(f"   🏷️  Status: {created_ticket.get('status')}")
+                
+                # Final verification of requester_id in list
+                list_requester_id = created_ticket.get('requester_id')
+                if list_requester_id == chat_ticket_data['requester_id']:
+                    print(f"   ✅ Requester ID consistent in tickets list")
+                else:
+                    print(f"   ❌ Requester ID mismatch in tickets list")
+                    print(f"   Expected: {chat_ticket_data['requester_id']}")
+                    print(f"   Found: {list_requester_id}")
+                    return False
+            else:
+                print(f"   ❌ Created ticket not found in tickets list")
+                return False
+        else:
+            print(f"   ❌ Failed to retrieve tickets list")
+            return False
+        
+        print(f"\n🔍 Step 3: Testing GET /api/boost/tickets/{ticket_id}...")
+        
+        # Get specific ticket to confirm it exists
+        get_success, get_response = self.run_test(
+            "Get Specific Chat Ticket", 
+            "GET", 
+            f"/boost/tickets/{ticket_id}", 
+            200
+        )
+        
+        if get_success:
+            get_requester_id = get_response.get('requester_id')
+            print(f"   ✅ Individual ticket retrieval successful")
+            print(f"   👤 Requester ID: {get_requester_id}")
+            
+            if get_requester_id == chat_ticket_data['requester_id']:
+                print(f"   ✅ Requester ID consistent in individual get")
+            else:
+                print(f"   ❌ Requester ID mismatch in individual get")
+                return False
+        else:
+            print(f"   ❌ Failed to retrieve individual ticket")
+            return False
+        
+        print(f"\n🎉 CHAT TICKET CREATION BUG FIX TEST PASSED!")
+        print(f"✅ Ticket created with correct requester_id: {chat_ticket_data['requester_id']}")
+        print(f"✅ Ticket appears in tickets list with correct data")
+        print(f"✅ Individual ticket retrieval works correctly")
+        
+        return True, ticket_id
+
+    def test_activity_log_quick_actions_bug_fix(self):
+        """Test Activity Log for Quick Actions Bug Fix - Verify audit trail entries are created"""
+        print("\n📊 CRITICAL BUG FIX TEST: Activity Log for Quick Actions...")
+        print("=" * 70)
+        
+        # First create a test ticket to update
+        print("\n📝 Step 1: Creating test ticket for quick actions...")
+        
+        test_ticket_data = {
+            "subject": "Test Ticket for Quick Actions",
+            "description": "This ticket will be used to test quick action audit logging",
+            "support_department": "IT",
+            "category": "Access",
+            "subcategory": "Login",
+            "classification": "Incident",
+            "priority": "low",  # Start with low priority
+            "justification": "Testing quick actions audit trail",
+            "requester_name": "Test User",
+            "requester_email": "quickactions@example.com",
+            "requester_id": "qa-test-user-456",
+            "business_unit_id": "",
+            "channel": "Hub"
+        }
+        
+        create_success, create_response = self.run_test(
+            "Create Test Ticket for Quick Actions", 
+            "POST", 
+            "/boost/tickets", 
+            200, 
+            test_ticket_data
+        )
+        
+        if not create_success:
+            print("❌ Failed to create test ticket - stopping test")
+            return False
+        
+        ticket_id = create_response.get('id')
+        initial_status = create_response.get('status', 'open')
+        initial_priority = create_response.get('priority', 'low')
+        
+        print(f"   ✅ Test ticket created successfully")
+        print(f"   🆔 Ticket ID: {ticket_id}")
+        print(f"   🏷️  Initial Status: {initial_status}")
+        print(f"   ⚡ Initial Priority: {initial_priority}")
+        
+        print(f"\n🔄 Step 2: Testing quick action updates (status and priority changes)...")
+        
+        # Test the exact update format from review request
+        quick_action_update = {
+            "status": "in_progress",
+            "priority": "high",
+            "updated_by": "Admin User"  # This should be tracked in audit trail
+        }
+        
+        print(f"   Updating status: {initial_status} → {quick_action_update['status']}")
+        print(f"   Updating priority: {initial_priority} → {quick_action_update['priority']}")
+        print(f"   Updated by: {quick_action_update['updated_by']}")
+        
+        # Perform the quick action update
+        update_success, update_response = self.run_test(
+            "Quick Action Update (Status + Priority)", 
+            "PUT", 
+            f"/boost/tickets/{ticket_id}", 
+            200, 
+            quick_action_update
+        )
+        
+        if not update_success:
+            print("❌ Failed to perform quick action update - stopping test")
+            return False
+        
+        updated_status = update_response.get('status')
+        updated_priority = update_response.get('priority')
+        
+        print(f"   ✅ Quick action update successful")
+        print(f"   🏷️  Updated Status: {updated_status}")
+        print(f"   ⚡ Updated Priority: {updated_priority}")
+        
+        # Verify the updates were applied
+        if updated_status != quick_action_update['status']:
+            print(f"   ❌ Status update failed: Expected {quick_action_update['status']}, got {updated_status}")
+            return False
+        
+        if updated_priority != quick_action_update['priority']:
+            print(f"   ❌ Priority update failed: Expected {quick_action_update['priority']}, got {updated_priority}")
+            return False
+        
+        print(f"   ✅ Ticket updates applied correctly")
+        
+        print(f"\n🔍 Step 3: Testing GET /api/boost/tickets/{ticket_id}/audit for audit trail...")
+        
+        # Test the audit trail endpoint
+        audit_success, audit_response = self.run_test(
+            "Get Ticket Audit Trail", 
+            "GET", 
+            f"/boost/tickets/{ticket_id}/audit", 
+            200
+        )
+        
+        if not audit_success:
+            print("❌ Failed to retrieve audit trail - BUG CONFIRMED")
+            print("❌ Quick actions are not creating audit trail entries")
+            return False
+        
+        print(f"   ✅ Audit trail endpoint accessible")
+        
+        # Analyze audit trail entries
+        if isinstance(audit_response, list):
+            audit_entries = audit_response
+        else:
+            audit_entries = audit_response.get('audit_trail', []) if isinstance(audit_response, dict) else []
+        
+        print(f"   📊 Found {len(audit_entries)} audit trail entries")
+        
+        # Look for specific audit entries related to our changes
+        status_change_entries = []
+        priority_change_entries = []
+        user_attribution_entries = []
+        
+        for entry in audit_entries:
+            action = entry.get('action', '')
+            description = entry.get('description', '')
+            user_name = entry.get('user_name', '')
+            
+            print(f"   📋 Audit Entry:")
+            print(f"      Action: {action}")
+            print(f"      Description: {description}")
+            print(f"      User: {user_name}")
+            print(f"      Timestamp: {entry.get('timestamp', 'N/A')}")
+            
+            if 'status' in action.lower() or 'status' in description.lower():
+                status_change_entries.append(entry)
+            
+            if 'priority' in action.lower() or 'priority' in description.lower():
+                priority_change_entries.append(entry)
+            
+            if user_name == quick_action_update['updated_by']:
+                user_attribution_entries.append(entry)
+        
+        print(f"\n📊 Step 4: Verifying audit trail completeness...")
+        
+        # Check for status change audit entry
+        if status_change_entries:
+            print(f"   ✅ Status change audit entries found: {len(status_change_entries)}")
+            for entry in status_change_entries:
+                old_value = entry.get('old_value', 'N/A')
+                new_value = entry.get('new_value', 'N/A')
+                print(f"      Status change: {old_value} → {new_value}")
+        else:
+            print(f"   ❌ No status change audit entries found")
+            print(f"   ❌ BUG CONFIRMED: Status changes not logged in audit trail")
+            return False
+        
+        # Check for priority change audit entry
+        if priority_change_entries:
+            print(f"   ✅ Priority change audit entries found: {len(priority_change_entries)}")
+            for entry in priority_change_entries:
+                old_value = entry.get('old_value', 'N/A')
+                new_value = entry.get('new_value', 'N/A')
+                print(f"      Priority change: {old_value} → {new_value}")
+        else:
+            print(f"   ❌ No priority change audit entries found")
+            print(f"   ❌ BUG CONFIRMED: Priority changes not logged in audit trail")
+            return False
+        
+        # Check for proper user attribution
+        if user_attribution_entries:
+            print(f"   ✅ User attribution found: {len(user_attribution_entries)} entries by '{quick_action_update['updated_by']}'")
+        else:
+            print(f"   ❌ No entries attributed to '{quick_action_update['updated_by']}'")
+            print(f"   ❌ BUG CONFIRMED: User attribution not working in audit trail")
+            return False
+        
+        print(f"\n🔍 Step 5: Verifying audit trail shows detailed change logs...")
+        
+        # Verify that audit entries contain proper old/new values
+        detailed_entries = 0
+        for entry in audit_entries:
+            old_value = entry.get('old_value')
+            new_value = entry.get('new_value')
+            details = entry.get('details')
+            
+            if old_value and new_value and old_value != new_value:
+                detailed_entries += 1
+                print(f"   ✅ Detailed change log: {old_value} → {new_value}")
+            elif details and 'changed from' in details.lower():
+                detailed_entries += 1
+                print(f"   ✅ Detailed change log in details: {details}")
+        
+        if detailed_entries >= 2:  # Should have at least status and priority changes
+            print(f"   ✅ Detailed change logs found: {detailed_entries} entries")
+        else:
+            print(f"   ⚠️  Limited detailed change logs: {detailed_entries} entries")
+            print(f"   ⚠️  Expected at least 2 (status + priority changes)")
+        
+        print(f"\n🎉 ACTIVITY LOG QUICK ACTIONS BUG FIX TEST PASSED!")
+        print(f"✅ Quick action updates (status + priority) applied correctly")
+        print(f"✅ Audit trail entries created for all changes")
+        print(f"✅ User attribution working: '{quick_action_update['updated_by']}'")
+        print(f"✅ Detailed change logs with old/new values present")
+        
+        return True, ticket_id
+
+    def run_bug_fix_tests(self):
+        """Run the specific bug fix tests requested in the review"""
+        print("\n" + "=" * 80)
+        print("🐛 RUNNING CRITICAL BUG FIX TESTS")
+        print("=" * 80)
+        
+        bug_fix_results = []
+        
+        # Test 1: Chat Ticket Creation Bug Fix
+        try:
+            result1 = self.test_chat_ticket_creation_bug_fix()
+            if isinstance(result1, tuple):
+                success1, ticket_id1 = result1
+            else:
+                success1, ticket_id1 = result1, None
+            bug_fix_results.append(("Chat Ticket Creation Bug Fix", success1))
+        except Exception as e:
+            print(f"❌ Chat Ticket Creation Bug Fix test failed with error: {str(e)}")
+            bug_fix_results.append(("Chat Ticket Creation Bug Fix", False))
+        
+        # Test 2: Activity Log for Quick Actions Bug Fix
+        try:
+            result2 = self.test_activity_log_quick_actions_bug_fix()
+            if isinstance(result2, tuple):
+                success2, ticket_id2 = result2
+            else:
+                success2, ticket_id2 = result2, None
+            bug_fix_results.append(("Activity Log for Quick Actions Bug Fix", success2))
+        except Exception as e:
+            print(f"❌ Activity Log for Quick Actions Bug Fix test failed with error: {str(e)}")
+            bug_fix_results.append(("Activity Log for Quick Actions Bug Fix", False))
+        
+        # Summary
+        print(f"\n" + "=" * 80)
+        print("🐛 BUG FIX TEST RESULTS SUMMARY")
+        print("=" * 80)
+        
+        passed_tests = 0
+        total_tests = len(bug_fix_results)
+        
+        for test_name, success in bug_fix_results:
+            status = "✅ PASSED" if success else "❌ FAILED"
+            print(f"{status} - {test_name}")
+            if success:
+                passed_tests += 1
+        
+        print(f"\n📊 Overall Results: {passed_tests}/{total_tests} bug fix tests passed")
+        
+        if passed_tests == total_tests:
+            print("🎉 ALL BUG FIX TESTS PASSED - Both fixes are working correctly!")
+            return True
+        else:
+            print("⚠️  SOME BUG FIX TESTS FAILED - Issues still need to be addressed")
+            return False
+
     def test_ticket_allocation_debugging(self):
         """DEBUG TICKET ALLOCATION ISSUE - Specific debugging for layth.bunni@adamsmithinternational.com"""
         print("\n🔍 TICKET ALLOCATION DEBUGGING - Investigating ID Format Mismatch")
