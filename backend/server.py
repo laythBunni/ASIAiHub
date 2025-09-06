@@ -2564,16 +2564,22 @@ async def create_user_admin(
         logger.info(f"About to insert user document: {new_user_doc}")
         
         # Insert into simple_users collection
-        result = await db.simple_users.insert_one(new_user_doc)
+        result = await db.simple_users.insert_one(new_user_doc.copy())  # Use copy to avoid modifying original
         
         logger.info(f"Insert result: {result.inserted_id}")
         
         if result.inserted_id:
-            # Return success without sensitive data and ensure JSON serializable
-            response_user = {k: v for k, v in new_user_doc.items() if k not in ['personal_code', 'access_token', '_id']}
-            # Convert datetime to string for JSON serialization
-            if 'created_at' in response_user:
-                response_user['created_at'] = response_user['created_at'].isoformat()
+            # Create clean response without sensitive data and ensure JSON serializable
+            response_user = {
+                "id": new_user_doc["id"],
+                "email": new_user_doc["email"],
+                "name": new_user_doc["name"],
+                "role": new_user_doc["role"],
+                "department": new_user_doc.get("department"),
+                "business_unit_id": new_user_doc.get("business_unit_id"),
+                "is_active": new_user_doc["is_active"],
+                "created_at": new_user_doc["created_at"].isoformat()
+            }
             
             logger.info(f"Returning user creation response with ID: {response_user.get('id')}")
             return response_user
