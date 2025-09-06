@@ -248,8 +248,10 @@ metadata:
   run_ui: true
 
 test_plan:
-  current_focus: []
-  stuck_tasks: []
+  current_focus:
+    - "Admin Page Error Fix"
+  stuck_tasks:
+    - "Admin Page Error Fix"
   test_all: false
   test_priority: "critical_first"
 
