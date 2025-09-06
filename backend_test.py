@@ -2005,10 +2005,16 @@ class ASIOSAPITester:
             
             admin_apis_success = self.test_admin_apis_with_auth()
             
-            if admin_apis_success:
-                print("✅ ADMIN APIS: WORKING")
+            # 5. ADMIN USER MANAGEMENT TESTING (NEW - FROM REVIEW REQUEST)
+            print("\n👥 SYSTEM 5: ADMIN USER MANAGEMENT")
+            print("-" * 40)
+            
+            admin_user_mgmt_success = self.test_admin_user_management_apis()
+            
+            if admin_apis_success and admin_user_mgmt_success:
+                print("✅ ADMIN SYSTEMS: WORKING")
             else:
-                print("❌ ADMIN APIS: FAILED")
+                print("❌ ADMIN SYSTEMS: FAILED")
                 all_systems_working = False
             
         except KeyboardInterrupt:
