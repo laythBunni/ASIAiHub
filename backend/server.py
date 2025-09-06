@@ -2153,74 +2153,63 @@ async def register_user(request: RegistrationRequest):
         raise HTTPException(status_code=500, detail="Registration failed")
 
 @api_router.post("/auth/login", response_model=LoginResponse)
-async def universal_login(request: LoginRequest):
-    """Universal login - auto-creates users if they don't exist"""
+async def admin_managed_login(request: LoginRequest):
+    """Phase 2: Admin-managed login - only pre-registered users can login"""
     try:
-        # Check if using master code
-        MASTER_CODE = 'ASI2025'  # Hardcoded for now, change later via env
-        
-        if request.personal_code != MASTER_CODE:
-            raise HTTPException(status_code=401, detail="Invalid access code")
-        
-        # Look for existing user first
+        # Look for existing user in both collections (no auto-registration)
         user_data = await db.beta_users.find_one({"email": request.email})
+        if not user_data:
+            user_data = await db.simple_users.find_one({"email": request.email})
         
-        if user_data:
-            # Existing user - login directly
-            # Remove MongoDB _id field to avoid ObjectId serialization issues
-            if '_id' in user_data:
-                del user_data['_id']
-            user = BetaUser(**user_data)
-            
-            # Special check: Always ensure layth.bunni is Admin
-            if user.email == "layth.bunni@adamsmithinternational.com" and user.role != "Admin":
-                # Update user role to Admin in database
-                await db.beta_users.update_one(
-                    {"email": user.email},
-                    {"$set": {"role": "Admin"}}
-                )
-                user.role = "Admin"
-            
-            # Check if user is active
-            if not user.is_active:
-                raise HTTPException(status_code=401, detail="User account is inactive")
-        else:
-            # New user - auto-create with smart name extraction
-            user_name = request.name if request.name else request.email.split('@')[0].replace('.', ' ').title()
-            
-            # Special handling for layth.bunni - make Admin
-            role = "Admin" if request.email == "layth.bunni@adamsmithinternational.com" else "Manager"
-            
-            user = BetaUser(
-                email=request.email,
-                personal_code="***",  # Don't store master code
-                name=user_name,
-                role=role,
-                department="Management",
-                is_active=True,
-                created_at=datetime.now(timezone.utc),
-                last_login=datetime.now(timezone.utc)
+        # If user doesn't exist, reject immediately
+        if not user_data:
+            logger.warning(f"Login attempt for non-registered email: {request.email}")
+            raise HTTPException(status_code=401, detail="Invalid email or personal code")
+        
+        # Remove MongoDB _id field to avoid ObjectId serialization issues
+        if '_id' in user_data:
+            del user_data['_id']
+        
+        user = BetaUser(**user_data)
+        
+        # Verify personal code matches
+        if user.personal_code != request.personal_code:
+            logger.warning(f"Invalid personal code for user: {request.email}")
+            raise HTTPException(status_code=401, detail="Invalid email or personal code")
+        
+        # Check if user is active
+        if not user.is_active:
+            logger.warning(f"Login attempt for inactive user: {request.email}")
+            raise HTTPException(status_code=401, detail="Account is inactive")
+        
+        # Special check: Always ensure layth.bunni is Admin
+        if user.email == "layth.bunni@adamsmithinternational.com" and user.role != "Admin":
+            # Update user role to Admin in database
+            collection = db.beta_users if await db.beta_users.find_one({"email": user.email}) else db.simple_users
+            await collection.update_one(
+                {"email": user.email},
+                {"$set": {"role": "Admin"}}
             )
-            
-            # Save new user to database
-            user_dict = user.dict()
-            await db.beta_users.insert_one(user_dict)
+            user.role = "Admin"
         
         # Generate access token
-        access_token = generate_access_token(user.id, user.email)
+        access_token = secrets.token_urlsafe(32)
         
-        # Update last login and token
-        await db.beta_users.update_one(
-            {"email": request.email},
+        # Update last login and access token
+        collection = db.beta_users if await db.beta_users.find_one({"email": user.email}) else db.simple_users
+        await collection.update_one(
+            {"email": user.email},
             {"$set": {
                 "last_login": datetime.now(timezone.utc),
                 "access_token": access_token
             }}
         )
         
-        # Return response
+        logger.info(f"Successful login for pre-registered user: {user.email} (Role: {user.role})")
+        
+        # Return response (hide sensitive data)
         user_response = user.copy()
-        user_response.personal_code = "***"
+        user_response.personal_code = "***"  # Hide personal code in response
         user_response.access_token = None
         
         return LoginResponse(access_token=access_token, user=user_response)
