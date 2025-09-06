@@ -285,6 +285,30 @@ frontend:
         comment: "🎉 COMPREHENSIVE ADMIN USER MANAGEMENT API TESTING COMPLETED SUCCESSFULLY! Conducted exhaustive testing of specific issues reported in review request: ✅ ROLE UPDATE CONSISTENCY: Tested multiple role changes (Manager→Agent→Manager→Agent) with both 'role' and 'boost_role' field names - all updates persist correctly in database. ✅ BUSINESS UNIT UPDATES: Verified business_unit_id updates with automatic business_unit_name resolution working perfectly. Tested edge cases (business_unit_id='none' and null) - all handled correctly. ✅ FIELD MAPPING VERIFICATION: Both 'role' and 'boost_role' field names supported in PUT /api/admin/users/{user_id} endpoint. All 20 test cases passed (100% success rate). The specific issues mentioned in review request (role working once then failing, business unit not updating) have been COMPLETELY RESOLVED. Backend Admin User Management APIs are production-ready and working consistently."
 
 backend:
+  - task: "New Admin-Managed Authentication System - Phase 2"
+    implemented: false  
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "PHASE 2 IMPLEMENTATION: 1) Replace current authentication system (email + ASI2025), 2) Switch to new system (email + personal code only), 3) Remove auto-registration - only pre-registered users can login, 4) Reject anyone not pre-registered by admin. User reports admin page has error that needs fixing."
+
+  - task: "Admin Page Error Fix"
+    implemented: false  
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Admin page is loaded with an error - needs investigation and fix."
+
   - task: "New Admin-Managed Authentication System - Phase 1"
     implemented: true  
     working: true
