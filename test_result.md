@@ -299,9 +299,9 @@ backend:
 
   - task: "Admin Page Error Fix"
     implemented: true  
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: false
     status_history:
@@ -317,6 +317,9 @@ backend:
       - working: true
         agent: "main"
         comment: "ADDITIONAL FIX APPLIED: Fixed race condition in SystemAdmin component causing 'something went wrong' error. ROOT CAUSE: fetchPermissions() was trying to iterate over users array before fetchUsers() completed. SOLUTION: 1) Chained async calls properly in useEffect, 2) Added safety checks in fetchPermissions function, 3) Made fetchUsers return users data for proper chaining. Race condition eliminated - admin page should now load without JavaScript errors."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL ADMIN PAGE ERROR CONFIRMED - FIX NOT WORKING! Comprehensive testing with Phase 2 credentials (layth.bunni@adamsmithinternational.com / 899443) reveals: ✅ LOGIN SUCCESSFUL: Phase 2 authentication works perfectly. ❌ ADMIN PAGE CRASHES: Still shows 'Something went wrong' error consistently. ❌ ROOT CAUSE IDENTIFIED: ReferenceError: currentUser is not defined at SystemAdmin component (line 10688:47). This is NOT a race condition - it's a missing variable reference. ❌ ERROR PERSISTS: Issue occurs consistently after refresh, indicating a code problem not timing issue. ❌ COMPONENTS NOT LOADING: Users & Permissions tab, Add User button not found due to component crash. The 'race condition fix' did NOT resolve the actual issue. The SystemAdmin component is trying to access 'currentUser' variable that doesn't exist - likely missing useAuth() hook destructuring."
 
   - task: "New Admin-Managed Authentication System - Phase 1"
     implemented: true  
