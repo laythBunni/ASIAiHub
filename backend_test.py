@@ -3798,6 +3798,38 @@ class ASIOSAPITester:
             print("❌ Failed to retrieve Layth's credentials")
             return False
         
+        # Check if personal code is masked - if so, regenerate it
+        personal_code = credentials_response.get('personal_code')
+        if personal_code == "***" or not (personal_code and len(str(personal_code)) == 6 and str(personal_code).isdigit()):
+            print("\n🔄 Personal code is masked or invalid, regenerating...")
+            
+            # Use regenerate endpoint to get a fresh 6-digit code
+            regenerate_success, regenerate_response = self.run_test(
+                "Regenerate Layth's Personal Code", 
+                "POST", 
+                f"/admin/users/{layth_user.get('id')}/regenerate-code", 
+                200, 
+                headers=auth_headers
+            )
+            
+            if regenerate_success:
+                print("   ✅ Personal code regenerated successfully")
+                # Get credentials again after regeneration
+                credentials_success, credentials_response = self.run_test(
+                    "GET /api/admin/layth-credentials (After Regeneration)", 
+                    "GET", 
+                    "/admin/layth-credentials", 
+                    200, 
+                    headers=auth_headers
+                )
+                
+                if not credentials_success:
+                    print("❌ Failed to retrieve credentials after regeneration")
+                    return False
+            else:
+                print("   ❌ Failed to regenerate personal code")
+                # Continue with existing credentials
+        
         # Step 3: Display the actual credentials clearly
         print("\n🎯 Step 3: Displaying Layth's Actual Credentials...")
         print("=" * 50)
