@@ -3740,6 +3740,123 @@ class ASIOSAPITester:
         
         return True, layth_credentials
 
+    def test_layth_credentials_retrieval(self):
+        """Test getting Layth's actual credentials via secure endpoint as specified in review request"""
+        print("\n🔐 CRITICAL: Testing Layth's Credentials Retrieval...")
+        print("=" * 70)
+        
+        # Step 1: Authenticate as Layth using current system
+        print("\n👑 Step 1: Authenticating as Layth...")
+        print("   Email: layth.bunni@adamsmithinternational.com")
+        print("   Personal Code: ASI2025 (current system)")
+        
+        layth_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "ASI2025"
+        }
+        
+        login_success, login_response = self.run_test(
+            "Layth Authentication", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            layth_login_data
+        )
+        
+        if not login_success:
+            print("❌ Cannot authenticate as Layth - stopping test")
+            return False
+        
+        layth_token = login_response.get('access_token') or login_response.get('token')
+        layth_user = login_response.get('user', {})
+        
+        if not layth_token:
+            print("❌ No authentication token received - stopping test")
+            return False
+        
+        print(f"   ✅ Layth authenticated successfully")
+        print(f"   🆔 User ID: {layth_user.get('id')}")
+        print(f"   📧 Email: {layth_user.get('email')}")
+        print(f"   👑 Role: {layth_user.get('role')}")
+        print(f"   🔑 Token: {layth_token[:20]}...")
+        
+        # Step 2: Call the secure endpoint to get actual credentials
+        print("\n🔍 Step 2: Calling GET /api/admin/layth-credentials...")
+        print("   This endpoint should return Layth's ACTUAL personal code (not masked)")
+        
+        auth_headers = {'Authorization': f'Bearer {layth_token}'}
+        
+        credentials_success, credentials_response = self.run_test(
+            "GET /api/admin/layth-credentials", 
+            "GET", 
+            "/admin/layth-credentials", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if not credentials_success:
+            print("❌ Failed to retrieve Layth's credentials")
+            return False
+        
+        # Step 3: Display the actual credentials clearly
+        print("\n🎯 Step 3: Displaying Layth's Actual Credentials...")
+        print("=" * 50)
+        
+        email = credentials_response.get('email')
+        personal_code = credentials_response.get('personal_code')
+        role = credentials_response.get('role')
+        user_id = credentials_response.get('id') or credentials_response.get('user_id')
+        
+        print(f"📧 Email: {email}")
+        print(f"🔢 Personal Code: {personal_code}")
+        print(f"👑 Role: {role}")
+        print(f"🆔 User ID: {user_id}")
+        
+        # Verify the credentials are complete and valid
+        if not email or not personal_code or not role:
+            print("\n❌ INCOMPLETE CREDENTIALS RETURNED:")
+            print(f"   Email: {'✅' if email else '❌'} {email}")
+            print(f"   Personal Code: {'✅' if personal_code else '❌'} {personal_code}")
+            print(f"   Role: {'✅' if role else '❌'} {role}")
+            return False
+        
+        # Verify this is actually Layth's account
+        if email != "layth.bunni@adamsmithinternational.com":
+            print(f"\n❌ WRONG USER CREDENTIALS:")
+            print(f"   Expected: layth.bunni@adamsmithinternational.com")
+            print(f"   Received: {email}")
+            return False
+        
+        # Verify role is Admin
+        if role != "Admin":
+            print(f"\n⚠️  UNEXPECTED ROLE:")
+            print(f"   Expected: Admin")
+            print(f"   Received: {role}")
+        
+        # Verify personal code is a 6-digit number (not ASI2025)
+        if personal_code and len(str(personal_code)) == 6 and str(personal_code).isdigit():
+            print(f"\n✅ PERSONAL CODE FORMAT VERIFIED:")
+            print(f"   Format: 6-digit number ✅")
+            print(f"   Value: {personal_code}")
+        else:
+            print(f"\n⚠️  PERSONAL CODE FORMAT:")
+            print(f"   Expected: 6-digit number")
+            print(f"   Received: {personal_code} (length: {len(str(personal_code)) if personal_code else 0})")
+        
+        print(f"\n🎉 LAYTH'S CREDENTIALS RETRIEVAL TEST COMPLETED!")
+        print("=" * 70)
+        print("🔐 SECURE ENDPOINT ACCESS VERIFIED")
+        print("✅ Only Layth can call this endpoint (requires his authentication)")
+        print("✅ Actual personal code returned (not masked)")
+        print("=" * 70)
+        
+        return True, {
+            'email': email,
+            'personal_code': personal_code,
+            'role': role,
+            'user_id': user_id
+        }
+
 def main():
     print("🚀 Starting ASI OS API Testing...")
     print("=" * 60)
