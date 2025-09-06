@@ -2400,7 +2400,7 @@ class ASIOSAPITester:
             
             admin_role_consistency_success = self.test_admin_user_management_role_consistency()
             
-            if admin_apis_success and admin_user_mgmt_success:
+            if admin_apis_success and admin_user_mgmt_success and admin_role_consistency_success:
                 print("✅ ADMIN SYSTEMS: WORKING")
             else:
                 print("❌ ADMIN SYSTEMS: FAILED")
