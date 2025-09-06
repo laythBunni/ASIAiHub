@@ -3908,7 +3908,8 @@ def main():
         
         else:
             print("Available test modes:")
-            print("  layth-credentials - Get Layth's Phase 1 credentials")
+            print("  layth-credentials - Get Layth's actual credentials via secure endpoint")
+            print("  layth-phase1 - Get Layth's Phase 1 credentials")
             print("  phase1 - Run Phase 1 admin-managed authentication tests")
             return 1
     
