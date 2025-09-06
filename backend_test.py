@@ -3743,7 +3743,43 @@ def main():
     
     tester = ASIOSAPITester()
     
-    # Test basic connectivity first
+    # Check for command line arguments
+    if len(sys.argv) > 1:
+        test_mode = sys.argv[1]
+        
+        if test_mode == "layth-credentials":
+            # Run Layth credentials Phase 1 test
+            print("\n🔐 RUNNING LAYTH CREDENTIALS PHASE 1 TEST")
+            print("=" * 60)
+            success, credentials = tester.test_layth_credentials_phase1()
+            
+            if success:
+                print("\n🎉 LAYTH CREDENTIALS TEST COMPLETED SUCCESSFULLY!")
+                return 0
+            else:
+                print("\n❌ LAYTH CREDENTIALS TEST FAILED!")
+                return 1
+        
+        elif test_mode == "phase1":
+            # Run Phase 1 admin-managed authentication tests
+            print("\n🔐 RUNNING PHASE 1 ADMIN-MANAGED AUTHENTICATION TESTS")
+            print("=" * 60)
+            phase1_passed = tester.test_admin_managed_auth_phase1()
+            
+            if phase1_passed:
+                print("🎉 Phase 1 Admin-Managed Authentication System tests passed!")
+                return 0
+            else:
+                print("⚠️  Phase 1 issues found - system needs attention.")
+                return 1
+        
+        else:
+            print("Available test modes:")
+            print("  layth-credentials - Get Layth's Phase 1 credentials")
+            print("  phase1 - Run Phase 1 admin-managed authentication tests")
+            return 1
+    
+    # Default: Test basic connectivity first
     print("\n📡 Testing Basic Connectivity...")
     success, _ = tester.test_root_endpoint()
     if not success:
