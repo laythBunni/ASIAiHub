@@ -388,6 +388,7 @@ class BoostTicketUpdate(BaseModel):
     owner_name: Optional[str] = None
     resolution_notes: Optional[str] = None
     resolution_type: Optional[ResolutionType] = None
+    updated_by: Optional[str] = None  # Add field to track who made the update
 
 class BoostCommentCreate(BaseModel):
     body: str
