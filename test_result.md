@@ -249,9 +249,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Universal Authentication System"
-    - "Chat/LLM Integration" 
-    - "RAG System Integration"
+    - "Admin Page Error Fix"
   stuck_tasks: []
   test_all: false
   test_priority: "critical_first"
