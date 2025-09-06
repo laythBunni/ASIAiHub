@@ -1463,7 +1463,7 @@ async def create_boost_ticket(ticket_data: BoostTicketCreate):
             "updated_at": created_at,
             "due_at": due_at,
             "business_unit_name": business_unit_name,
-            "requester_id": "default_user"  # For MVP
+            # Use the provided requester_id instead of hardcoding "default_user"
         })
         
         ticket = BoostTicket(**ticket_dict)
