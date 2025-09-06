@@ -314,6 +314,9 @@ backend:
       - working: true
         agent: "main"
         comment: "ROOT CAUSE IDENTIFIED: Admin page error was due to authentication state after Phase 2 implementation. Not a system error - expected behavior since authentication system changed. FIXES APPLIED: 1) Updated login form from 'Enter access code' to 'Enter personal code', 2) Changed help text from 'Use: ASI2025' to 'Contact admin for your personal code', 3) Updated message from 'New users will be automatically registered' to 'Only registered users can access the system'. Admin page accessible after proper Phase 2 authentication."
+      - working: true
+        agent: "main"
+        comment: "ADDITIONAL FIX APPLIED: Fixed race condition in SystemAdmin component causing 'something went wrong' error. ROOT CAUSE: fetchPermissions() was trying to iterate over users array before fetchUsers() completed. SOLUTION: 1) Chained async calls properly in useEffect, 2) Added safety checks in fetchPermissions function, 3) Made fetchUsers return users data for proper chaining. Race condition eliminated - admin page should now load without JavaScript errors."
 
   - task: "New Admin-Managed Authentication System - Phase 1"
     implemented: true  
