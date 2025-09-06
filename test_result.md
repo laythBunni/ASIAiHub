@@ -277,6 +277,9 @@ frontend:
       - working: true
         agent: "main"
         comment: "FIXES IMPLEMENTED: 1) Fixed delete endpoint from /boost/users to /admin/users, 2) Enhanced UI refresh logic with immediate state updates plus backend refresh for both role updates and user deletion, 3) Added timing delays to ensure backend consistency. Backend testing confirms all APIs working perfectly."
+      - working: true
+        agent: "main"
+        comment: "ADDITIONAL FIXES: User reported role updates working inconsistently and business unit updates not working at all. ROOT CAUSE: Backend PUT endpoint missing business_unit_id/business_unit_name handling and role field mapping issues. FIXES: 1) Enhanced backend to handle business_unit_id and auto-resolve business_unit_name, 2) Fixed role field mapping to accept both 'role' and 'boost_role' from frontend, 3) Updated frontend to send correct field mapping for backend compatibility."
 
 agent_communication:
   - agent: "main"
