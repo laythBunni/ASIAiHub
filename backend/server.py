@@ -424,7 +424,7 @@ async def process_document_with_rag(document_data: Dict[str, Any]) -> None:
         )
         
         # Process and store document
-        success = await rag.process_and_store_document(document_data)
+        success = rag.process_and_store_document(document_data)
         
         if success:
             # Get collection stats for chunks count
