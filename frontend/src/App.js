@@ -4959,8 +4959,10 @@ const SystemAdmin = () => {
         duration: 3000,
       });
       
-      // Refresh users list
-      fetchUsers();
+      // Refresh users list with a slight delay to ensure backend consistency
+      setTimeout(() => {
+        fetchUsers();
+      }, 100);
     } catch (error) {
       console.error('Error updating user:', error);
       toast({
