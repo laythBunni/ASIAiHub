@@ -4869,16 +4869,19 @@ const SystemAdmin = () => {
     }
   };
 
-  const fetchPermissions = async () => {
-    // Safety check: ensure users are loaded before creating permissions
-    if (!users || users.length === 0) {
-      console.log('Users not loaded yet, skipping permissions initialization');
+  const fetchPermissions = async (usersData = null) => {
+    // Use provided users data or fallback to state
+    const usersList = usersData || users;
+    
+    // Safety check: ensure users are available
+    if (!usersList || usersList.length === 0) {
+      console.log('No users available for permissions initialization');
       return;
     }
     
     // Create default permissions structure
     const defaultPermissions = {};
-    users.forEach(user => {
+    usersList.forEach(user => {
       defaultPermissions[user.id] = getDefaultPermissions(user.boost_role || user.role);
     });
     setPermissions(defaultPermissions);
