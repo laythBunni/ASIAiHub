@@ -5860,7 +5860,14 @@ const UserEditModal = ({ isOpen, onClose, user, businessUnits = [], onSave }) =>
       return;
     }
 
-    onSave(formData);
+    // Convert boost_role to role for backend compatibility
+    const submitData = {
+      ...formData,
+      role: formData.boost_role,  // Backend expects 'role' field
+      business_unit_id: formData.business_unit_id === 'none' ? null : formData.business_unit_id
+    };
+
+    onSave(submitData);
   };
 
   return (
