@@ -760,6 +760,7 @@ const ChatInterface = () => {
   const [ticketFromChat, setTicketFromChat] = useState({ show: false, userQuestion: '', aiResponse: '' });
   const { apiCall } = useAPI();
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const { token } = useAuth();
 
   useEffect(() => {
