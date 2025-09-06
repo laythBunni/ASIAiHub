@@ -5051,13 +5051,21 @@ const SystemAdmin = () => {
         title: "Success",
         description: "User deleted successfully",
       });
-      fetchUsers();
-      // Remove user from permissions state
+      
+      // Remove user from permissions state immediately
       setPermissions(prev => {
         const newPerms = { ...prev };
         delete newPerms[userId];
         return newPerms;
       });
+      
+      // Remove user from current users state immediately
+      setUsers(prev => prev.filter(user => user.id !== userId));
+      
+      // Also refresh from backend to ensure consistency
+      setTimeout(() => {
+        fetchUsers();
+      }, 100);
     } catch (error) {
       console.error('Error deleting user:', error);
       toast({
