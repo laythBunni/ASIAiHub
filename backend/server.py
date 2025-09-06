@@ -2167,6 +2167,9 @@ async def universal_login(request: LoginRequest):
         
         if user_data:
             # Existing user - login directly
+            # Remove MongoDB _id field to avoid ObjectId serialization issues
+            if '_id' in user_data:
+                del user_data['_id']
             user = BetaUser(**user_data)
             
             # Special check: Always ensure layth.bunni is Admin
