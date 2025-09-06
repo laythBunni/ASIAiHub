@@ -1589,6 +1589,7 @@ const DocumentManagement = () => {
   const [isAdmin, setIsAdmin] = useState(false); // For demo purposes
   const { apiCall } = useAPI();
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     fetchDocuments();
