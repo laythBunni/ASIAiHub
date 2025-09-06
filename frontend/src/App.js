@@ -5184,16 +5184,18 @@ const SystemAdmin = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>User Management & Permissions</CardTitle>
-                <Button 
-                  onClick={() => {
-                    setSelectedUser(null);
-                    setShowPermissionModal(true);
-                  }}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add User
-                </Button>
+                {currentUser?.email === 'layth.bunni@adamsmithinternational.com' && (
+                  <Button 
+                    onClick={() => {
+                      setSelectedUser(null);
+                      setShowPermissionModal(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add User
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
