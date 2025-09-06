@@ -5044,7 +5044,7 @@ const SystemAdmin = () => {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
     
     try {
-      await apiCall('DELETE', `/boost/users/${userId}`);
+      await apiCall('DELETE', `/admin/users/${userId}`);
       toast({
         title: "Success",
         description: "User deleted successfully",
