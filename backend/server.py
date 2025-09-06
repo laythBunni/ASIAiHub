@@ -2267,21 +2267,37 @@ async def update_user_admin(
         if current_user.role != 'Admin':
             raise HTTPException(status_code=403, detail="Admin access required")
         
+        # Handle role - accept both 'role' and 'boost_role' from frontend
+        role_value = user_data.get('role') or user_data.get('boost_role')
+        
+        # Handle business unit
+        business_unit_id = user_data.get('business_unit_id')
+        business_unit_name = None
+        
+        # If business_unit_id is provided and not 'none', get the business unit name
+        if business_unit_id and business_unit_id != 'none':
+            try:
+                unit = await db.boost_business_units.find_one({"id": business_unit_id})
+                if unit:
+                    business_unit_name = unit["name"]
+            except Exception as e:
+                logger.warning(f"Could not fetch business unit {business_unit_id}: {e}")
+        
         update_data = {
-            "role": user_data.get('role'),
+            "role": role_value,
+            "boost_role": role_value,  # Keep both for consistency
             "department": user_data.get('department'),
             "is_active": user_data.get('is_active', True),
             "name": user_data.get('name'),
+            "business_unit_id": business_unit_id if business_unit_id != 'none' else None,
+            "business_unit_name": business_unit_name,
             "updated_at": datetime.now(timezone.utc)
         }
         
         # Try to update user in beta_users first
         result = await db.beta_users.update_one(
             {"id": user_id},
-            {"$set": {
-                **update_data,
-                "boost_role": user_data.get('role')  # Also update boost_role for consistency
-            }}
+            {"$set": update_data}
         )
         
         # If not found in beta_users, try simple_users
