@@ -4820,6 +4820,7 @@ const SystemAdmin = () => {
     try {
       const users = await apiCall('GET', '/admin/users');
       setUsers(users);
+      return users; // Return users for chaining
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -4827,6 +4828,7 @@ const SystemAdmin = () => {
         description: "Failed to fetch users. Admin access required.",
         variant: "destructive"
       });
+      return []; // Return empty array on error
     }
   };
 
