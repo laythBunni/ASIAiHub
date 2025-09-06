@@ -516,6 +516,39 @@ async def log_audit_entry(ticket_id: str, action: str, description: str, user_na
         logger.error(f"Failed to log audit entry: {e}")
         # Don't raise exception to avoid breaking the main operation
 
+def generate_personal_code():
+    """Generate a random 6-digit personal code"""
+    import random
+    return f"{random.randint(100000, 999999):06d}"
+
+async def ensure_all_users_have_codes():
+    """Ensure all existing users have personal codes"""
+    try:
+        # Check beta_users collection
+        beta_users_without_codes = await db.beta_users.find({"personal_code": {"$exists": False}}).to_list(length=None)
+        for user in beta_users_without_codes:
+            personal_code = generate_personal_code()
+            await db.beta_users.update_one(
+                {"id": user["id"]},
+                {"$set": {"personal_code": personal_code}}
+            )
+            logger.info(f"Generated personal code for beta user: {user['email']}")
+        
+        # Check simple_users collection 
+        simple_users_without_codes = await db.simple_users.find({"personal_code": {"$exists": False}}).to_list(length=None)
+        for user in simple_users_without_codes:
+            personal_code = generate_personal_code()
+            await db.simple_users.update_one(
+                {"id": user["id"]},
+                {"$set": {"personal_code": personal_code}}
+            )
+            logger.info(f"Generated personal code for simple user: {user['email']}")
+            
+        logger.info("All users now have personal codes")
+        
+    except Exception as e:
+        logger.error(f"Error ensuring users have codes: {e}")
+
 def auto_prefix_subject(department: SupportDepartment, category: str, subject: str) -> str:
     """Auto-prefix subject with department and category"""
     dept_name = department.value  # Get the actual string value from enum
