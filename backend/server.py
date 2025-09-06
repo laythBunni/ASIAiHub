@@ -2267,15 +2267,20 @@ async def update_user_admin(
         if current_user.role != 'Admin':
             raise HTTPException(status_code=403, detail="Admin access required")
         
+        update_data = {
+            "role": user_data.get('role'),
+            "department": user_data.get('department'),
+            "is_active": user_data.get('is_active', True),
+            "name": user_data.get('name'),
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
         # Try to update user in beta_users first
         result = await db.beta_users.update_one(
             {"id": user_id},
             {"$set": {
-                "role": user_data.get('role'),
-                "department": user_data.get('department'),
-                "is_active": user_data.get('is_active', True),
-                "name": user_data.get('name'),
-                "updated_at": datetime.now(timezone.utc)
+                **update_data,
+                "boost_role": user_data.get('role')  # Also update boost_role for consistency
             }}
         )
         
@@ -2283,19 +2288,15 @@ async def update_user_admin(
         if result.matched_count == 0:
             result = await db.simple_users.update_one(
                 {"id": user_id},
-                {"$set": {
-                    "role": user_data.get('role'),
-                    "department": user_data.get('department'),
-                    "is_active": user_data.get('is_active', True),
-                    "name": user_data.get('name'),
-                    "updated_at": datetime.now(timezone.utc)
-                }}
+                {"$set": update_data}
             )
         
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="User not found")
         
-        return {"message": "User updated successfully"}
+        logger.info(f"Admin {current_user.email} updated user {user_id} with role {user_data.get('role')}")
+        return {"message": "User updated successfully", "updated_fields": update_data}
+        
     except HTTPException:
         raise
     except Exception as e:
