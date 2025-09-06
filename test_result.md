@@ -256,6 +256,22 @@ test_plan:
   test_all: false
   test_priority: "critical_first"
 
+frontend:
+  - task: "User Management UI Refresh Issues"
+    implemented: false
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Two critical UI issues reported: 1) User role changes not reflecting in UI after admin updates, 2) User deletion functionality not working. Delete button exists but API call fails."
+      - working: "unknown"
+        agent: "main"
+        comment: "ANALYSIS COMPLETE: Found root cause of both issues. Delete function calling wrong endpoint (/boost/users instead of /admin/users). Role update issue is frontend state management - need to ensure proper UI refresh after backend calls. Ready to implement fixes."
+
 agent_communication:
   - agent: "main"
     message: "CRITICAL PRE-DEPLOYMENT TESTING SETUP: Applied comprehensive stability fixes including error boundaries, retry logic, global error handling, and simplified authentication. Need thorough testing of all critical features before sharing with colleagues: 1) Universal login (any email + ASI2025), 2) Chat functionality with James AI, 3) Admin user management and permissions, 4) Error handling and recovery, 5) System stability. All core features must work reliably for colleague demo."
