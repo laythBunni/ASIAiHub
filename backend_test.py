@@ -3693,9 +3693,12 @@ class ASIOSAPITester:
         # Step 3: Test User Creation Fix (POST /api/admin/users)
         print(f"\n👥 Step 3: Test User Creation Fix (POST /api/admin/users)...")
         
+        # Use timestamp to ensure unique email
+        import time
+        unique_timestamp = int(time.time())
         test_user_data = {
             "name": "Test User Phase1",
-            "email": "test.phase1@example.com",
+            "email": f"test.phase1.{unique_timestamp}@example.com",
             "role": "Agent",
             "department": "IT",
             "is_active": True
