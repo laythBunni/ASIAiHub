@@ -3870,7 +3870,7 @@ const Navigation = () => {
     { path: '/tickets', label: 'Legacy Tickets', icon: Settings },
     { path: '/documents', label: 'Knowledge Base', icon: FileText },
     // Admin tab only visible to Admin users
-    ...(user?.role === 'Admin' ? [{ path: '/admin', label: 'Admin', icon: Shield }] : []),
+    ...((user?.role === 'Admin' || user?.boost_role === 'Admin') ? [{ path: '/admin', label: 'Admin', icon: Shield }] : []),
   ];
 
   return (
