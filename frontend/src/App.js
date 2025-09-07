@@ -218,14 +218,18 @@ const SimpleLoginForm = () => {
         loginButton.textContent = 'Signing in...';
       }
       
+      setDebugInfo(`🔐 Attempting login with ${formData.email} and code ${formData.accessCode ? '[PROVIDED]' : '[MISSING]'}`);
+      
       const result = await login(formData.email, formData.accessCode);
-
+      
       if (result.success) {
+        setDebugInfo('✅ Login successful! Redirecting...');
         toast({
           title: "✅ Welcome to ASI AiHub!",
           description: "Login successful",
         });
       } else {
+        setDebugInfo(`❌ Login failed: ${result.error}`);
         setError(result.error);
         if (loginButton) {
           loginButton.textContent = 'Sign In';
@@ -233,6 +237,7 @@ const SimpleLoginForm = () => {
       }
       // Note: if successful, login() will redirect, so no need to reset button
     } catch (error) {
+      setDebugInfo(`❌ Connection error: ${error.message}`);
       setError('Connection failed. Please check your internet connection.');
       const loginButton = e.target.querySelector('button[type="submit"]');
       if (loginButton) {
