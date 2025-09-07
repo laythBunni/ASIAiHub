@@ -1991,6 +1991,7 @@ const BoostSupport = () => {
   const [showNewTicketModal, setShowNewTicketModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketDetail, setShowTicketDetail] = useState(false);
+  const [showAllTickets, setShowAllTickets] = useState(false);
   const [businessUnits, setBusinessUnits] = useState([]);
   const [categories, setCategories] = useState({});
   const { apiCall } = useAPI();
