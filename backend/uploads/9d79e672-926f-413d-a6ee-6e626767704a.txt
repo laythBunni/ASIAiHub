@@ -1,0 +1,17 @@
+
+        ASI Company Policy Document - Test Upload
+        
+        This is a test document to verify the document upload functionality.
+        
+        IT Support Policy:
+        1. All IT issues should be reported via support ticket system
+        2. Password resets require manager approval
+        3. Software installation must be pre-approved by IT department
+        
+        Leave Management Policy:
+        1. Annual leave requests must be submitted 2 weeks in advance
+        2. Emergency leave requires manager approval within 24 hours
+        3. Maximum 5 consecutive days without director approval
+        
+        Document Upload Test - Created: 2025-09-07 07:12:13.602384
+        
