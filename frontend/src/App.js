@@ -3458,6 +3458,7 @@ const TicketManagement = () => {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAllTickets, setShowAllTickets] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [ticketComments, setTicketComments] = useState([]);
   const [newComment, setNewComment] = useState('');
