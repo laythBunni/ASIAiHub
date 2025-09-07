@@ -2418,14 +2418,21 @@ const BoostSupport = () => {
                 </p>
               </div>
             ) : (
-              getAllTickets().slice(0, 10).map(ticket => (
+              getAllTickets().slice(0, showAllTickets ? getAllTickets().length : 10).map(ticket => (
                 <TicketRow key={ticket.id} ticket={ticket} showQuickActions={true} />
               ))
             )}
             {getAllTickets().length > 10 && (
               <div className="text-center pt-2">
-                <Button variant="outline" size="sm">
-                  View all {getAllTickets().length} tickets
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowAllTickets(!showAllTickets)}
+                >
+                  {showAllTickets 
+                    ? `Show less` 
+                    : `View all ${getAllTickets().length} tickets`
+                  }
                 </Button>
               </div>
             )}
