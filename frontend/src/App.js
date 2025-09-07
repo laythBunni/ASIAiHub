@@ -5282,18 +5282,18 @@ const SystemAdmin = () => {
                           </div>
                         </td>
                         <td className="p-3">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => manageUserPermissions(user)}
-                            title="Manage user permissions"
-                          >
-                            <Settings className="w-3 h-3 mr-1" />
-                            Manage
-                          </Button>
+                          <span className="text-sm text-gray-500">View permissions</span>
                         </td>
                         <td className="p-3">
                           <div className="flex space-x-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => manageUserPermissions(user)}
+                              title="Manage user permissions"
+                            >
+                              <Settings className="w-3 h-3" />
+                            </Button>
                             <Button 
                               size="sm" 
                               variant="outline"
