@@ -4229,7 +4229,10 @@ const BoostAdmin = () => {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <p className="text-sm text-gray-600 mb-2">DEBUG: Loading {users.length} users</p>
+                <table className="w-full"
+                  onLoad={() => console.log('📊 TABLE DEBUG: User table loaded with', users.length, 'users')}
+                >
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-3">Name</th>
