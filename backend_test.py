@@ -4081,6 +4081,70 @@ class ASIOSAPITester:
             'user_id': user_id
         }
 
+    def print_test_summary(self, test_results):
+        """Print a comprehensive test summary"""
+        print(f"\n" + "=" * 80)
+        print("📊 COMPREHENSIVE TEST RESULTS SUMMARY")
+        print("=" * 80)
+        
+        # Count results
+        total_tests = len(test_results)
+        passed_tests = sum(1 for result in test_results.values() if result)
+        failed_tests = total_tests - passed_tests
+        
+        print(f"📈 Overall Statistics:")
+        print(f"   Total Test Categories: {total_tests}")
+        print(f"   ✅ Passed Categories: {passed_tests}")
+        print(f"   ❌ Failed Categories: {failed_tests}")
+        print(f"   📊 Success Rate: {(passed_tests/total_tests*100):.1f}%")
+        
+        print(f"\n📋 Detailed Results:")
+        for test_name, result in test_results.items():
+            status = "✅ PASSED" if result else "❌ FAILED"
+            print(f"   {status} - {test_name.replace('_', ' ').title()}")
+        
+        print(f"\n🔧 API Call Statistics:")
+        print(f"   Total API Calls: {self.tests_run}")
+        print(f"   ✅ Successful Calls: {self.tests_passed}")
+        print(f"   ❌ Failed Calls: {self.tests_run - self.tests_passed}")
+        print(f"   📊 API Success Rate: {(self.tests_passed/self.tests_run*100):.1f}%" if self.tests_run > 0 else "No API calls made")
+        
+        if passed_tests == total_tests:
+            print(f"\n🎉 ALL TESTS PASSED!")
+            print(f"🚀 ASI OS API is fully functional and ready for production use!")
+        else:
+            print(f"\n⚠️  SOME TESTS FAILED")
+            print(f"🔧 Please review the failed test categories above")
+            print(f"💡 Focus on fixing the failed areas before production deployment")
+
+if __name__ == "__main__":
+    tester = ASIOSAPITester()
+    
+    # PRIORITY: Run Layth Authentication Debug First (as per review request)
+    print("🚨 PRIORITY TESTING: Layth Authentication Debug")
+    print("=" * 60)
+    
+    layth_debug_success = tester.test_layth_authentication_debug()
+    
+    if layth_debug_success:
+        print("\n✅ LAYTH AUTHENTICATION DEBUG COMPLETED SUCCESSFULLY")
+        print("   All authentication components working correctly")
+    else:
+        print("\n❌ LAYTH AUTHENTICATION DEBUG FOUND ISSUES")
+        print("   Please review the detailed output above")
+    
+    print(f"\n🎯 FINAL RESULTS:")
+    print(f"Tests Run: {tester.tests_run}")
+    print(f"Tests Passed: {tester.tests_passed}")
+    print(f"Success Rate: {(tester.tests_passed/tester.tests_run*100):.1f}%")
+    
+    if tester.tests_passed == tester.tests_run:
+        print("🎉 All tests passed!")
+        sys.exit(0)
+    else:
+        print("⚠️  Some tests failed")
+        sys.exit(1)
+
     def test_user_creation_issue(self):
         """Test User Creation Issue as specified in review request"""
         print("\n👤 CRITICAL: Testing User Creation Issue...")
