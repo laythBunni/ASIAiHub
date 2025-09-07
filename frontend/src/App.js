@@ -1809,11 +1809,6 @@ const DocumentManagement = () => {
                     <p className="text-xs text-gray-500 mb-3">
                       Supports PDF, DOCX, and TXT files
                     </p>
-                    {uploadDebug && (
-                      <div className="mb-3 p-2 bg-gray-100 rounded text-xs font-mono text-gray-700">
-                        {uploadDebug}
-                      </div>
-                    )}
                     <input
                       type="file"
                       accept=".pdf,.docx,.txt"
