@@ -289,6 +289,7 @@ const SimpleLoginForm = () => {
             <p className="text-xs text-gray-500">
               Only registered users can access the system
             </p>
+            <p className="text-red-600 font-bold">TEST: Code Version 2.0 - If you see this, latest code is deployed</p>
           </div>
         </div>
       </div>
