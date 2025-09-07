@@ -4678,27 +4678,16 @@ def main():
             print("  phase2 - Run Phase 2 new authentication system tests")
             return 1
     
-    # Default: Test basic connectivity first
-    print("\n📡 Testing Basic Connectivity...")
-    success, _ = tester.test_root_endpoint()
-    if not success:
-        print("❌ Cannot connect to API. Stopping tests.")
-        return 1
+    # Default: Run review request tests for this specific testing session
+    print("\n🚨 RUNNING REVIEW REQUEST SPECIFIC TESTS (DEFAULT)")
+    print("=" * 60)
+    success = tester.run_review_request_tests()
     
-    # RUN PHASE 1 ADMIN-MANAGED AUTHENTICATION SYSTEM TESTS
-    print("\n" + "🔐 RUNNING PHASE 1 ADMIN-MANAGED AUTHENTICATION TESTS" + "="*30)
-    phase1_passed = tester.test_admin_managed_auth_phase1()
-    
-    # Print final results
-    print("\n" + "=" * 60)
-    print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
-    
-    if phase1_passed:
-        print("🎉 Phase 1 Admin-Managed Authentication System tests passed!")
-        print("✅ System is ready for Phase 2 (switching authentication)")
+    if success:
+        print("\n🎉 REVIEW REQUEST TESTS COMPLETED SUCCESSFULLY!")
         return 0
     else:
-        print("⚠️  Phase 1 issues found - system needs attention before Phase 2.")
+        print("\n❌ REVIEW REQUEST TESTS FAILED!")
         return 1
 
 if __name__ == "__main__":
