@@ -1631,6 +1631,10 @@ const DocumentManagement = () => {
   const handleFileUpload = async (event, department) => {
     const file = event.target.files[0];
     if (!file) return;
+    
+    console.log('📁 UPLOAD DEBUG: Starting file upload...');
+    console.log('📄 File:', file.name, 'Size:', file.size, 'Type:', file.type);
+    console.log('🏢 Department:', department);
 
     setUploading(true);
     try {
@@ -1638,8 +1642,12 @@ const DocumentManagement = () => {
       formData.append('file', file);
       formData.append('department', department);
       formData.append('tags', '');
-
+      
+      console.log('🚀 UPLOAD DEBUG: Calling API...');
       const data = await apiCall('POST', '/documents/upload', formData, true);
+      
+      console.log('✅ UPLOAD DEBUG: Upload successful!');
+      console.log('📊 Response:', data);
       
       toast({
         title: "📄 Document Uploaded!",
@@ -1653,10 +1661,14 @@ const DocumentManagement = () => {
       // Refresh documents
       fetchDocuments();
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error('❌ UPLOAD DEBUG: Upload failed');
+      console.error('📊 Error status:', error.response?.status);
+      console.error('📋 Error data:', error.response?.data);
+      console.error('🔍 Full error:', error);
+      
       toast({
         title: "Upload Error",
-        description: "Failed to upload document. Please try again.",
+        description: `Failed to upload document: ${error.response?.data?.detail || error.message}`,
         variant: "destructive"
       });
     } finally {
