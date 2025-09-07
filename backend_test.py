@@ -4099,9 +4099,12 @@ class ASIOSAPITester:
         # Step 2: Test POST /api/admin/users with new user data
         print("\n👥 Step 2: Testing POST /api/admin/users with new user data...")
         
+        # Use timestamp to ensure unique email
+        import time
+        unique_timestamp = int(time.time())
         new_user_data = {
             "name": "Test User Creation",
-            "email": "test.creation@example.com",
+            "email": f"test.creation.{unique_timestamp}@example.com",  # Unique email
             "role": "Agent",
             "department": "Information Technology",  # Use correct Department enum value
             "business_unit_id": "",
