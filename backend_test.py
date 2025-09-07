@@ -4081,6 +4081,267 @@ class ASIOSAPITester:
             'user_id': user_id
         }
 
+    def test_layth_authentication_debug(self):
+        """Debug Layth's authentication issue as specified in review request"""
+        print("\n🔍 LAYTH AUTHENTICATION DEBUG - REVIEW REQUEST TESTING")
+        print("=" * 80)
+        print("📋 Testing specific requirements from review request:")
+        print("   1. Check if backend is running (GET /api/auth/me)")
+        print("   2. Test Layth's login credentials (layth.bunni@adamsmithinternational.com / 899443)")
+        print("   3. Verify user exists in database")
+        print("   4. Test authentication endpoint")
+        print("   5. Database connectivity")
+        print("=" * 80)
+        
+        # Step 1: Check if backend is running - Test GET /api/auth/me endpoint
+        print("\n🔧 Step 1: Testing Backend Responsiveness...")
+        print("   Testing GET /api/auth/me endpoint (without auth - should return 401/403)")
+        
+        try:
+            url = f"{self.api_url}/auth/me"
+            response = requests.get(url, timeout=10)
+            
+            self.tests_run += 1
+            print(f"   URL: {url}")
+            print(f"   Status: {response.status_code}")
+            
+            if response.status_code in [401, 403]:
+                self.tests_passed += 1
+                print(f"   ✅ Backend is running and responding correctly")
+                print(f"   ✅ Authentication endpoint properly protected")
+                backend_running = True
+            elif response.status_code == 200:
+                print(f"   ⚠️  Backend running but auth endpoint not protected")
+                backend_running = True
+            else:
+                print(f"   ❌ Unexpected response from backend")
+                backend_running = False
+                
+        except requests.exceptions.RequestException as e:
+            print(f"   ❌ Backend connection failed: {str(e)}")
+            print(f"   ❌ Cannot reach backend at {self.api_url}")
+            backend_running = False
+        
+        if not backend_running:
+            print("\n❌ CRITICAL: Backend is not running or not accessible")
+            print("   Cannot proceed with authentication testing")
+            return False
+        
+        # Step 2: Test Layth's login credentials
+        print("\n🔐 Step 2: Testing Layth's Login Credentials...")
+        print("   Email: layth.bunni@adamsmithinternational.com")
+        print("   Personal Code: 899443")
+        
+        layth_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "899443"
+        }
+        
+        login_success, login_response = self.run_test(
+            "Layth Login (Phase 2 Credentials)", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            layth_login_data
+        )
+        
+        layth_token = None
+        layth_user_data = None
+        
+        if login_success:
+            layth_token = login_response.get('access_token') or login_response.get('token')
+            layth_user_data = login_response.get('user', {})
+            
+            print(f"   ✅ Layth login successful")
+            print(f"   👤 User ID: {layth_user_data.get('id')}")
+            print(f"   📧 Email: {layth_user_data.get('email')}")
+            print(f"   👑 Role: {layth_user_data.get('role')}")
+            print(f"   🔑 Token: {layth_token[:20] if layth_token else 'None'}...")
+            
+            if layth_user_data.get('role') == 'Admin':
+                print(f"   ✅ Admin role confirmed")
+            else:
+                print(f"   ⚠️  Expected Admin role, got: {layth_user_data.get('role')}")
+        else:
+            print(f"   ❌ Layth login failed")
+            print(f"   ❌ Status code or response indicates authentication failure")
+            
+            # Try to get more details about the failure
+            try:
+                error_details = login_response if isinstance(login_response, dict) else {}
+                if error_details:
+                    print(f"   📋 Error details: {error_details}")
+            except:
+                pass
+        
+        # Step 3: Verify user exists in database (via admin endpoint if we have token)
+        print("\n💾 Step 3: Verifying User Exists in Database...")
+        
+        if layth_token:
+            auth_headers = {'Authorization': f'Bearer {layth_token}'}
+            
+            # Test admin users endpoint to verify Layth exists
+            users_success, users_response = self.run_test(
+                "Get Admin Users (Verify Layth Exists)", 
+                "GET", 
+                "/admin/users", 
+                200, 
+                headers=auth_headers
+            )
+            
+            if users_success and isinstance(users_response, list):
+                layth_found = False
+                layth_db_record = None
+                
+                for user in users_response:
+                    if user.get('email') == 'layth.bunni@adamsmithinternational.com':
+                        layth_found = True
+                        layth_db_record = user
+                        break
+                
+                if layth_found:
+                    print(f"   ✅ Layth's user record found in database")
+                    print(f"   📋 Database ID: {layth_db_record.get('id')}")
+                    print(f"   📧 Database Email: {layth_db_record.get('email')}")
+                    print(f"   👑 Database Role: {layth_db_record.get('role')}")
+                    print(f"   🔢 Personal Code: {layth_db_record.get('personal_code', 'Not visible')}")
+                    print(f"   ✅ User is active: {layth_db_record.get('is_active', 'Unknown')}")
+                    
+                    # Verify personal code matches
+                    if layth_db_record.get('personal_code') == '899443':
+                        print(f"   ✅ Personal code matches: 899443")
+                    else:
+                        print(f"   ⚠️  Personal code in DB: {layth_db_record.get('personal_code')}")
+                else:
+                    print(f"   ❌ Layth's user record NOT found in database")
+                    print(f"   📊 Total users in database: {len(users_response)}")
+            else:
+                print(f"   ❌ Could not retrieve users from database")
+        else:
+            print(f"   ⚠️  No token available - cannot verify database record")
+        
+        # Step 4: Test authentication endpoint with token
+        print("\n🔑 Step 4: Testing Authentication Endpoint with Token...")
+        
+        if layth_token:
+            auth_headers = {'Authorization': f'Bearer {layth_token}'}
+            
+            me_success, me_response = self.run_test(
+                "GET /api/auth/me (With Layth's Token)", 
+                "GET", 
+                "/auth/me", 
+                200, 
+                headers=auth_headers
+            )
+            
+            if me_success:
+                print(f"   ✅ Token authentication successful")
+                print(f"   👤 Authenticated as: {me_response.get('email')}")
+                print(f"   👑 Role: {me_response.get('role')}")
+                print(f"   🏢 Department: {me_response.get('department', 'Not set')}")
+                
+                # Verify token returns same user as login
+                if me_response.get('email') == 'layth.bunni@adamsmithinternational.com':
+                    print(f"   ✅ Token authentication matches login user")
+                else:
+                    print(f"   ❌ Token authentication user mismatch")
+            else:
+                print(f"   ❌ Token authentication failed")
+                print(f"   ❌ Token may be invalid or expired")
+        else:
+            print(f"   ⚠️  No token available - cannot test token authentication")
+        
+        # Step 5: Test database connectivity and admin endpoints
+        print("\n🗄️  Step 5: Testing Database Connectivity...")
+        
+        if layth_token:
+            auth_headers = {'Authorization': f'Bearer {layth_token}'}
+            
+            # Test admin stats endpoint
+            stats_success, stats_response = self.run_test(
+                "GET /api/admin/stats (Database Stats)", 
+                "GET", 
+                "/admin/stats", 
+                200, 
+                headers=auth_headers
+            )
+            
+            if stats_success:
+                print(f"   ✅ Database connectivity confirmed")
+                print(f"   📊 Total Users: {stats_response.get('totalUsers', 'Unknown')}")
+                print(f"   📊 Total Tickets: {stats_response.get('totalTickets', 'Unknown')}")
+                print(f"   📊 Total Documents: {stats_response.get('totalDocuments', 'Unknown')}")
+                print(f"   📊 Total Sessions: {stats_response.get('totalSessions', 'Unknown')}")
+            else:
+                print(f"   ❌ Database connectivity issue or admin stats endpoint failed")
+            
+            # Test chat functionality (RAG system)
+            print(f"\n🤖 Additional Test: Chat Functionality...")
+            
+            chat_data = {
+                "session_id": f"layth-debug-{int(time.time())}",
+                "message": "Hello James, can you help me with company policies?",
+                "stream": False
+            }
+            
+            chat_success, chat_response = self.run_test(
+                "Chat Send (AI Response Test)", 
+                "POST", 
+                "/chat/send", 
+                200, 
+                chat_data
+            )
+            
+            if chat_success:
+                print(f"   ✅ Chat functionality working")
+                print(f"   🤖 AI response received")
+                print(f"   📄 Documents referenced: {chat_response.get('documents_referenced', 0)}")
+            else:
+                print(f"   ❌ Chat functionality failed")
+            
+            # Test document access
+            print(f"\n📄 Additional Test: Document Access...")
+            
+            docs_success, docs_response = self.run_test(
+                "GET /api/documents (Document Access)", 
+                "GET", 
+                "/documents", 
+                200
+            )
+            
+            if docs_success and isinstance(docs_response, list):
+                print(f"   ✅ Document access working")
+                print(f"   📚 Available documents: {len(docs_response)}")
+            else:
+                print(f"   ❌ Document access failed")
+        
+        # Final Summary
+        print(f"\n📋 LAYTH AUTHENTICATION DEBUG SUMMARY:")
+        print("=" * 60)
+        
+        if backend_running:
+            print(f"✅ Backend Status: Running and accessible at {self.api_url}")
+        else:
+            print(f"❌ Backend Status: Not accessible")
+        
+        if login_success:
+            print(f"✅ Layth Login: Successful with personal code 899443")
+            print(f"   👤 User: {layth_user_data.get('email')}")
+            print(f"   👑 Role: {layth_user_data.get('role')}")
+        else:
+            print(f"❌ Layth Login: Failed")
+        
+        if layth_token:
+            print(f"✅ Authentication Token: Generated and working")
+            print(f"   🔑 Token: {layth_token[:20]}...")
+        else:
+            print(f"❌ Authentication Token: Not available")
+        
+        print("=" * 60)
+        
+        # Return overall success
+        return backend_running and login_success and layth_token is not None
+
     def print_test_summary(self, test_results):
         """Print a comprehensive test summary"""
         print(f"\n" + "=" * 80)
