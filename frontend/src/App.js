@@ -195,6 +195,7 @@ const SimpleLoginForm = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('');
   const { login } = useAuth();
   const { toast } = useToast();
 
