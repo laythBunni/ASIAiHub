@@ -1633,9 +1633,7 @@ const DocumentManagement = () => {
     const file = event.target.files[0];
     if (!file) return;
     
-    console.log('📁 UPLOAD DEBUG: Starting file upload...');
-    console.log('📄 File:', file.name, 'Size:', file.size, 'Type:', file.type);
-    console.log('🏢 Department:', department);
+    setUploadDebug(`📁 Starting upload: ${file.name} (${Math.round(file.size/1024)}KB) to ${department}`);
 
     setUploading(true);
     try {
@@ -1644,11 +1642,10 @@ const DocumentManagement = () => {
       formData.append('department', department);
       formData.append('tags', '');
       
-      console.log('🚀 UPLOAD DEBUG: Calling API...');
+      setUploadDebug(`🚀 Uploading to API...`);
       const data = await apiCall('POST', '/documents/upload', formData, true);
       
-      console.log('✅ UPLOAD DEBUG: Upload successful!');
-      console.log('📊 Response:', data);
+      setUploadDebug(`✅ Upload successful! Response: ${JSON.stringify(data)}`);
       
       toast({
         title: "📄 Document Uploaded!",
@@ -1661,17 +1658,21 @@ const DocumentManagement = () => {
       
       // Refresh documents
       fetchDocuments();
+      
+      // Clear debug after 5 seconds
+      setTimeout(() => setUploadDebug(''), 5000);
     } catch (error) {
-      console.error('❌ UPLOAD DEBUG: Upload failed');
-      console.error('📊 Error status:', error.response?.status);
-      console.error('📋 Error data:', error.response?.data);
-      console.error('🔍 Full error:', error);
+      const errorMsg = error.response?.data?.detail || error.message || 'Unknown error';
+      setUploadDebug(`❌ Upload failed: ${errorMsg} (Status: ${error.response?.status})`);
       
       toast({
         title: "Upload Error",
-        description: `Failed to upload document: ${error.response?.data?.detail || error.message}`,
+        description: `Failed to upload document: ${errorMsg}`,
         variant: "destructive"
       });
+      
+      // Clear debug after 10 seconds on error
+      setTimeout(() => setUploadDebug(''), 10000);
     } finally {
       setUploading(false);
     }
