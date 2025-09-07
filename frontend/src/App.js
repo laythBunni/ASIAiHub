@@ -1602,6 +1602,7 @@ const DocumentManagement = () => {
   const [documents, setDocuments] = useState([]);
   const [activeTab, setActiveTab] = useState('Finance');
   const [uploading, setUploading] = useState(false);
+  const [uploadDebug, setUploadDebug] = useState('');
   const [isAdmin, setIsAdmin] = useState(false); // For demo purposes
   const { apiCall } = useAPI();
   const { toast } = useToast();
