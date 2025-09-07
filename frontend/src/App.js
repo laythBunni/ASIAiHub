@@ -5304,21 +5304,30 @@ const SystemAdmin = () => {
                           <div className="flex space-x-2">
                             <button
                               className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                              onClick={() => manageUserPermissions(user)}
+                              onClick={() => {
+                                console.log('🔵 MANAGE button clicked for user:', user.email);
+                                manageUserPermissions(user);
+                              }}
                               title="Manage user permissions"
                             >
                               Manage
                             </button>
                             <button
                               className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
-                              onClick={() => editUser(user)}
+                              onClick={() => {
+                                console.log('🟢 EDIT button clicked for user:', user.email);
+                                editUser(user);
+                              }}
                               title="Edit user details"
                             >
                               Edit
                             </button>
                             <button
                               className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-                              onClick={() => deleteUser(user.id)}
+                              onClick={() => {
+                                console.log('🔴 DELETE button clicked for user:', user.email);
+                                deleteUser(user.id);
+                              }}
                               title="Delete user permanently"
                             >
                               Delete
