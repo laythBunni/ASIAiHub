@@ -5285,32 +5285,28 @@ const SystemAdmin = () => {
                           <span className="text-sm text-gray-500">View permissions</span>
                         </td>
                         <td className="p-3">
-                          <div className="flex space-x-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
+                          <div className="flex space-x-2">
+                            <button
+                              className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                               onClick={() => manageUserPermissions(user)}
                               title="Manage user permissions"
                             >
-                              <Settings className="w-3 h-3" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
+                              Manage
+                            </button>
+                            <button
+                              className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
                               onClick={() => editUser(user)}
-                              title="Edit user details and permissions"
+                              title="Edit user details"
                             >
-                              <Edit className="w-3 h-3" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="text-red-600 hover:bg-red-50"
+                              Edit
+                            </button>
+                            <button
+                              className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
                               onClick={() => deleteUser(user.id)}
                               title="Delete user permanently"
                             >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                              Delete
+                            </button>
                           </div>
                         </td>
                       </tr>
