@@ -5028,6 +5028,7 @@ def main():
         
         else:
             print("Available test modes:")
+            print("  debug-layth - Debug Layth's authentication issue (review request)")
             print("  review-request - Run review request specific tests (user creation & document upload)")
             print("  layth-credentials - Get Layth's actual credentials via secure endpoint")
             print("  layth-phase1 - Get Layth's Phase 1 credentials")
