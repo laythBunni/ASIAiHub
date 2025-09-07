@@ -1662,8 +1662,28 @@ const DocumentManagement = () => {
       // Clear debug after 5 seconds
       setTimeout(() => setUploadDebug(''), 5000);
     } catch (error) {
-      const errorMsg = error.response?.data?.detail || error.message || 'Unknown error';
-      setUploadDebug(`❌ Upload failed: ${errorMsg} (Status: ${error.response?.status})`);
+      let errorMsg = 'Unknown error';
+      let statusCode = 'undefined';
+      
+      if (error.response) {
+        // Server responded with error status
+        errorMsg = error.response.data?.detail || error.response.data?.message || `HTTP ${error.response.status}`;
+        statusCode = error.response.status;
+      } else if (error.request) {
+        // Request made but no response received  
+        errorMsg = 'Network error - no response from server';
+        statusCode = 'network';
+      } else if (error.message) {
+        // Something else happened
+        errorMsg = error.message;
+        statusCode = 'js_error';
+      } else {
+        // Complete fallback
+        errorMsg = JSON.stringify(error);
+        statusCode = 'unknown';
+      }
+      
+      setUploadDebug(`❌ Upload failed: ${errorMsg} (Status: ${statusCode})`);
       
       toast({
         title: "Upload Error",
