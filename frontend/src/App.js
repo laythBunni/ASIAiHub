@@ -279,6 +279,12 @@ const SimpleLoginForm = () => {
                 </div>
               </div>
             )}
+            
+            {debugInfo && (
+              <div className="text-blue-600 text-xs mb-4 p-2 bg-blue-50 rounded font-mono">
+                {debugInfo}
+              </div>
+            )}
 
             <div>
               <Label htmlFor="email">Email address</Label>
