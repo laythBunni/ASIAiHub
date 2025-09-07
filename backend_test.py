@@ -4062,6 +4062,538 @@ class ASIOSAPITester:
             'user_id': user_id
         }
 
+    def test_user_creation_issue(self):
+        """Test User Creation Issue as specified in review request"""
+        print("\n👤 CRITICAL: Testing User Creation Issue...")
+        print("=" * 60)
+        
+        # Step 1: Authenticate as Layth with personal code 899443
+        print("\n🔐 Step 1: Authenticating as Layth with personal code 899443...")
+        
+        layth_login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "899443"
+        }
+        
+        login_success, login_response = self.run_test(
+            "Layth Authentication (Personal Code 899443)", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            layth_login_data
+        )
+        
+        if not login_success:
+            print("❌ Cannot authenticate as Layth - stopping user creation test")
+            return False
+        
+        admin_token = login_response.get('access_token')
+        if not admin_token:
+            print("❌ No admin token received - stopping user creation test")
+            return False
+        
+        print(f"   ✅ Layth authenticated successfully")
+        print(f"   👑 Role: {login_response.get('user', {}).get('role')}")
+        auth_headers = {'Authorization': f'Bearer {admin_token}'}
+        
+        # Step 2: Test POST /api/admin/users with new user data
+        print("\n👥 Step 2: Testing POST /api/admin/users with new user data...")
+        
+        new_user_data = {
+            "name": "Test User Creation",
+            "email": "test.creation@example.com",
+            "role": "Agent",
+            "department": "IT",
+            "business_unit_id": "",
+            "is_active": True
+        }
+        
+        print(f"   📝 Creating user: {new_user_data['name']}")
+        print(f"   📧 Email: {new_user_data['email']}")
+        print(f"   👤 Role: {new_user_data['role']}")
+        print(f"   🏢 Department: {new_user_data['department']}")
+        
+        create_success, create_response = self.run_test(
+            "Create New User via Admin API", 
+            "POST", 
+            "/admin/users", 
+            200, 
+            new_user_data,
+            headers=auth_headers
+        )
+        
+        if not create_success:
+            print("❌ User creation failed - API returned error")
+            return False
+        
+        created_user_id = create_response.get('id')
+        print(f"   ✅ User creation API call successful")
+        print(f"   🆔 Created user ID: {created_user_id}")
+        print(f"   📋 Response: {create_response}")
+        
+        # Step 3: Verify user was actually created by checking users list
+        print("\n🔍 Step 3: Verifying user was actually created...")
+        
+        users_success, users_response = self.run_test(
+            "GET /api/admin/users (Verify Creation)", 
+            "GET", 
+            "/admin/users", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if not users_success:
+            print("❌ Failed to retrieve users list for verification")
+            return False
+        
+        users_list = users_response if isinstance(users_response, list) else []
+        created_user = None
+        
+        for user in users_list:
+            if user.get('email') == new_user_data['email']:
+                created_user = user
+                break
+        
+        if created_user:
+            print(f"   ✅ User successfully created and found in database")
+            print(f"   👤 Name: {created_user.get('name')}")
+            print(f"   📧 Email: {created_user.get('email')}")
+            print(f"   👤 Role: {created_user.get('role')}")
+            print(f"   🏢 Department: {created_user.get('department')}")
+            print(f"   🆔 ID: {created_user.get('id')}")
+            
+            # Verify all fields match
+            fields_match = (
+                created_user.get('name') == new_user_data['name'] and
+                created_user.get('email') == new_user_data['email'] and
+                created_user.get('role') == new_user_data['role'] and
+                created_user.get('department') == new_user_data['department']
+            )
+            
+            if fields_match:
+                print(f"   ✅ All user fields match expected values")
+            else:
+                print(f"   ⚠️  Some user fields don't match expected values")
+                print(f"   Expected: {new_user_data}")
+                print(f"   Actual: {created_user}")
+            
+            return True
+        else:
+            print(f"   ❌ User NOT found in database after creation")
+            print(f"   ❌ User creation button may not be working properly")
+            print(f"   📧 Looking for email: {new_user_data['email']}")
+            print(f"   👥 Total users in system: {len(users_list)}")
+            return False
+        
+    def test_document_upload_issue(self):
+        """Test Document Upload Issue as specified in review request"""
+        print("\n📄 CRITICAL: Testing Document Upload Issue...")
+        print("=" * 60)
+        
+        # Step 1: Test POST /api/documents/upload endpoint
+        print("\n📤 Step 1: Testing POST /api/documents/upload endpoint...")
+        
+        # Create a test document file
+        test_content = f"""
+        ASI Company Policy Document - Test Upload
+        
+        This is a test document to verify the document upload functionality.
+        
+        IT Support Policy:
+        1. All IT issues should be reported via support ticket system
+        2. Password resets require manager approval
+        3. Software installation must be pre-approved by IT department
+        
+        Leave Management Policy:
+        1. Annual leave requests must be submitted 2 weeks in advance
+        2. Emergency leave requires manager approval within 24 hours
+        3. Maximum 5 consecutive days without director approval
+        
+        Document Upload Test - Created: {datetime.now()}
+        """
+        
+        test_file_path = Path("/tmp/test_upload_document.txt")
+        with open(test_file_path, 'w') as f:
+            f.write(test_content)
+        
+        try:
+            with open(test_file_path, 'rb') as f:
+                files = {'file': ('test_upload_document.txt', f, 'text/plain')}
+                data = {
+                    'department': 'IT', 
+                    'tags': 'policy,test,upload'
+                }
+                
+                print(f"   📁 File: test_upload_document.txt")
+                print(f"   🏢 Department: IT")
+                print(f"   🏷️  Tags: policy,test,upload")
+                print(f"   📏 File size: {len(test_content)} bytes")
+                
+                success, response = self.run_test(
+                    "Document Upload Test", 
+                    "POST", 
+                    "/documents/upload", 
+                    200, 
+                    data=data, 
+                    files=files
+                )
+                
+                if success:
+                    document_id = response.get('id')
+                    filename = response.get('filename')
+                    message = response.get('message')
+                    
+                    print(f"   ✅ Document upload API call successful")
+                    print(f"   🆔 Document ID: {document_id}")
+                    print(f"   📁 Filename: {filename}")
+                    print(f"   💬 Message: {message}")
+                    
+                    # Step 2: Verify document appears in documents list
+                    print(f"\n🔍 Step 2: Verifying document appears in documents list...")
+                    
+                    docs_success, docs_response = self.run_test(
+                        "GET /api/documents (Verify Upload)", 
+                        "GET", 
+                        "/documents", 
+                        200
+                    )
+                    
+                    if docs_success:
+                        docs_list = docs_response if isinstance(docs_response, list) else []
+                        uploaded_doc = None
+                        
+                        for doc in docs_list:
+                            if doc.get('id') == document_id:
+                                uploaded_doc = doc
+                                break
+                        
+                        if uploaded_doc:
+                            print(f"   ✅ Document found in documents list")
+                            print(f"   📁 Original name: {uploaded_doc.get('original_name')}")
+                            print(f"   🏢 Department: {uploaded_doc.get('department')}")
+                            print(f"   📏 File size: {uploaded_doc.get('file_size')} bytes")
+                            print(f"   🏷️  Tags: {uploaded_doc.get('tags')}")
+                            print(f"   📅 Upload date: {uploaded_doc.get('uploaded_at')}")
+                            print(f"   ✅ Approval status: {uploaded_doc.get('approval_status')}")
+                            
+                            return True
+                        else:
+                            print(f"   ❌ Document NOT found in documents list after upload")
+                            print(f"   ❌ Document upload may not be adding documents properly")
+                            print(f"   🆔 Looking for document ID: {document_id}")
+                            print(f"   📊 Total documents in system: {len(docs_list)}")
+                            return False
+                    else:
+                        print(f"   ❌ Failed to retrieve documents list for verification")
+                        return False
+                else:
+                    print(f"   ❌ Document upload API call failed")
+                    return False
+                    
+        except Exception as e:
+            print(f"❌ Document upload test error: {str(e)}")
+            return False
+        finally:
+            # Cleanup test file
+            if test_file_path.exists():
+                test_file_path.unlink()
+    
+    def test_authentication_tokens_working(self):
+        """Test if authentication tokens are working for both endpoints"""
+        print("\n🔐 CRITICAL: Testing Authentication Tokens...")
+        print("=" * 60)
+        
+        # Step 1: Get authentication token
+        print("\n🔑 Step 1: Getting authentication token...")
+        
+        login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "899443"
+        }
+        
+        login_success, login_response = self.run_test(
+            "Get Auth Token", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            login_data
+        )
+        
+        if not login_success:
+            print("❌ Cannot get authentication token")
+            return False
+        
+        token = login_response.get('access_token')
+        if not token:
+            print("❌ No token in login response")
+            return False
+        
+        print(f"   ✅ Authentication token obtained")
+        print(f"   🔑 Token: {token[:20]}...")
+        
+        # Step 2: Test token with admin/users endpoint
+        print("\n👥 Step 2: Testing token with /api/admin/users endpoint...")
+        
+        auth_headers = {'Authorization': f'Bearer {token}'}
+        
+        admin_users_success, admin_users_response = self.run_test(
+            "Admin Users with Token", 
+            "GET", 
+            "/admin/users", 
+            200, 
+            headers=auth_headers
+        )
+        
+        if admin_users_success:
+            print(f"   ✅ Token works with admin/users endpoint")
+            users_count = len(admin_users_response) if isinstance(admin_users_response, list) else 0
+            print(f"   👥 Retrieved {users_count} users")
+        else:
+            print(f"   ❌ Token failed with admin/users endpoint")
+            return False
+        
+        # Step 3: Test invalid token
+        print("\n🚫 Step 3: Testing invalid token rejection...")
+        
+        invalid_headers = {'Authorization': 'Bearer invalid-token-12345'}
+        
+        invalid_success, invalid_response = self.run_test(
+            "Admin Users with Invalid Token", 
+            "GET", 
+            "/admin/users", 
+            401,  # Should be unauthorized
+            headers=invalid_headers
+        )
+        
+        if invalid_success:
+            print(f"   ✅ Invalid token correctly rejected")
+        else:
+            print(f"   ❌ Invalid token not properly rejected")
+        
+        return True
+    
+    def test_cors_and_network_issues(self):
+        """Test if there are any CORS or network issues"""
+        print("\n🌐 CRITICAL: Testing CORS and Network Issues...")
+        print("=" * 60)
+        
+        # Step 1: Test CORS headers in response
+        print("\n🔗 Step 1: Testing CORS headers...")
+        
+        try:
+            import requests
+            
+            # Test with a simple GET request to check CORS headers
+            response = requests.get(f"{self.api_url}/", headers={
+                'Origin': 'https://aihub-fix.preview.emergentagent.com',
+                'Access-Control-Request-Method': 'POST',
+                'Access-Control-Request-Headers': 'Content-Type,Authorization'
+            })
+            
+            cors_headers = {
+                'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials')
+            }
+            
+            print(f"   📋 CORS Headers:")
+            for header, value in cors_headers.items():
+                if value:
+                    print(f"   ✅ {header}: {value}")
+                else:
+                    print(f"   ❌ {header}: Not present")
+            
+            # Check if CORS allows the frontend origin
+            allow_origin = cors_headers.get('Access-Control-Allow-Origin')
+            if allow_origin == '*' or 'aihub-fix.preview.emergentagent.com' in str(allow_origin):
+                print(f"   ✅ CORS allows frontend origin")
+            else:
+                print(f"   ⚠️  CORS may not allow frontend origin")
+                print(f"   Frontend URL: https://aihub-fix.preview.emergentagent.com")
+                print(f"   Allowed Origin: {allow_origin}")
+        
+        except Exception as e:
+            print(f"   ❌ Error checking CORS headers: {str(e)}")
+        
+        # Step 2: Test network connectivity and response times
+        print("\n⚡ Step 2: Testing network connectivity and response times...")
+        
+        import time
+        
+        endpoints_to_test = [
+            "/",
+            "/documents",
+            "/dashboard/stats"
+        ]
+        
+        for endpoint in endpoints_to_test:
+            try:
+                start_time = time.time()
+                response = requests.get(f"{self.api_url}{endpoint}")
+                end_time = time.time()
+                
+                response_time = (end_time - start_time) * 1000  # Convert to milliseconds
+                
+                if response.status_code == 200:
+                    print(f"   ✅ {endpoint}: {response.status_code} ({response_time:.0f}ms)")
+                else:
+                    print(f"   ⚠️  {endpoint}: {response.status_code} ({response_time:.0f}ms)")
+                
+                if response_time > 5000:  # More than 5 seconds
+                    print(f"   ⚠️  Slow response time for {endpoint}")
+                
+            except Exception as e:
+                print(f"   ❌ {endpoint}: Network error - {str(e)}")
+        
+        return True
+    
+    def test_formdata_handling(self):
+        """Test if file upload FormData is handled correctly"""
+        print("\n📋 CRITICAL: Testing FormData Handling...")
+        print("=" * 60)
+        
+        # Step 1: Test multipart/form-data upload
+        print("\n📤 Step 1: Testing multipart/form-data upload...")
+        
+        test_content = "FormData test document content for upload verification"
+        test_file_path = Path("/tmp/formdata_test.txt")
+        
+        try:
+            with open(test_file_path, 'w') as f:
+                f.write(test_content)
+            
+            # Test with proper multipart/form-data
+            with open(test_file_path, 'rb') as f:
+                files = {'file': ('formdata_test.txt', f, 'text/plain')}
+                data = {
+                    'department': 'IT',
+                    'tags': 'formdata,test,upload'
+                }
+                
+                print(f"   📁 Testing file: formdata_test.txt")
+                print(f"   📏 Content length: {len(test_content)} bytes")
+                print(f"   🏢 Department: IT")
+                
+                # Make request without explicit Content-Type to let requests handle it
+                url = f"{self.api_url}/documents/upload"
+                response = requests.post(url, files=files, data=data)
+                
+                self.tests_run += 1
+                print(f"   🔗 URL: {url}")
+                print(f"   📋 Response status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    self.tests_passed += 1
+                    print(f"   ✅ FormData upload successful")
+                    
+                    try:
+                        response_data = response.json()
+                        print(f"   🆔 Document ID: {response_data.get('id')}")
+                        print(f"   📁 Filename: {response_data.get('filename')}")
+                        print(f"   💬 Message: {response_data.get('message')}")
+                        
+                        return True
+                    
+                    except Exception as e:
+                        print(f"   ❌ Error parsing response JSON: {str(e)}")
+                        print(f"   📄 Raw response: {response.text}")
+                        return False
+                else:
+                    print(f"   ❌ FormData upload failed")
+                    print(f"   📄 Response: {response.text}")
+                    return False
+        
+        except Exception as e:
+            print(f"❌ FormData test error: {str(e)}")
+            return False
+        finally:
+            if test_file_path.exists():
+                test_file_path.unlink()
+
+    def run_review_request_tests(self):
+        """Run the specific tests requested in the review request"""
+        print("🚨 REVIEW REQUEST SPECIFIC TESTING")
+        print("=" * 60)
+        print("Testing specific issues mentioned in review request:")
+        print("1. User Creation Issue (Layth + personal code 899443)")
+        print("2. Document Upload Issue")  
+        print("3. Authentication Tokens Working")
+        print("4. CORS and Network Issues")
+        print("5. FormData Handling")
+        print("=" * 60)
+        
+        all_tests_passed = True
+        test_results = {}
+        
+        try:
+            # Test 1: User Creation Issue
+            print("\n" + "="*60)
+            user_creation_success = self.test_user_creation_issue()
+            test_results['user_creation_issue'] = user_creation_success
+            if not user_creation_success:
+                all_tests_passed = False
+            
+            # Test 2: Document Upload Issue  
+            print("\n" + "="*60)
+            document_upload_success = self.test_document_upload_issue()
+            test_results['document_upload_issue'] = document_upload_success
+            if not document_upload_success:
+                all_tests_passed = False
+            
+            # Test 3: Authentication Tokens Working
+            print("\n" + "="*60)
+            auth_tokens_success = self.test_authentication_tokens_working()
+            test_results['authentication_tokens'] = auth_tokens_success
+            if not auth_tokens_success:
+                all_tests_passed = False
+            
+            # Test 4: CORS and Network Issues
+            print("\n" + "="*60)
+            cors_network_success = self.test_cors_and_network_issues()
+            test_results['cors_network_issues'] = cors_network_success
+            if not cors_network_success:
+                all_tests_passed = False
+            
+            # Test 5: FormData Handling
+            print("\n" + "="*60)
+            formdata_success = self.test_formdata_handling()
+            test_results['formdata_handling'] = formdata_success
+            if not formdata_success:
+                all_tests_passed = False
+                
+        except KeyboardInterrupt:
+            print("\n⚠️  Testing interrupted by user")
+            all_tests_passed = False
+        except Exception as e:
+            print(f"\n❌ Unexpected error during review request testing: {str(e)}")
+            all_tests_passed = False
+        
+        # FINAL RESULTS
+        print("\n" + "=" * 60)
+        print("🎯 REVIEW REQUEST TESTING COMPLETE")
+        print("=" * 60)
+        print(f"📊 Total Tests Run: {self.tests_run}")
+        print(f"✅ Tests Passed: {self.tests_passed}")
+        print(f"❌ Tests Failed: {self.tests_run - self.tests_passed}")
+        print(f"📈 Success Rate: {(self.tests_passed/self.tests_run*100):.1f}%" if self.tests_run > 0 else "No tests run")
+        
+        print("\n🔍 REVIEW REQUEST TEST RESULTS:")
+        print("-" * 40)
+        
+        for test_name, success in test_results.items():
+            status = "✅ WORKING" if success else "❌ FAILED"
+            print(f"{test_name.replace('_', ' ').title()}: {status}")
+        
+        if all_tests_passed:
+            print("\n🎉 ALL REVIEW REQUEST TESTS PASSED!")
+            print("🚀 BACKEND ISSUES RESOLVED")
+        else:
+            print("\n⚠️  SOME REVIEW REQUEST TESTS FAILED")
+            print("🔧 PLEASE REVIEW FAILED TESTS ABOVE")
+        
+        return all_tests_passed
+
 def main():
     print("🚀 Starting ASI OS API Testing...")
     print("=" * 60)
