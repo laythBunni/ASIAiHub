@@ -4220,7 +4220,7 @@ class ASIOSAPITester:
             with open(test_file_path, 'rb') as f:
                 files = {'file': ('test_upload_document.txt', f, 'text/plain')}
                 data = {
-                    'department': 'IT', 
+                    'department': 'Information Technology',  # Use correct Department enum value
                     'tags': 'policy,test,upload'
                 }
                 
