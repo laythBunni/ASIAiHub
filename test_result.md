@@ -249,9 +249,9 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Document Upload Issue"
     - "User Management Action Buttons Missing"
-  stuck_tasks:
-    - "User Management Action Buttons Missing"
+  stuck_tasks: []
   test_all: false
   test_priority: "critical_first"
 
