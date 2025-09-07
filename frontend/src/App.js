@@ -2963,9 +2963,9 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
 
   const fetchAvailableAgents = async () => {
     try {
-      const users = await apiCall('GET', '/boost/users');
+      const users = await apiCall('GET', '/admin/users');
       const agents = users.filter(user => 
-        ['Agent', 'Manager', 'Admin'].includes(user.boost_role)
+        ['Agent', 'Manager', 'Admin'].includes(user.role) && user.is_active
       );
       setAvailableAgents(agents);
     } catch (error) {
