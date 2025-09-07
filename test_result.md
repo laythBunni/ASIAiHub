@@ -415,9 +415,9 @@ backend:
 frontend:
   - task: "User Management Action Buttons Missing"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "critical"
     needs_retesting: false
     status_history:
@@ -430,6 +430,9 @@ frontend:
       - working: true
         agent: "main"
         comment: "ROOT CAUSE IDENTIFIED & FIXED: The buttons were actually present in the code but incorrectly positioned across columns. The 'Manage' button was in the Permissions column (6th) while Edit/Delete were in Actions column (7th), causing misalignment. SOLUTION: Moved all three action buttons (Manage with Settings icon, Edit with Edit icon, Delete with Trash2 icon) into the Actions column as a grouped set. Updated Permissions column to show descriptive text 'View permissions'. Table structure now correctly matches 7 headers with 7 data columns. All user management action buttons should now be visible and functional."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL ISSUE PERSISTS AFTER FRONTEND RESTART - ACTION BUTTONS STILL MISSING! Comprehensive post-restart testing with Layth's credentials (layth.bunni@adamsmithinternational.com / 899443) confirms: ✅ AUTHENTICATION & NAVIGATION: Successfully logged in and navigated to Admin → Users & Permissions tab. ✅ TABLE STRUCTURE CORRECT: Table displays 7 columns ['User', 'Role', 'Department', 'Business Unit', 'Personal Code', 'Permissions', 'Actions'] with 26 user rows. ❌ ACTION BUTTONS STILL MISSING: Actions column exists but contains 0 Manage buttons (Settings icon), 0 Edit buttons (Edit icon), 0 Delete buttons (Trash2 icon). Found 78 total buttons in Actions column but none are the expected manage/edit/delete buttons. ✅ NO JAVASCRIPT ERRORS: No console errors detected during testing. ✅ HORIZONTAL SCROLL: Table fits within viewport, no scroll issues. The main agent's fix did NOT resolve the issue - the expected action buttons with Settings, Edit, and Trash2 icons are still completely missing from the Actions column. This prevents all user management operations."
 
 agent_communication:
   - agent: "main"
