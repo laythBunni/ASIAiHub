@@ -4961,6 +4961,19 @@ def main():
                 print("\n❌ REVIEW REQUEST TESTS FAILED!")
                 return 1
         
+        elif test_mode == "debug-layth":
+            # Run Layth authentication debug test as per review request
+            print("\n🔍 RUNNING LAYTH AUTHENTICATION DEBUG TEST")
+            print("=" * 60)
+            success = tester.test_layth_credentials_comprehensive()
+            
+            if success:
+                print("\n🎉 LAYTH AUTHENTICATION DEBUG TEST COMPLETED SUCCESSFULLY!")
+                return 0
+            else:
+                print("\n❌ LAYTH AUTHENTICATION DEBUG TEST FAILED!")
+                return 1
+        
         elif test_mode == "layth-credentials":
             # Run Layth credentials retrieval test as per review request
             print("\n🔐 RUNNING LAYTH CREDENTIALS RETRIEVAL TEST")
