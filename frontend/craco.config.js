@@ -13,6 +13,28 @@ module.exports = {
     },
     configure: (webpackConfig) => {
       
+      // Production optimizations
+      if (process.env.NODE_ENV === 'production') {
+        // Disable source maps to prevent memory issues
+        webpackConfig.devtool = false;
+        
+        // Optimize memory usage
+        webpackConfig.optimization = {
+          ...webpackConfig.optimization,
+          splitChunks: {
+            chunks: 'all',
+            maxSize: 244000,
+            cacheGroups: {
+              vendor: {
+                test: /[\\/]node_modules[\\/]/,
+                name: 'vendors',
+                chunks: 'all',
+              },
+            },
+          },
+        };
+      }
+      
       // Disable hot reload completely if environment variable is set
       if (config.disableHotReload) {
         // Remove hot reload related plugins
