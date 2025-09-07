@@ -5664,8 +5664,8 @@ const PermissionModal = ({ isOpen, onClose, user, permissionCategories, permissi
           return;
         }
 
-        // Create user first
-        const newUser = await apiCall('POST', '/boost/users', userForm);
+        // Create user first using admin endpoint
+        const newUser = await apiCall('POST', '/admin/users', userForm);
         
         toast({
           title: "Success",
