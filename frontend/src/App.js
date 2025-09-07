@@ -257,16 +257,16 @@ const SimpleLoginForm = () => {
             </div>
 
             <div>
-              <Label htmlFor="accessCode">Access Code</Label>
+              <Label htmlFor="personalCode">Personal Code</Label>
               <Input
-                id="accessCode"
-                name="accessCode"
+                id="personalCode"
+                name="personalCode"
                 type="password"
                 autoComplete="current-password"
                 required
                 placeholder="Enter personal code"
                 value={formData.accessCode}
-                onChange={handleInputChange}
+                onChange={(e) => setFormData({...formData, accessCode: e.target.value})}
                 className="mt-1"
               />
               <p className="mt-1 text-xs text-gray-500">
