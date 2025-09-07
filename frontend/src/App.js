@@ -5249,6 +5249,7 @@ const SystemAdmin = () => {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
+                <p className="text-sm text-blue-600 mb-2 font-bold">🔍 DEBUG: Loading {users.length} users in SystemAdmin</p>
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
