@@ -3389,15 +3389,18 @@ const BoostTicketDetailModal = ({ isOpen, onClose, ticket, currentUser, onUpdate
                     <Label className="text-sm font-medium">Assignee</Label>
                     <Select value={quickAssignee} onValueChange={setQuickAssignee}>
                       <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select assignee" />
+                        <SelectValue placeholder="Type to search assignees..." />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {availableAgents.map(agent => (
-                          <SelectItem key={agent.id} value={agent.id}>
-                            {agent.name} ({agent.boost_role}) - {agent.department}
-                          </SelectItem>
-                        ))}
+                        {availableAgents
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map(agent => (
+                            <SelectItem key={agent.id} value={agent.id}>
+                              {agent.name} ({agent.role}) - {agent.department}
+                            </SelectItem>
+                          ))
+                        }
                       </SelectContent>
                     </Select>
                   </div>
