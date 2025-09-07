@@ -249,7 +249,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Admin Page Error Fix"
+    - "User Management Action Buttons Missing"
   stuck_tasks: []
   test_all: false
   test_priority: "critical_first"
