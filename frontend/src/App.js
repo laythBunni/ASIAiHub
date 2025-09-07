@@ -547,14 +547,20 @@ const useAPI = () => {
         const config = {
           method,
           headers: {
-            'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` }),
           },
           ...options
         };
 
         if (data && method !== 'GET') {
-          config.body = JSON.stringify(data);
+          if (data instanceof FormData) {
+            // For file uploads, let browser set Content-Type automatically
+            config.body = data;
+          } else {
+            // For JSON data
+            config.headers['Content-Type'] = 'application/json';
+            config.body = JSON.stringify(data);
+          }
         }
 
         const response = await fetch(`${API}${endpoint}`, config);
