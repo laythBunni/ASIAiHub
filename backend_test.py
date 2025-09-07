@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 class ASIOSAPITester:
-    def __init__(self, base_url="https://aihub-fix.preview.emergentagent.com"):
+    def __init__(self, base_url="http://localhost:8001"):  # Use localhost for testing
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
