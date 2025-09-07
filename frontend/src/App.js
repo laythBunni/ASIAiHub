@@ -237,7 +237,10 @@ const SimpleLoginForm = () => {
           ASI AiHub
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Sign in to your account
+          🚨 URGENT TEST: If you see this red message, the latest code IS deployed!
+        </p>
+        <p className="mt-1 text-center text-red-600 font-bold text-lg">
+          DEPLOYMENT TEST - VERSION 3.0
         </p>
       </div>
 
