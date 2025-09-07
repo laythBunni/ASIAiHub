@@ -255,6 +255,30 @@ test_plan:
   test_priority: "critical_first"
 
 frontend:
+  - task: "User Creation Button Not Working"
+    implemented: false  
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "When creating a new user at the end of the process, the create user button does not create a user. User creation form submits but no user is actually created."
+
+  - task: "Document Upload Not Working"
+    implemented: false  
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "When trying to add a document from the knowledge management dashboard, it does not add the document. Document upload process fails to complete."
+
   - task: "User Management UI Refresh Issues"
     implemented: true
     working: true
