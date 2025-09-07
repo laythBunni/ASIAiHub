@@ -4467,7 +4467,7 @@ class ASIOSAPITester:
             with open(test_file_path, 'rb') as f:
                 files = {'file': ('formdata_test.txt', f, 'text/plain')}
                 data = {
-                    'department': 'IT',
+                    'department': 'Information Technology',  # Use correct Department enum value
                     'tags': 'formdata,test,upload'
                 }
                 
