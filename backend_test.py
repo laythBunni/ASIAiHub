@@ -4671,6 +4671,7 @@ def main():
         
         else:
             print("Available test modes:")
+            print("  review-request - Run review request specific tests (user creation & document upload)")
             print("  layth-credentials - Get Layth's actual credentials via secure endpoint")
             print("  layth-phase1 - Get Layth's Phase 1 credentials")
             print("  phase1 - Run Phase 1 admin-managed authentication tests")
