@@ -1637,8 +1637,6 @@ const DocumentManagement = () => {
   const handleFileUpload = async (event, department) => {
     const file = event.target.files[0];
     if (!file) return;
-    
-    setUploadDebug(`📁 Starting upload: ${file.name} (${Math.round(file.size/1024)}KB) to ${department}`);
 
     setUploading(true);
     try {
@@ -1647,10 +1645,7 @@ const DocumentManagement = () => {
       formData.append('department', department);
       formData.append('tags', '');
       
-      setUploadDebug(`🚀 Uploading to API...`);
-      const data = await apiCall('POST', '/documents/upload', formData, true);
-      
-      setUploadDebug(`✅ Upload successful! Response: ${JSON.stringify(data)}`);
+      const data = await apiCall('POST', '/documents/upload', formData);
       
       toast({
         title: "📄 Document Uploaded!",
@@ -1663,41 +1658,22 @@ const DocumentManagement = () => {
       
       // Refresh documents
       fetchDocuments();
-      
-      // Clear debug after 5 seconds
-      setTimeout(() => setUploadDebug(''), 5000);
     } catch (error) {
       let errorMsg = 'Unknown error';
-      let statusCode = 'undefined';
       
       if (error.response) {
-        // Server responded with error status
         errorMsg = error.response.data?.detail || error.response.data?.message || `HTTP ${error.response.status}`;
-        statusCode = error.response.status;
       } else if (error.request) {
-        // Request made but no response received  
         errorMsg = 'Network error - no response from server';
-        statusCode = 'network';
       } else if (error.message) {
-        // Something else happened
         errorMsg = error.message;
-        statusCode = 'js_error';
-      } else {
-        // Complete fallback
-        errorMsg = JSON.stringify(error);
-        statusCode = 'unknown';
       }
-      
-      setUploadDebug(`❌ Upload failed: ${errorMsg} (Status: ${statusCode})`);
       
       toast({
         title: "Upload Error",
         description: `Failed to upload document: ${errorMsg}`,
         variant: "destructive"
       });
-      
-      // Clear debug after 10 seconds on error
-      setTimeout(() => setUploadDebug(''), 10000);
     } finally {
       setUploading(false);
     }
