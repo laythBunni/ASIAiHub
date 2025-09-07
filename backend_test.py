@@ -4604,7 +4604,20 @@ def main():
     if len(sys.argv) > 1:
         test_mode = sys.argv[1]
         
-        if test_mode == "layth-credentials":
+        if test_mode == "review-request":
+            # Run review request specific tests
+            print("\n🚨 RUNNING REVIEW REQUEST SPECIFIC TESTS")
+            print("=" * 60)
+            success = tester.run_review_request_tests()
+            
+            if success:
+                print("\n🎉 REVIEW REQUEST TESTS COMPLETED SUCCESSFULLY!")
+                return 0
+            else:
+                print("\n❌ REVIEW REQUEST TESTS FAILED!")
+                return 1
+        
+        elif test_mode == "layth-credentials":
             # Run Layth credentials retrieval test as per review request
             print("\n🔐 RUNNING LAYTH CREDENTIALS RETRIEVAL TEST")
             print("=" * 60)
