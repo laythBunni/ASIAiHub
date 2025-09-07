@@ -4103,7 +4103,7 @@ class ASIOSAPITester:
             "name": "Test User Creation",
             "email": "test.creation@example.com",
             "role": "Agent",
-            "department": "IT",
+            "department": "Information Technology",  # Use correct Department enum value
             "business_unit_id": "",
             "is_active": True
         }
