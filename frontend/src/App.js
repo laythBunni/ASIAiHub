@@ -193,6 +193,12 @@ const SimpleLoginForm = () => {
     setLoading(true);
 
     try {
+      // Add visible feedback
+      const loginButton = e.target.querySelector('button[type="submit"]');
+      if (loginButton) {
+        loginButton.textContent = 'Signing in...';
+      }
+      
       const result = await login(formData.email, formData.accessCode);
 
       if (result.success) {
@@ -202,9 +208,17 @@ const SimpleLoginForm = () => {
         });
       } else {
         setError(result.error);
+        if (loginButton) {
+          loginButton.textContent = 'Sign In';
+        }
       }
+      // Note: if successful, login() will redirect, so no need to reset button
     } catch (error) {
       setError('Connection failed. Please check your internet connection.');
+      const loginButton = e.target.querySelector('button[type="submit"]');
+      if (loginButton) {
+        loginButton.textContent = 'Sign In';
+      }
     } finally {
       setLoading(false);
     }
