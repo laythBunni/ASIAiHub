@@ -115,11 +115,24 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, accessCode) => {
+    console.log('🔐 FRONTEND LOGIN DEBUG:');
+    console.log('📧 Email:', email);
+    console.log('🔑 Personal Code:', accessCode);
+    console.log('🌐 API URL:', `${API}/auth/login`);
+    console.log('🌐 Full API constant:', API);
+    console.log('🌐 BACKEND_URL:', BACKEND_URL);
+    
     try {
-      const response = await axios.post(`${API}/auth/login`, {
+      const loginData = {
         email,
         personal_code: accessCode
-      });
+      };
+      console.log('📤 Sending login data:', loginData);
+      
+      const response = await axios.post(`${API}/auth/login`, loginData);
+      
+      console.log('✅ LOGIN SUCCESS:', response.status);
+      console.log('👤 Response data:', response.data);
       
       const { access_token, user: userData } = response.data;
       // Map new auth system to legacy BOOST system for backward compatibility
@@ -139,10 +152,15 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ LOGIN FAILED:');
+      console.error('📊 Error status:', error.response?.status);
+      console.error('📋 Error data:', error.response?.data);
+      console.error('🔍 Full error:', error);
+      console.error('🌐 Request URL was:', `${API}/auth/login`);
+      
       return { 
         success: false, 
-        error: error.response?.data?.detail || 'Login failed' 
+        error: error.response?.data?.detail || error.message || 'Login failed' 
       };
     }
   };
