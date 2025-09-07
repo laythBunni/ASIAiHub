@@ -250,7 +250,8 @@ metadata:
 test_plan:
   current_focus:
     - "User Management Action Buttons Missing"
-  stuck_tasks: []
+  stuck_tasks:
+    - "User Management Action Buttons Missing"
   test_all: false
   test_priority: "critical_first"
 
