@@ -2694,10 +2694,11 @@ async def error_handling_middleware(request: Request, call_next):
             content={"detail": "Internal server error - service temporarily unavailable"}
         )
 
-# CORS setup - Allow all origins for simplicity  
+# CORS setup - Use environment variable for allowed origins
+cors_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for now
+    allow_origins=[origin.strip() for origin in cors_origins],  # Use environment variable
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
