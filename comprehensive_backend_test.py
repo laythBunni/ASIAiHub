@@ -38,7 +38,6 @@ class ComprehensiveBackendTester:
             self.base_url = "http://localhost:8001"
         
         print(f"🔗 Backend URL: {self.base_url}")
-        print(f"🔗 API URL: {self.api_url}")
     
     def run_test(self, name, method, endpoint, expected_status, data=None, files=None, headers=None):
         """Run a single API test"""
