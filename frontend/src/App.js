@@ -59,8 +59,8 @@ import {
   Download
 } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+
+const API = "/api";
 
 // Authentication Context
 const AuthContext = createContext();
@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }) => {
     console.log('🔑 Personal Code:', accessCode);
     console.log('🌐 API URL:', `${API}/auth/login`);
     console.log('🌐 Full API constant:', API);
-    console.log('🌐 BACKEND_URL:', BACKEND_URL);
+    
     
     try {
       const loginData = {
