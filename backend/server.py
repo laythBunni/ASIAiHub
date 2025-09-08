@@ -55,21 +55,25 @@ db = client[os.environ['DB_NAME']]
 # Create the main app without a prefix
 app = FastAPI(title="ASI AiHub - AI-Powered Knowledge Management Platform")
 
-# Add startup event to ensure all users have personal codes and pre-warm RAG system
+# Add startup event to ensure all users have personal codes
 @app.on_event("startup")
 async def startup_event():
     """Run startup tasks"""
     await ensure_all_users_have_codes()
     
-    # Pre-warm RAG system to avoid 5-6s delay on first document load
-    try:
-        print("🔥 Pre-warming RAG system...")
-        rag = get_rag_system(EMERGENT_LLM_KEY)
-        # Trigger RAG initialization by getting stats
-        stats = rag.get_collection_stats()
-        print(f"✅ RAG system pre-warmed: {stats.get('total_chunks', 0)} chunks ready")
-    except Exception as e:
-        print(f"⚠️ RAG pre-warm failed (will initialize on first use): {e}")
+    # Pre-warm RAG system in background (non-blocking)
+    async def prewarm_rag():
+        try:
+            print("🔥 Pre-warming RAG system in background...")
+            rag = get_rag_system(EMERGENT_LLM_KEY)
+            stats = rag.get_collection_stats()
+            print(f"✅ RAG system pre-warmed: {stats.get('total_chunks', 0)} chunks ready")
+        except Exception as e:
+            print(f"⚠️ RAG pre-warm failed (will initialize on first use): {e}")
+    
+    # Run RAG pre-warming in background, don't block startup
+    import asyncio
+    asyncio.create_task(prewarm_rag())
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
