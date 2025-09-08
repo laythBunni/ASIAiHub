@@ -1,0 +1,14 @@
+
+ASI Test Document - 2025-09-08T22:02:10.367457
+
+This is a test document uploaded to investigate the production issue
+where documents upload successfully but don't appear in the admin approval list.
+
+Document Details:
+- Upload Time: 2025-09-08 22:02:10.367459
+- Test Session: test-session-1757368930
+- Purpose: Production Issue Investigation
+
+Content:
+This document contains test policy information for verification purposes.
+All employees should follow proper procedures when uploading documents.
