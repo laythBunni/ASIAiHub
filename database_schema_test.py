@@ -114,7 +114,7 @@ class DatabaseSchemaVerifier:
             self.client.close()
             print(f"🔌 Database connection closed")
     
-    def run_test(self, name: str, test_func, *args, **kwargs):
+    async def run_test(self, name: str, test_func, *args, **kwargs):
         """Run a single test and track results"""
         self.tests_run += 1
         print(f"\n🔍 Testing {name}...")
@@ -122,7 +122,7 @@ class DatabaseSchemaVerifier:
         try:
             result = test_func(*args, **kwargs)
             if asyncio.iscoroutine(result):
-                result = asyncio.run(result)
+                result = await result
             
             if result:
                 self.tests_passed += 1
