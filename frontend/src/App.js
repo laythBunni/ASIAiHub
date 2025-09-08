@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }) => {
     console.log('🔑 Personal Code:', accessCode);
     console.log('🌐 API URL:', `${API}/auth/login`);
     console.log('🌐 Full API constant:', API);
-    console.log('🌐 BACKEND_URL:', BACKEND_URL);
+    
     
     try {
       const loginData = {
