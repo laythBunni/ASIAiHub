@@ -60,20 +60,6 @@ app = FastAPI(title="ASI AiHub - AI-Powered Knowledge Management Platform")
 async def startup_event():
     """Run startup tasks"""
     await ensure_all_users_have_codes()
-    
-    # Pre-warm RAG system in background (non-blocking)
-    async def prewarm_rag():
-        try:
-            print("🔥 Pre-warming RAG system in background...")
-            rag = get_rag_system(EMERGENT_LLM_KEY)
-            stats = rag.get_collection_stats()
-            print(f"✅ RAG system pre-warmed: {stats.get('total_chunks', 0)} chunks ready")
-        except Exception as e:
-            print(f"⚠️ RAG pre-warm failed (will initialize on first use): {e}")
-    
-    # Run RAG pre-warming in background, don't block startup
-    import asyncio
-    asyncio.create_task(prewarm_rag())
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
