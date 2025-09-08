@@ -63,7 +63,7 @@ class AdminRoleConsistencyTester:
         
         admin_login_data = {
             "email": "layth.bunni@adamsmithinternational.com",
-            "personal_code": "ASI2025"
+            "personal_code": ""
         }
         
         success, response = self.run_test(
