@@ -2099,11 +2099,9 @@ async def require_admin(current_user: BetaUser = Depends(get_current_user)) -> B
 async def register_user(request: RegistrationRequest):
     """Register new user with name + email + master code"""
     try:
-        # Check if using master code
-        MASTER_CODE = 'ASI2025'  # Hardcoded for now, change later via env
-        
-        if request.personal_code != MASTER_CODE:
-            raise HTTPException(status_code=401, detail="Invalid access code")
+        # Registration endpoint is deprecated in Phase 2 system
+        # Only admin-managed user creation is allowed
+        raise HTTPException(status_code=403, detail="Registration is disabled. Contact admin for account creation.")
         
         # Check if user already exists
         existing_user = await db.beta_users.find_one({"email": request.email})
