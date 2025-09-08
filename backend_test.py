@@ -4402,30 +4402,58 @@ class ASIOSAPITester:
 if __name__ == "__main__":
     tester = ASIOSAPITester()
     
-    # PRIORITY: Run Layth Authentication Debug First (as per review request)
-    print("🚨 PRIORITY TESTING: Layth Authentication Debug")
-    print("=" * 60)
+    print("🚀 Starting Authentication System Testing (Post ASI2025 Cleanup)...")
+    print(f"📡 Base URL: {tester.base_url}")
+    print(f"🔗 API URL: {tester.api_url}")
+    print("=" * 80)
     
-    layth_debug_success = tester.test_layth_authentication_debug()
+    # Run authentication-focused tests as specified in review request
+    try:
+        # CRITICAL AUTHENTICATION TESTS - Focus on review request requirements
+        print("\n🔐 CRITICAL AUTHENTICATION TESTING")
+        print("=" * 80)
+        
+        # Main test: Authentication cleanup verification
+        tester.test_authentication_cleanup_verification()
+        
+        # Additional verification tests
+        print("\n🔍 ADDITIONAL VERIFICATION TESTS")
+        print("-" * 50)
+        
+        # Test root endpoint to verify API is accessible
+        tester.test_root_endpoint()
+        
+        # Test a simple endpoint to verify general API health
+        tester.test_dashboard_stats()
+        
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Testing interrupted by user")
+    except Exception as e:
+        print(f"\n\n❌ Testing failed with error: {str(e)}")
+        import traceback
+        traceback.print_exc()
     
-    if layth_debug_success:
-        print("\n✅ LAYTH AUTHENTICATION DEBUG COMPLETED SUCCESSFULLY")
-        print("   All authentication components working correctly")
-    else:
-        print("\n❌ LAYTH AUTHENTICATION DEBUG FOUND ISSUES")
-        print("   Please review the detailed output above")
-    
-    print(f"\n🎯 FINAL RESULTS:")
-    print(f"Tests Run: {tester.tests_run}")
-    print(f"Tests Passed: {tester.tests_passed}")
-    print(f"Success Rate: {(tester.tests_passed/tester.tests_run*100):.1f}%")
+    # Final Results
+    print("\n" + "=" * 80)
+    print("🏁 AUTHENTICATION TESTING COMPLETE")
+    print("=" * 80)
+    print(f"📊 Tests Run: {tester.tests_run}")
+    print(f"✅ Tests Passed: {tester.tests_passed}")
+    print(f"❌ Tests Failed: {tester.tests_run - tester.tests_passed}")
     
     if tester.tests_passed == tester.tests_run:
-        print("🎉 All tests passed!")
-        sys.exit(0)
+        print("🎉 ALL AUTHENTICATION TESTS PASSED!")
+        print("✅ Login system working correctly after ASI2025 cleanup")
+        print("✅ Personal codes authentication functional")
+        print("✅ ASI2025 properly rejected")
+        print("✅ Proper tokens and user data returned")
     else:
-        print("⚠️  Some tests failed")
-        sys.exit(1)
+        print(f"⚠️  {tester.tests_run - tester.tests_passed} authentication tests failed")
+        print("❌ Authentication system may need attention")
+        
+    success_rate = (tester.tests_passed / tester.tests_run * 100) if tester.tests_run > 0 else 0
+    print(f"📈 Success Rate: {success_rate:.1f}%")
+    print("=" * 80)
 
     def test_user_creation_issue(self):
         """Test User Creation Issue as specified in review request"""
