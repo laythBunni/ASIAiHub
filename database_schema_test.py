@@ -686,37 +686,37 @@ async def main():
         collections_data = await verifier.get_collections_inventory()
         
         # 2. Verify Expected Collections
-        verifier.run_test(
+        await verifier.run_test(
             "Expected Collections Verification",
             verifier.verify_expected_collections
         )
         
         # 3. Documents Collection Schema
-        verifier.run_test(
+        await verifier.run_test(
             "Documents Collection Schema",
             verifier.verify_documents_collection_schema
         )
         
         # 4. Chat Collections Schema
-        verifier.run_test(
+        await verifier.run_test(
             "Chat Collections Schema", 
             verifier.verify_chat_collections_schema
         )
         
         # 5. User Collections Schema
-        verifier.run_test(
+        await verifier.run_test(
             "User Collections Schema",
             verifier.verify_user_collections_schema
         )
         
         # 6. Field Type Compatibility
-        verifier.run_test(
+        await verifier.run_test(
             "Field Type Compatibility",
             verifier.verify_field_types_compatibility
         )
         
         # 7. Document Approval Workflow
-        verifier.run_test(
+        await verifier.run_test(
             "Document Approval Workflow",
             verifier.check_document_approval_workflow
         )
