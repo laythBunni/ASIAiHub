@@ -5416,16 +5416,26 @@ def main():
             print("  phase2 - Run Phase 2 new authentication system tests")
             return 1
     
-    # Default: Run review request tests for this specific testing session
-    print("\n🚨 RUNNING REVIEW REQUEST SPECIFIC TESTS (DEFAULT)")
+    # Default: Run authentication cleanup verification tests
+    print("\n🚨 RUNNING AUTHENTICATION CLEANUP VERIFICATION TESTS (DEFAULT)")
     print("=" * 60)
-    success = tester.run_review_request_tests()
     
-    if success:
-        print("\n🎉 REVIEW REQUEST TESTS COMPLETED SUCCESSFULLY!")
-        return 0
-    else:
-        print("\n❌ REVIEW REQUEST TESTS FAILED!")
+    try:
+        # Run the authentication cleanup verification test
+        auth_success = tester.test_authentication_cleanup_verification()
+        
+        # Run basic API health checks
+        tester.test_root_endpoint()
+        tester.test_dashboard_stats()
+        
+        if auth_success:
+            print("\n🎉 AUTHENTICATION CLEANUP VERIFICATION COMPLETED SUCCESSFULLY!")
+            return 0
+        else:
+            print("\n❌ AUTHENTICATION CLEANUP VERIFICATION FAILED!")
+            return 1
+    except Exception as e:
+        print(f"\n❌ Testing failed with error: {str(e)}")
         return 1
 
 if __name__ == "__main__":
