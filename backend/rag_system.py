@@ -138,22 +138,22 @@ class RAGSystem:
             self._init_cloud_rag()
     
     def _init_cloud_rag(self):
-        """Initialize RAG with cloud-based alternatives (production)"""
+        """Initialize RAG with MongoDB-based chunk storage (production-safe)"""
         try:
-            # Use in-memory document storage with OpenAI embeddings
-            self.documents = {}  # Store documents in memory
-            self.document_chunks = {}  # Store processed chunks
-            self.embedding_cache = {}  # Cache embeddings
+            # Use MongoDB for reliable chunk storage instead of problematic ChromaDB
+            self.documents = {}  # Document metadata cache
+            self.chunk_collection_name = "document_chunks"  # MongoDB collection for chunks
+            self.embedding_cache = {}  # Embedding cache
             
             # Simple text splitter without ML dependencies
             self.chunk_size = 1000
             self.chunk_overlap = 200
             
-            self.rag_mode = "cloud"
-            print("✅ RAG System initialized with cloud alternatives (production mode)")
+            self.rag_mode = "mongodb_cloud"
+            print("✅ RAG System initialized with MongoDB chunk storage (production-safe)")
             
         except Exception as e:
-            logger.error(f"Failed to initialize cloud RAG: {e}")
+            logger.error(f"Failed to initialize MongoDB RAG: {e}")
             raise
     
     def _simple_text_splitter(self, text: str) -> List[str]:
