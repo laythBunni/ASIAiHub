@@ -18,7 +18,7 @@ from pathlib import Path
 import PyPDF2
 from docx import Document as DocxDocument
 
-# Check if we're in production environment and force cloud mode
+# Check if we're in production environment - but allow persistent storage
 PRODUCTION_INDICATORS = [
     os.environ.get('NODE_ENV') == 'production',
     os.environ.get('ENVIRONMENT') == 'production', 
@@ -26,22 +26,35 @@ PRODUCTION_INDICATORS = [
     'ai-workspace-17' in os.environ.get('REACT_APP_BACKEND_URL', ''),
 ]
 
-# Force cloud mode in production to avoid memory issues
+# Force ChromaDB mode with persistent storage for production (avoid memory-only cloud mode)
 if any(PRODUCTION_INDICATORS):
-    print("🏭 Production environment detected - forcing cloud mode for RAG operations")
-    ML_DEPENDENCIES_AVAILABLE = False
+    print("🏭 Production environment detected - using persistent ChromaDB for reliable chunk storage")
+    # Try to use ChromaDB with persistent storage in production
+    try:
+        import chromadb
+        from chromadb.utils import embedding_functions
+        # Use lighter dependencies - avoid sentence-transformers in production
+        ML_DEPENDENCIES_AVAILABLE = True
+        PRODUCTION_MODE = True
+        print("✅ Production ChromaDB mode enabled (persistent chunk storage)")
+    except ImportError as e:
+        print(f"⚠️ ChromaDB not available in production, falling back to cloud mode: {e}")
+        ML_DEPENDENCIES_AVAILABLE = False
+        PRODUCTION_MODE = True
 else:
-    # Try to import ML dependencies for local development
+    # Try to import full ML dependencies for local development
     try:
         import chromadb
         from chromadb.utils import embedding_functions
         from sentence_transformers import SentenceTransformer
         from langchain_text_splitters import RecursiveCharacterTextSplitter
         ML_DEPENDENCIES_AVAILABLE = True
+        PRODUCTION_MODE = False
         print("✅ Local ML dependencies available (development mode)")
     except ImportError as e:
         print(f"⚠️ ML dependencies not available, using cloud alternatives: {e}")
         ML_DEPENDENCIES_AVAILABLE = False
+        PRODUCTION_MODE = False
 
 # Import required packages
 import requests
