@@ -646,41 +646,65 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch real statistics from existing endpoints
-        const [tickets, documents, ragStats] = await Promise.all([
-          apiCall('GET', '/boost/tickets').catch(() => []),
-          apiCall('GET', '/documents?show_all=true').catch(() => []),
-          apiCall('GET', '/documents/rag-stats').catch(() => ({ total_documents: 0, processed_documents: 0 }))
-        ]);
-
-        // Calculate real statistics with better error handling
-        const totalTickets = Array.isArray(tickets) ? tickets.length : 0;
-        const openTickets = Array.isArray(tickets) ? tickets.filter(t => t && t.status === 'open').length : 0;
-        const totalDocuments = Array.isArray(documents) ? documents.length : 0;
-        const approvedDocuments = Array.isArray(documents) ? documents.filter(d => d && d.approval_status === 'approved').length : 0;
-        const overdueTickets = Array.isArray(tickets) ? tickets.filter(t => 
-          t && t.due_at && new Date(t.due_at) < new Date() && !['resolved', 'closed'].includes(t.status)
-        ).length : 0;
-
-        console.log('Dashboard Stats Debug:', {
-          ticketsCount: totalTickets,
-          openCount: openTickets,
-          documentsCount: totalDocuments,
-          approvedCount: approvedDocuments,
-          overdueCount: overdueTickets,
-          ragStats
-        });
-
+        // Load data sequentially with lightweight endpoints first
         setStats({
-          totalTickets,
-          openTickets,
-          totalDocuments: ragStats?.total_documents || totalDocuments,
-          overdue: overdueTickets,
-          processed_documents: ragStats?.processed_documents || approvedDocuments
+          totalTickets: 0,
+          openTickets: 0, 
+          totalDocuments: 0,
+          overdue: 0,
+          processed_documents: 0
         });
+
+        // Step 1: Try lightweight ticket stats first
+        try {
+          const tickets = await apiCall('GET', '/boost/tickets');
+          const totalTickets = Array.isArray(tickets) ? tickets.length : 0;
+          const openTickets = Array.isArray(tickets) ? tickets.filter(t => t && t.status === 'open').length : 0;
+          const overdueTickets = Array.isArray(tickets) ? tickets.filter(t => 
+            t && t.due_at && new Date(t.due_at) < new Date() && !['resolved', 'closed'].includes(t.status)
+          ).length : 0;
+
+          setStats(prev => ({
+            ...prev,
+            totalTickets,
+            openTickets,
+            overdue: overdueTickets
+          }));
+        } catch (error) {
+          console.log('Tickets loading failed, continuing with other stats...');
+        }
+
+        // Step 2: Load document count (lightweight)
+        try {
+          const documents = await apiCall('GET', '/documents');
+          const totalDocuments = Array.isArray(documents) ? documents.length : 0;
+          const approvedDocuments = Array.isArray(documents) ? documents.filter(d => d && d.approval_status === 'approved').length : 0;
+          
+          setStats(prev => ({
+            ...prev,
+            totalDocuments,
+            processed_documents: approvedDocuments
+          }));
+        } catch (error) {
+          console.log('Documents loading failed, using RAG stats...');
+          
+          // Step 3: Fallback to RAG stats (may be slow)
+          try {
+            const ragStats = await apiCall('GET', '/documents/rag-stats');
+            setStats(prev => ({
+              ...prev,
+              totalDocuments: ragStats?.total_documents || 0,
+              processed_documents: ragStats?.processed_documents || 0
+            }));
+          } catch (ragError) {
+            console.log('RAG stats also failed, using defaults');
+          }
+        }
+
+        console.log('Dashboard Stats Debug:', stats);
       } catch (error) {
         console.error('Error fetching stats:', error);
-        // Set default stats if API calls fail
+        // Ensure we always have stats even if everything fails
         setStats({
           totalTickets: 0,
           openTickets: 0,
