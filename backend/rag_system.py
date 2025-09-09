@@ -405,7 +405,7 @@ class RAGSystem:
             
             context_text = "\n".join(context_parts)
             
-            # Generate structured response with GPT-5
+            # Generate structured response with GPT-5 with timeout protection
             chat = LlmChat(
                 api_key=self.emergent_llm_key,
                 session_id=session_id,
@@ -442,7 +442,31 @@ class RAGSystem:
                 text=f"Query: {query}\n\nRelevant Company Documentation:\n{context_text}"
             )
             
-            response = await chat.send_message(user_message)
+            # Add timeout protection to LLM call
+            try:
+                response = await asyncio.wait_for(
+                    chat.send_message(user_message), 
+                    timeout=45.0  # 45 second timeout
+                )
+            except asyncio.TimeoutError:
+                logger.warning(f"LLM timeout for query: {query[:50]}... - using fallback response")
+                # Return fallback response with relevant documents found
+                return {
+                    "response": {
+                        "summary": f"I found {len(referenced_docs)} relevant documents but response generation timed out. Here are the key documents that contain information about your query.",
+                        "details": {
+                            "requirements": ["Document processing timed out - please check the referenced documents below"],
+                            "procedures": ["Contact IT support if this issue persists"],
+                            "exceptions": []
+                        },
+                        "action_required": "Review the referenced documents manually or contact support for assistance",
+                        "contact_info": "Contact your department administrator or IT support",
+                        "related_policies": list(referenced_docs)
+                    },
+                    "suggested_ticket": None,
+                    "documents_referenced": len(referenced_docs),
+                    "response_type": "llm_timeout"
+                }
             
             # Parse structured JSON response
             try:
