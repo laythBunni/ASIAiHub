@@ -941,10 +941,16 @@ async def get_documents_admin():
 
 @api_router.get("/documents/rag-stats")
 async def get_rag_stats():
-    """Get RAG system statistics"""
+    """Get RAG system statistics with graceful fallback"""
     try:
-        rag = get_rag_system(EMERGENT_LLM_KEY)
-        stats = rag.get_collection_stats()
+        # Try to get RAG stats with timeout
+        import asyncio
+        async def get_stats_with_timeout():
+            rag = get_rag_system(EMERGENT_LLM_KEY)
+            return rag.get_collection_stats()
+        
+        # 5 second timeout for RAG operations
+        stats = await asyncio.wait_for(get_stats_with_timeout(), timeout=5.0)
         
         # Get processing status from database
         processing_stats = await db.documents.aggregate([
@@ -959,13 +965,22 @@ async def get_rag_stats():
             "total_documents": await db.documents.count_documents({}),
             "processed_documents": await db.documents.count_documents({"processed": True})
         }
-    except Exception as e:
-        logger.error(f"Error getting RAG stats: {e}")
+        
+    except asyncio.TimeoutError:
+        logger.warning("RAG stats request timed out, returning fallback data")
         return {
-            "vector_database": {"total_chunks": 0, "unique_documents": 0},
-            "processing_status": {},
+            "total_chunks": 0,
             "total_documents": 0,
-            "processed_documents": 0
+            "departments": {},
+            "status": "RAG system temporarily unavailable"
+        }
+    except Exception as e:
+        logger.error(f"RAG stats error: {e}")
+        return {
+            "total_chunks": 0, 
+            "total_documents": 0,
+            "departments": {},
+            "status": "RAG system unavailable"
         }
 
 # Chat Routes
