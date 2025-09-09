@@ -80,42 +80,60 @@ class RAGSystem:
             self._init_cloud_rag()
     
     def _init_local_rag(self):
-        """Initialize RAG with local ML dependencies (development)"""
+        """Initialize RAG with local ChromaDB - use lightweight production mode if needed"""
         try:
-            # Initialize ChromaDB with sentence transformers
-            self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-                model_name="all-MiniLM-L6-v2"
-            )
+            import chromadb
+            from chromadb.utils import embedding_functions
             
-            os.makedirs(CHROMA_DB_PATH, exist_ok=True)
-            self.chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+            # Use persistent ChromaDB storage
+            self.client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
             
-            # Get or create collection
-            try:
-                self.collection = self.chroma_client.get_collection(
+            # Check if in production mode - use OpenAI embeddings instead of heavy ML models
+            if globals().get('PRODUCTION_MODE', False):
+                print("🏭 Production ChromaDB mode - using OpenAI embeddings")
+                # Use OpenAI embeddings for production (lighter than sentence-transformers)
+                self.collection = self.client.get_or_create_collection(
                     name="asi_os_documents",
-                    embedding_function=self.embedding_function
-                )
-            except:
-                self.collection = self.chroma_client.create_collection(
-                    name="asi_os_documents",
-                    embedding_function=self.embedding_function,
+                    embedding_function=embedding_functions.OpenAIEmbeddingFunction(
+                        api_key=self.emergent_llm_key,
+                        model_name="text-embedding-ada-002"
+                    ),
                     metadata={"hnsw:space": "cosine"}
                 )
+                
+                # Use simple text splitter (no heavy ML dependencies)
+                self.chunk_size = 1000
+                self.chunk_overlap = 200
+                self.rag_mode = "production_persistent"
+                
+            else:
+                print("🔧 Development ChromaDB mode - using local sentence-transformers")
+                # Development mode with full ML dependencies
+                from sentence_transformers import SentenceTransformer
+                from langchain_text_splitters import RecursiveCharacterTextSplitter
+                
+                # Use sentence transformers for development
+                self.collection = self.client.get_or_create_collection(
+                    name="asi_os_documents",
+                    embedding_function=embedding_functions.SentenceTransformerEmbeddingFunction(
+                        model_name="all-MiniLM-L6-v2"
+                    ),
+                    metadata={"hnsw:space": "cosine"}
+                )
+                
+                # Initialize text splitter
+                self.text_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=1000,
+                    chunk_overlap=200,
+                    length_function=len,
+                    separators=["\n\n", "\n", ". ", " ", ""]
+                )
+                self.rag_mode = "local"
             
-            # Initialize text splitter
-            self.text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=1000,
-                chunk_overlap=200,
-                length_function=len,
-                separators=["\n\n", "\n", ". ", " ", ""]
-            )
-            
-            self.rag_mode = "local"
-            print("✅ RAG System initialized with local ML dependencies")
+            print(f"✅ RAG System initialized with persistent ChromaDB ({self.rag_mode} mode)")
             
         except Exception as e:
-            logger.error(f"Failed to initialize local RAG: {e}")
+            logger.error(f"Failed to initialize persistent RAG: {e}")
             # Fallback to cloud mode
             self._init_cloud_rag()
     
