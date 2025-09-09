@@ -156,6 +156,151 @@ class RAGSystem:
             logger.error(f"Failed to initialize MongoDB RAG: {e}")
             raise
     
+    async def _store_chunks_mongodb(self, document_id: str, chunks: List[str], document_data: Dict) -> bool:
+        """Store document chunks in MongoDB with embeddings"""
+        try:
+            from motor.motor_asyncio import AsyncIOMotorClient
+            import os
+            
+            # Get database connection
+            mongo_url = os.environ.get('MONGO_URL')
+            db_name = os.environ.get('DB_NAME')
+            client = AsyncIOMotorClient(mongo_url)
+            db = client[db_name]
+            
+            # Generate embeddings using OpenAI
+            import asyncio
+            from emergentintegrations import LlmChat, UserMessage
+            
+            chunk_documents = []
+            
+            for i, chunk_text in enumerate(chunks):
+                try:
+                    # Generate embedding using OpenAI
+                    chat = LlmChat(api_key=self.emergent_llm_key)
+                    embedding_response = await asyncio.wait_for(
+                        chat.get_embedding(chunk_text, model="text-embedding-ada-002"),
+                        timeout=30.0
+                    )
+                    
+                    chunk_doc = {
+                        "document_id": document_id,
+                        "chunk_index": i,
+                        "text": chunk_text,
+                        "embedding": embedding_response,
+                        "metadata": {
+                            "source": document_data.get('original_name', 'Unknown'),
+                            "department": document_data.get('department'),
+                            "created_at": document_data.get('uploaded_at'),
+                        },
+                        "created_at": datetime.now(timezone.utc)
+                    }
+                    chunk_documents.append(chunk_doc)
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to generate embedding for chunk {i}: {e}")
+                    continue
+            
+            if chunk_documents:
+                # Store chunks in MongoDB
+                await db[self.chunk_collection_name].insert_many(chunk_documents)
+                logger.info(f"Successfully stored {len(chunk_documents)} chunks in MongoDB for document {document_id}")
+                return True
+            else:
+                logger.error(f"No chunks could be processed for document {document_id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Failed to store chunks in MongoDB: {e}")
+            return False
+
+    async def _search_chunks_mongodb(self, query: str, limit: int = 5) -> List[Dict]:
+        """Search document chunks in MongoDB using semantic similarity"""
+        try:
+            from motor.motor_asyncio import AsyncIOMotorClient
+            import os
+            import numpy as np
+            
+            # Get database connection
+            mongo_url = os.environ.get('MONGO_URL')
+            db_name = os.environ.get('DB_NAME')
+            client = AsyncIOMotorClient(mongo_url)
+            db = client[db_name]
+            
+            # Generate query embedding
+            from emergentintegrations import LlmChat
+            import asyncio
+            
+            chat = LlmChat(api_key=self.emergent_llm_key)
+            query_embedding = await asyncio.wait_for(
+                chat.get_embedding(query, model="text-embedding-ada-002"),
+                timeout=30.0
+            )
+            
+            # Get all chunks from MongoDB
+            chunks_cursor = db[self.chunk_collection_name].find({})
+            chunks = await chunks_cursor.to_list(length=1000)
+            
+            if not chunks:
+                logger.warning("No chunks found in MongoDB")
+                return []
+            
+            # Calculate cosine similarity with all chunks
+            similarities = []
+            for chunk in chunks:
+                try:
+                    chunk_embedding = chunk.get('embedding')
+                    if chunk_embedding:
+                        # Calculate cosine similarity
+                        similarity = self._cosine_similarity(query_embedding, chunk_embedding)
+                        similarities.append({
+                            'chunk': chunk,
+                            'similarity': similarity
+                        })
+                except Exception as e:
+                    logger.warning(f"Error calculating similarity for chunk: {e}")
+                    continue
+            
+            # Sort by similarity and return top results
+            similarities.sort(key=lambda x: x['similarity'], reverse=True)
+            top_results = similarities[:limit]
+            
+            results = []
+            for result in top_results:
+                chunk = result['chunk']
+                results.append({
+                    'text': chunk['text'],
+                    'metadata': chunk['metadata'],
+                    'similarity': result['similarity'],
+                    'source': chunk['metadata'].get('source', 'Unknown')
+                })
+            
+            logger.info(f"MongoDB search found {len(results)} relevant chunks")
+            return results
+            
+        except Exception as e:
+            logger.error(f"Failed to search chunks in MongoDB: {e}")
+            return []
+
+    def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+        """Calculate cosine similarity between two vectors"""
+        try:
+            import numpy as np
+            vec1 = np.array(vec1)
+            vec2 = np.array(vec2)
+            
+            dot_product = np.dot(vec1, vec2)
+            norm1 = np.linalg.norm(vec1)
+            norm2 = np.linalg.norm(vec2)
+            
+            if norm1 == 0 or norm2 == 0:
+                return 0
+                
+            return dot_product / (norm1 * norm2)
+        except Exception as e:
+            logger.error(f"Error calculating cosine similarity: {e}")
+            return 0
+
     def _simple_text_splitter(self, text: str) -> List[str]:
         """Simple text splitter for production mode"""
         chunks = []
