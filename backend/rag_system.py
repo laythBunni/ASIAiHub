@@ -330,7 +330,7 @@ class RAGSystem:
         """Process document and store chunks - MongoDB or ChromaDB based on mode"""
         try:
             # Extract text from file
-            text = self.extract_text_from_file(document_data['file_path'])
+            text = self.extract_text_from_file(document_data['file_path'], document_data['mime_type'])
             if not text:
                 return False
             
