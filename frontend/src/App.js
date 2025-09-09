@@ -1764,14 +1764,38 @@ const DocumentManagement = () => {
 
   const deleteDocument = async (documentId) => {
     try {
-      await apiCall('DELETE', `/documents/${documentId}`);
+      // Show loading state
       toast({
-        title: "Success",
-        description: "Document deleted successfully",
+        title: "Deleting...",
+        description: "Removing document from knowledge base",
+        duration: 2000,
       });
+
+      await apiCall('DELETE', `/documents/${documentId}`);
+      
+      toast({
+        title: "✅ Document Deleted",
+        description: "Document has been successfully removed from the knowledge base",
+        duration: 3000,
+      });
+      
       fetchDocuments();
     } catch (error) {
       console.error('Error deleting document:', error);
+      
+      // Show specific error message
+      const errorMessage = error.message?.includes('timeout') 
+        ? "Delete operation timed out - please try again"
+        : error.message?.includes('not found')
+        ? "Document not found - it may have already been deleted"
+        : "Failed to delete document - please try again";
+        
+      toast({
+        title: "❌ Delete Failed",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 5000,
+      });
     }
   };
 
