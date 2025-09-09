@@ -1800,18 +1800,21 @@ const DocumentManagement = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Knowledge Base Management</h1>
-          <p className="text-gray-600 mt-2">Organize and manage approved documents by department</p>
+          <p className="text-gray-600 mt-2">
+            {isAdmin 
+              ? "Manage all documents and approve submissions" 
+              : "Browse approved documents by department"
+            }
+          </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant={isAdmin ? "default" : "outline"}
-            onClick={() => setIsAdmin(!isAdmin)}
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            <Shield className="w-4 h-4 mr-2" />
-            {isAdmin ? "Admin View" : "Switch to Admin"}
-          </Button>
-        </div>
+        {isAdmin && (
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200">
+              <Shield className="w-3 h-3 mr-1" />
+              Admin Access
+            </Badge>
+          </div>
+        )}
       </div>
 
       {/* Department Tabs */}
