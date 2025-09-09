@@ -55,6 +55,15 @@ db = client[os.environ['DB_NAME']]
 # Create the main app without a prefix
 app = FastAPI(title="ASI AiHub - AI-Powered Knowledge Management Platform")
 
+cors_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in cors_origins],  # Use environment variable
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Add startup event to ensure all users have personal codes
 @app.on_event("startup")
 async def startup_event():
@@ -2682,71 +2691,63 @@ async def logout(current_user: BetaUser = Depends(get_current_user)):
 app.include_router(api_router)
 
 # Enhanced CORS middleware with explicit OPTIONS handling
-@app.middleware("http")
-async def enhanced_cors_middleware(request: Request, call_next):
-    """Enhanced CORS middleware to handle all cross-origin requests"""
+# @app.middleware("http")
+# async def enhanced_cors_middleware(request: Request, call_next):
+#     """Enhanced CORS middleware to handle all cross-origin requests"""
     
-    # Get origin from request
-    origin = request.headers.get("origin")
-    allowed_origins = [
-        "https://asiaihub.com",
-        "https://www.asiaihub.com", 
-        "https://ai-workspace-17.emergent.host",
-        "http://localhost:3000",
-        "https://asi-platform.preview.emergentagent.com"
-    ]
+#     # Get origin from request
+#     origin = request.headers.get("origin")
+#     allowed_origins = [
+#         "https://asiaihub.com",
+#         "https://www.asiaihub.com", 
+#         "https://ai-workspace-17.emergent.host",
+#         "http://localhost:3000",
+#         "https://asi-platform.preview.emergentagent.com"
+#     ]
     
-    # Handle preflight OPTIONS requests
-    if request.method == "OPTIONS":
-        response = JSONResponse(status_code=200, content={})
+#     # Handle preflight OPTIONS requests
+#     if request.method == "OPTIONS":
+#         response = JSONResponse(status_code=200, content={})
         
-        # Set CORS headers for preflight
-        if origin and (origin in allowed_origins or origin.endswith('.emergentagent.com')):
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, X-Org-Unit, X-API-Key"
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Max-Age"] = "86400"  # 24 hours
-            response.headers["Vary"] = "Origin"
+#         # Set CORS headers for preflight
+#         if origin and (origin in allowed_origins or origin.endswith('.emergentagent.com')):
+#             response.headers["Access-Control-Allow-Origin"] = origin
+#             response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+#             response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, X-Org-Unit, X-API-Key"
+#             response.headers["Access-Control-Allow-Credentials"] = "true"
+#             response.headers["Access-Control-Max-Age"] = "86400"  # 24 hours
+#             response.headers["Vary"] = "Origin"
         
-        return response
+#         return response
     
-    # Process normal request
-    try:
-        response = await call_next(request)
+#     # Process normal request
+#     try:
+#         response = await call_next(request)
         
-        # Add CORS headers to response
-        if origin and (origin in allowed_origins or origin.endswith('.emergentagent.com')):
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Vary"] = "Origin"
+#         # Add CORS headers to response
+#         if origin and (origin in allowed_origins or origin.endswith('.emergentagent.com')):
+#             response.headers["Access-Control-Allow-Origin"] = origin
+#             response.headers["Access-Control-Allow-Credentials"] = "true"
+#             response.headers["Vary"] = "Origin"
             
-        return response
+#         return response
         
-    except Exception as e:
-        # Ensure CORS headers on error responses too
-        error_response = JSONResponse(
-            status_code=500,
-            content={"detail": "Internal server error - service temporarily unavailable"}
-        )
+#     except Exception as e:
+#         # Ensure CORS headers on error responses too
+#         error_response = JSONResponse(
+#             status_code=500,
+#             content={"detail": "Internal server error - service temporarily unavailable"}
+#         )
         
-        if origin and (origin in allowed_origins or origin.endswith('.emergentagent.com')):
-            error_response.headers["Access-Control-Allow-Origin"] = origin
-            error_response.headers["Access-Control-Allow-Credentials"] = "true"
-            error_response.headers["Vary"] = "Origin"
+#         if origin and (origin in allowed_origins or origin.endswith('.emergentagent.com')):
+#             error_response.headers["Access-Control-Allow-Origin"] = origin
+#             error_response.headers["Access-Control-Allow-Credentials"] = "true"
+#             error_response.headers["Vary"] = "Origin"
             
-        logger.error(f"Unhandled error in {request.url}: {str(e)}")
-        return error_response
+#         logger.error(f"Unhandled error in {request.url}: {str(e)}")
+#         return error_response
 
 # Keep the original CORS middleware as backup
-cors_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[origin.strip() for origin in cors_origins],  # Use environment variable
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Add health check endpoint
 @app.get("/health")
