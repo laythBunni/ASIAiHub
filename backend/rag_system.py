@@ -304,15 +304,141 @@ class RAGSystem:
     def _simple_text_splitter(self, text: str) -> List[str]:
         """Simple text splitter for production mode"""
         chunks = []
-        words = text.split()
+        current_chunk = ""
         
-        for i in range(0, len(words), self.chunk_size // 5):  # Approximate words per chunk
-            chunk_words = words[i:i + (self.chunk_size // 5) + (self.chunk_overlap // 5)]
-            chunk = " ".join(chunk_words)
-            if chunk.strip():
-                chunks.append(chunk)
+        # Split by paragraphs first
+        paragraphs = text.split('\n\n')
+        
+        for paragraph in paragraphs:
+            # If adding this paragraph would exceed chunk size, save current chunk
+            if len(current_chunk) + len(paragraph) > self.chunk_size and current_chunk:
+                chunks.append(current_chunk.strip())
+                current_chunk = paragraph
+            else:
+                if current_chunk:
+                    current_chunk += '\n\n' + paragraph
+                else:
+                    current_chunk = paragraph
+        
+        # Add the last chunk
+        if current_chunk.strip():
+            chunks.append(current_chunk.strip())
         
         return chunks
+
+    def process_and_store_document(self, document_data: Dict[str, Any]) -> bool:
+        """Process document and store chunks - MongoDB or ChromaDB based on mode"""
+        try:
+            # Extract text from file
+            text = self.extract_text_from_file(document_data['file_path'])
+            if not text:
+                return False
+            
+            # Split into chunks
+            if self.rag_mode == "mongodb_cloud":
+                chunks = self._simple_text_splitter(text)
+            elif hasattr(self, 'text_splitter'):
+                chunks = self.text_splitter.split_text(text)
+            else:
+                chunks = self._simple_text_splitter(text)
+            
+            if not chunks:
+                logger.warning(f"No chunks created for document {document_data['id']}")
+                return False
+            
+            # Store chunks based on mode
+            if self.rag_mode == "mongodb_cloud":
+                # Use MongoDB storage (async)
+                import asyncio
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    success = loop.run_until_complete(
+                        self._store_chunks_mongodb(document_data['id'], chunks, document_data)
+                    )
+                    return success
+                finally:
+                    loop.close()
+            else:
+                # Use ChromaDB storage (existing method)
+                return self._store_chunks_chromadb(document_data, chunks)
+                
+        except Exception as e:
+            logger.error(f"Error processing document {document_data.get('id', 'unknown')}: {e}")
+            return False
+
+    def _store_chunks_chromadb(self, document_data: Dict, chunks: List[str]) -> bool:
+        """Store chunks in ChromaDB (existing method)"""
+        try:
+            # Generate unique IDs for chunks
+            chunk_ids = [f"{document_data['id']}_chunk_{i}" for i in range(len(chunks))]
+            
+            # Create metadata
+            metadatas = [{
+                "source": document_data['original_name'],
+                "document_id": document_data['id'],
+                "chunk_index": i,
+                "department": document_data.get('department', ''),
+                "file_type": document_data.get('mime_type', ''),
+            } for i in range(len(chunks))]
+            
+            # Add to collection
+            self.collection.add(
+                documents=chunks,
+                metadatas=metadatas,
+                ids=chunk_ids
+            )
+            
+            logger.info(f"Successfully stored {len(chunks)} chunks for document {document_data['id']}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error storing chunks in ChromaDB: {e}")
+            return False
+
+    async def search_documents(self, query: str, limit: int = 5) -> List[Dict]:
+        """Search documents using appropriate method based on mode"""
+        try:
+            if self.rag_mode == "mongodb_cloud":
+                # Use MongoDB search
+                return await self._search_chunks_mongodb(query, limit)
+            else:
+                # Use ChromaDB search (existing method)
+                return self._search_chunks_chromadb(query, limit)
+                
+        except Exception as e:
+            logger.error(f"Error searching documents: {e}")
+            return []
+
+    def _search_chunks_chromadb(self, query: str, limit: int = 5) -> List[Dict]:
+        """Search chunks in ChromaDB (existing method)"""
+        try:
+            results = self.collection.query(
+                query_texts=[query],
+                n_results=limit,
+                include=['documents', 'metadatas', 'distances']
+            )
+            
+            search_results = []
+            if results['documents']:
+                for i, (doc, metadata, distance) in enumerate(zip(
+                    results['documents'][0],
+                    results['metadatas'][0], 
+                    results['distances'][0]
+                )):
+                    similarity = 1 - distance  # Convert distance to similarity
+                    search_results.append({
+                        'text': doc,
+                        'metadata': metadata,
+                        'similarity': similarity,
+                        'source': metadata.get('source', 'Unknown')
+                    })
+            
+            return search_results
+            
+        except Exception as e:
+            logger.error(f"Error searching ChromaDB: {e}")
+            return []
     
     async def _get_openai_embedding(self, text: str) -> List[float]:
         """Get embedding using OpenAI API via emergent integrations"""
