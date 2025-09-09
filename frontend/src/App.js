@@ -1661,14 +1661,16 @@ const DocumentManagement = () => {
   const [documents, setDocuments] = useState([]);
   const [activeTab, setActiveTab] = useState('Finance');
   const [uploading, setUploading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); // For demo purposes
   const { apiCall } = useAPI();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
 
+  // Check if user has admin permissions
+  const isAdmin = currentUser?.role === 'Admin';
+
   useEffect(() => {
     fetchDocuments();
-  }, [activeTab]);
+  }, [activeTab, isAdmin]); // Add isAdmin dependency
 
   const fetchDocuments = async () => {
     try {
