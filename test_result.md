@@ -264,9 +264,11 @@ metadata:
 
 test_plan:
   current_focus:
+    - "RAG Search Failure Investigation"
     - "Document Upload Issue"
     - "User Management Action Buttons Missing"
-  stuck_tasks: []
+  stuck_tasks: 
+    - "RAG Search Failure Investigation"
   test_all: false
   test_priority: "critical_first"
 
