@@ -871,7 +871,7 @@ async def upload_document(
     department: Optional[str] = Form(None),
     tags: Optional[str] = Form("")
 ):
-    """Upload a document for RAG processing"""
+    """Upload a document for RAG processing with resilient error handling"""
     try:
         # Validate file type
         allowed_types = ["application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
@@ -883,10 +883,31 @@ async def upload_document(
         unique_filename = f"{uuid.uuid4()}{file_extension}"
         file_path = UPLOAD_DIR / unique_filename
         
-        # Save file
-        async with aiofiles.open(file_path, 'wb') as f:
-            content = await file.read()
-            await f.write(content)
+        # Ensure upload directory exists with better error handling
+        try:
+            UPLOAD_DIR.mkdir(exist_ok=True, parents=True)
+        except Exception as e:
+            logger.error(f"Failed to create upload directory: {e}")
+            raise HTTPException(status_code=500, detail="Upload directory unavailable")
+        
+        # Save file with timeout protection
+        try:
+            import asyncio
+            async def save_file_with_timeout():
+                async with aiofiles.open(file_path, 'wb') as f:
+                    content = await file.read()
+                    await f.write(content)
+                return content
+            
+            # 30 second timeout for file operations
+            content = await asyncio.wait_for(save_file_with_timeout(), timeout=30.0)
+            
+        except asyncio.TimeoutError:
+            logger.error(f"File upload timeout for {file.filename}")
+            raise HTTPException(status_code=408, detail="File upload timed out - please try a smaller file")
+        except Exception as e:
+            logger.error(f"File save error: {e}")
+            raise HTTPException(status_code=500, detail="Failed to save uploaded file")
         
         # Create document record
         document = Document(
@@ -899,8 +920,20 @@ async def upload_document(
             tags=tags.split(",") if tags else []
         )
         
-        # Save to database
-        await db.documents.insert_one(document.dict())
+        # Save to database with timeout
+        try:
+            await asyncio.wait_for(
+                db.documents.insert_one(document.dict()), 
+                timeout=10.0
+            )
+        except asyncio.TimeoutError:
+            logger.error(f"Database timeout saving document {file.filename}")
+            # Clean up uploaded file
+            try:
+                file_path.unlink(missing_ok=True)
+            except:
+                pass
+            raise HTTPException(status_code=408, detail="Database timeout - please try again")
         
         return DocumentUploadResponse(
             id=document.id,
@@ -908,6 +941,8 @@ async def upload_document(
             message="Document uploaded successfully and pending approval"
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error uploading document: {e}")
         raise HTTPException(status_code=500, detail="Failed to upload document")
