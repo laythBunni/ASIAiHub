@@ -1,0 +1,84 @@
+{
+  "timestamp": "2025-09-09T20:40:40.348282",
+  "analysis": {
+    "preview": {
+      "doc_analysis": {
+        "total_docs": 4,
+        "processing_stats": {
+          "completed": 4
+        },
+        "chunk_stats": {
+          "test_upload_document.txt": 34,
+          "tmp1lubfyjr.txt": 34,
+          "BOOST ZOHO-ASI OS TICKETING.pdf": 33,
+          "ASI HUB Feedback 1.pdf": 32
+        },
+        "vector_db_chunks": 484
+      },
+      "rag_working": true
+    },
+    "production_1": {
+      "doc_analysis": {
+        "total_docs": 21,
+        "processing_stats": {
+          "completed": 21
+        },
+        "chunk_stats": {
+          "test_policy.txt": 1,
+          "Global Financial Manual 2024.pdf": 58,
+          "sample_hr_policy.txt": 1,
+          "sample_it_policy.txt": 47,
+          "sample_finance_policy.txt": 2,
+          "ASI Counter Fraud and Corruption Policy July 2023 v2.pdf": 45,
+          "ASI Information Security Policy-2.pdf": 46,
+          "ASI Mental Health Policy.pdf": 40,
+          "ASI Risk Management Policy.pdf": 41,
+          "ASI Travel Policy.pdf": 28,
+          "ASI Sabbatical Policy.pdf": 31,
+          "ASI Partner Code of Conduct v2 June 2024 final.pdf": 32,
+          "ASI IT Terms of Use Policy.pdf": 27,
+          "Artificial Intelligence Policy.pdf": 34,
+          "Additional Employment Policy.pdf": 36,
+          "Exit Policy.pdf": 28,
+          "OS USER GUIDES.pdf": 36
+        },
+        "vector_db_chunks": 0
+      },
+      "rag_working": false
+    },
+    "production_2": {
+      "doc_analysis": {
+        "total_docs": 21,
+        "processing_stats": {
+          "completed": 21
+        },
+        "chunk_stats": {
+          "test_policy.txt": 1,
+          "Global Financial Manual 2024.pdf": 58,
+          "sample_hr_policy.txt": 1,
+          "sample_it_policy.txt": 47,
+          "sample_finance_policy.txt": 2,
+          "ASI Counter Fraud and Corruption Policy July 2023 v2.pdf": 45,
+          "ASI Information Security Policy-2.pdf": 46,
+          "ASI Mental Health Policy.pdf": 40,
+          "ASI Risk Management Policy.pdf": 41,
+          "ASI Travel Policy.pdf": 28,
+          "ASI Sabbatical Policy.pdf": 31,
+          "ASI Partner Code of Conduct v2 June 2024 final.pdf": 32,
+          "ASI IT Terms of Use Policy.pdf": 27,
+          "Artificial Intelligence Policy.pdf": 34,
+          "Additional Employment Policy.pdf": 36,
+          "Exit Policy.pdf": 28,
+          "OS USER GUIDES.pdf": 36
+        },
+        "vector_db_chunks": 0
+      },
+      "rag_working": false
+    }
+  },
+  "conclusion": {
+    "preview_working": true,
+    "production_working": false,
+    "root_cause": "ChromaDB persistence or RAG processing issues in production environments"
+  }
+}
