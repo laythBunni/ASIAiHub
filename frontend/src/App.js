@@ -1966,9 +1966,24 @@ const DocumentManagement = () => {
                               {(doc.file_size / 1024).toFixed(1)} KB
                             </Badge>
                             {getStatusBadge(doc)}
-                            {doc.processed && (
+                            {doc.processed && doc.chunks_count > 0 && (
                               <Badge variant="secondary" className="bg-blue-100 text-blue-700">
                                 {doc.chunks_count} chunks
+                              </Badge>
+                            )}
+                            {doc.processed && (!doc.chunks_count || doc.chunks_count === 0) && (
+                              <Badge variant="outline" className="bg-gray-100 text-gray-600">
+                                Processing...
+                              </Badge>
+                            )}
+                            {doc.processing_status === 'timeout' && (
+                              <Badge variant="outline" className="bg-orange-100 text-orange-700">
+                                Indexed (timeout)
+                              </Badge>
+                            )}
+                            {doc.processing_status === 'failed' && (
+                              <Badge variant="destructive" className="bg-red-100 text-red-700">
+                                Processing failed
                               </Badge>
                             )}
                             <Button
