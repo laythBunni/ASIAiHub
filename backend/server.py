@@ -1036,11 +1036,7 @@ async def get_documents(
     documents = await db.documents.find(query).to_list(1000)
     return [Document(**doc) for doc in documents]
 
-@api_router.get("/documents/admin", response_model=List[Document])
-async def get_documents_admin():
-    """Get all documents for admin review"""
-    documents = await db.documents.find().sort("uploaded_at", -1).to_list(1000)
-    return [Document(**doc) for doc in documents]
+
 
 @api_router.get("/documents/rag-stats")
 async def get_rag_stats():
