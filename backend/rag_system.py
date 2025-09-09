@@ -672,13 +672,14 @@ class RAGSystem:
             logger.error(f"Error removing document chunks: {e}")
             return False
     
-    async def generate_rag_response(self, query: str, session_id: str) -> Dict[str, Any]:
-        """Generate structured response using RAG"""
+    async def generate_rag_response(self, query: str, session_id: str = None) -> Dict[str, Any]:
+        """Generate response using RAG with MongoDB or ChromaDB"""
         try:
-            # Search for relevant chunks
-            relevant_chunks = self.search_similar_chunks(query, n_results=8)
+            # Search for relevant documents using unified search method
+            search_results = await self.search_documents(query, limit=5)
             
-            if not relevant_chunks:
+            if not search_results:
+                logger.warning(f"No relevant documents found for query: {query}")
                 return {
                     "response": {
                         "summary": "I don't have information about this topic in the company knowledge base.",
@@ -693,21 +694,47 @@ class RAGSystem:
                     },
                     "suggested_ticket": None,
                     "documents_referenced": 0,
-                    "response_type": "no_knowledge"
+                    "response_type": "no_documents_found"
                 }
             
-            # Build context from relevant chunks
+            # Build context from search results
             context_parts = []
             referenced_docs = set()
             
-            for chunk in relevant_chunks:
-                if chunk['similarity_score'] > 0.3:  # Relevance threshold
-                    context_parts.append(f"[From {chunk['metadata']['original_name']}]:\n{chunk['content']}\n")
-                    referenced_docs.add(chunk['metadata']['original_name'])
+            for result in search_results:
+                similarity = result.get('similarity', 0)
+                if similarity > 0.3:  # Only include relevant results
+                    source = result['metadata'].get('source', 'Unknown Document')
+                    text = result['text']
+                    
+                    context_parts.append(f"From {source}:\n{text}")
+                    referenced_docs.add(source)
             
-            context_text = "\n".join(context_parts)
+            if not context_parts:
+                logger.warning(f"No sufficiently relevant documents found for query: {query}")
+                return {
+                    "response": {
+                        "summary": "I found some documents but they don't seem directly related to your question.",
+                        "details": {
+                            "requirements": [],
+                            "procedures": [],
+                            "exceptions": []
+                        },
+                        "action_required": "Try rephrasing your question or contact support for assistance.",
+                        "contact_info": "Contact your department administrator or IT support",
+                        "related_policies": list(referenced_docs) if referenced_docs else []
+                    },
+                    "suggested_ticket": None,
+                    "documents_referenced": len(referenced_docs),
+                    "response_type": "low_relevance"
+                }
+            
+            context_text = "\n\n".join(context_parts)
             
             # Generate structured response with GPT-5 with timeout protection
+            from emergentintegrations import LlmChat, UserMessage
+            import asyncio
+            
             chat = LlmChat(
                 api_key=self.emergent_llm_key,
                 session_id=session_id,
@@ -770,65 +797,53 @@ class RAGSystem:
                     "response_type": "llm_timeout"
                 }
             
-            # Parse structured JSON response
+            # Parse structured response
             try:
                 structured_response = json.loads(response)
                 
                 # Validate required fields
-                required_fields = ["summary", "details", "action_required", "contact_info", "related_policies"]
-                if not all(field in structured_response for field in required_fields):
-                    raise ValueError("Missing required fields in JSON response")
-                
-                # Check if action suggests creating a ticket
-                suggested_ticket = None
-                if structured_response.get("action_required") and "ticket" in structured_response["action_required"].lower():
-                    suggested_ticket = {"create_ticket": True, "suggestion": structured_response["action_required"]}
-                
-                # Add source information
-                structured_response["sources"] = list(referenced_docs)
+                if not isinstance(structured_response, dict):
+                    raise ValueError("Response is not a JSON object")
                 
                 return {
                     "response": structured_response,
-                    "suggested_ticket": suggested_ticket,
+                    "suggested_ticket": None,
                     "documents_referenced": len(referenced_docs),
-                    "response_type": "structured",
-                    "relevance_scores": [chunk['similarity_score'] for chunk in relevant_chunks[:3]]
+                    "response_type": "success"
                 }
                 
             except (json.JSONDecodeError, ValueError) as e:
-                logger.warning(f"Failed to parse structured response: {e}")
-                
-                # Fallback response
+                logger.warning(f"Failed to parse LLM response as JSON: {e}")
+                # Return a structured fallback using the raw response
                 return {
                     "response": {
-                        "summary": response[:200] + "..." if len(response) > 200 else response,
+                        "summary": str(response)[:200] + "..." if len(str(response)) > 200 else str(response),
                         "details": {
-                            "requirements": [],
+                            "requirements": ["Please see the summary for detailed information"],
                             "procedures": [],
                             "exceptions": []
                         },
-                        "action_required": "Please contact support for detailed guidance",
-                        "contact_info": "Contact your department administrator for assistance",
-                        "related_policies": [],
-                        "sources": list(referenced_docs)
+                        "action_required": "Review the information in the summary section",
+                        "contact_info": "Contact your department administrator or IT support",
+                        "related_policies": list(referenced_docs)
                     },
                     "suggested_ticket": None,
                     "documents_referenced": len(referenced_docs),
-                    "response_type": "fallback"
+                    "response_type": "parsing_fallback"
                 }
                 
         except Exception as e:
             logger.error(f"Error generating RAG response: {e}")
             return {
                 "response": {
-                    "summary": "I encountered an error processing your request. Please try again or contact support.",
+                    "summary": "An error occurred while processing your request.",
                     "details": {
                         "requirements": [],
                         "procedures": [],
                         "exceptions": []
                     },
-                    "action_required": "Please try again or contact IT support if the issue persists",
-                    "contact_info": "IT Support: ithelp@asi-os.com or extension 3000",
+                    "action_required": "Please try again or contact support if the issue persists",
+                    "contact_info": "Contact your department administrator or IT support",
                     "related_policies": []
                 },
                 "suggested_ticket": None,
