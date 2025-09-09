@@ -2441,6 +2441,12 @@ async def update_user_role(
         logger.error(f"Error updating user role: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update user role")
 
+@api_router.get("/documents/admin", response_model=List[Document])
+async def get_documents_admin(admin_user: BetaUser = Depends(require_admin)):
+    """Get all documents for admin review - REQUIRES ADMIN ROLE"""
+    documents = await db.documents.find().sort("uploaded_at", -1).to_list(1000)
+    return [Document(**doc) for doc in documents]
+
 # Admin User Management Endpoints
 @api_router.get("/admin/users")
 async def get_all_users(current_user: BetaUser = Depends(get_current_user)):
