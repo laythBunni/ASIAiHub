@@ -465,9 +465,48 @@ frontend:
         agent: "testing"
         comment: "🎉 CRITICAL ISSUE RESOLVED - USER MANAGEMENT ACTION BUTTONS NOW WORKING! Comprehensive re-testing with Layth's Phase 2 credentials (layth.bunni@adamsmithinternational.com / 899443) reveals COMPLETE RESOLUTION: ✅ AUTHENTICATION: Successfully logged in with Phase 2 credentials. ✅ NAVIGATION: Successfully navigated to Admin → Users & Permissions tab. ✅ TABLE STRUCTURE: Table displays correctly with all 7 columns ['User', 'Role', 'Department', 'Business Unit', 'Personal Code', 'Permissions', 'Actions']. ✅ ACTION BUTTONS FOUND: 26 Manage buttons, 26 Edit buttons, 26 Delete buttons detected in Actions column - EXACTLY matching the number of users in the table. ✅ BUTTON FUNCTIONALITY: All action buttons are properly rendered and accessible. ✅ NO JAVASCRIPT ERRORS: No console errors detected during testing. The main agent's fix has successfully resolved the issue - all user management action buttons (Manage, Edit, Delete) are now visible and functional in the Actions column. User management operations are now fully operational."
 
+backend:
+  - task: "Document Management Fixes - Delete Functionality"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ DELETE FUNCTIONALITY FIX VERIFIED! Comprehensive testing completed successfully: ✅ DELETE /api/documents/{id} endpoint working with timeout protection - successfully deleted test documents within timeout limits. ✅ Error handling robust: correctly returns 404 for non-existent documents (tested with fake ID). ✅ Timeout protection mechanisms working: delete operations complete within 30-second timeout limits, graceful handling of potential timeouts. ✅ File cleanup working: documents properly removed from both database and filesystem. ✅ RAG system cleanup: document chunks removed from vector database during deletion. The delete functionality fix is production-ready with proper timeout protection and error handling."
+
+  - task: "Document Management Fixes - Chunks Display"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ CHUNKS DISPLAY FIX VERIFIED! Comprehensive testing completed successfully: ✅ Processing status tracking working correctly: documents show proper status progression ('pending' → 'processing' → 'completed'). ✅ Chunks count properly set: tested document processed with 30 chunks correctly displayed. ✅ Processing status values working: confirmed 'processing', 'completed', 'timeout', 'failed' statuses are properly tracked. ✅ Document approval workflow: approval triggers RAG processing which updates chunks_count and processing_status correctly. ✅ Real-time status updates: processing status changes are immediately reflected in admin document list. The chunks display fix is production-ready with proper status tracking and chunk counting."
+
+  - task: "Document Management Fixes - Permission-Based Admin Access"
+    implemented: false
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 1
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL SECURITY ISSUE: Permission-based admin access NOT properly implemented! Testing revealed: ❌ /api/documents/admin endpoint NOT protected: anyone can access without authentication (tested without credentials - should return 401/403 but returns 200). ❌ Admin role verification missing: endpoint lacks require_admin dependency that exists in codebase. ✅ Regular /api/documents endpoint working correctly: shows only approved documents for all users. ✅ Document filtering by approval_status working when authenticated. ✅ Authentication functions available: require_admin and get_current_user functions exist but not used on admin endpoint. URGENT FIX NEEDED: Add 'require_admin' dependency to /api/documents/admin endpoint before deployment."
+
 agent_communication:
   - agent: "main"
     message: "CRITICAL PRE-DEPLOYMENT TESTING SETUP: Applied comprehensive stability fixes including error boundaries, retry logic, global error handling, and simplified authentication. Need thorough testing of all critical features before sharing with colleagues: 1) Universal login (any email + ASI2025), 2) Chat functionality with James AI, 3) Admin user management and permissions, 4) Error handling and recovery, 5) System stability. All core features must work reliably for colleague demo."
+  - agent: "testing"
+    message: "🎯 DOCUMENT MANAGEMENT FIXES TESTING COMPLETED - CRITICAL SECURITY ISSUE FOUND! Conducted comprehensive testing of all three document management fixes as specified in review request: ✅ DELETE FUNCTIONALITY: Working perfectly with timeout protection, proper error handling (404 for non-existent), and graceful cleanup of files and RAG chunks. ✅ CHUNKS DISPLAY: Working correctly with proper processing status tracking ('pending'→'processing'→'completed'), chunks_count properly set (tested with 30 chunks), and real-time status updates. ❌ ADMIN ACCESS CONTROL: CRITICAL SECURITY FLAW - /api/documents/admin endpoint is NOT protected with authentication. Anyone can access it without credentials. The require_admin dependency exists in codebase but is not applied to this endpoint. URGENT: Must add authentication protection before deployment. 2 out of 3 fixes working, 1 critical security issue needs immediate attention."
   - agent: "testing"
     message: "🎯 CORS MIDDLEWARE INVESTIGATION COMPLETED - ROOT CAUSE IDENTIFIED! Conducted comprehensive CORS testing as specified in review request to investigate why enhanced CORS middleware fails in production. KEY FINDINGS: ✅ CORS MIDDLEWARE WORKING PERFECTLY: Enhanced CORS middleware is functioning correctly on current environment (asi-platform.preview.emergentagent.com) - all production origins (asiaihub.com, ai-workspace-17.emergent.host) are properly allowed, preflight OPTIONS requests handled correctly, all failing endpoints (/api/documents/rag-stats, /api/chat/send, /api/admin/users) respond with correct CORS headers. ❌ PRODUCTION ENVIRONMENT DOWN: The actual issue is that production URL (ai-workspace-17.emergent.host) returns 503 Service Unavailable, which bypasses CORS middleware entirely. When server returns 503, application middleware (including CORS) never executes, causing browser to see 'No Access-Control-Allow-Origin header present'. 🔧 ENVIRONMENT MISMATCH: Frontend .env points to asi-platform.preview.emergentagent.com but production error mentions ai-workspace-17.emergent.host - these are different environments. 🎯 SOLUTION: CORS middleware is NOT the problem - production deployment needs to be fixed. The enhanced CORS middleware works perfectly when the backend service is running."
   - agent: "testing"
