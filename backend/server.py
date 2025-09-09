@@ -849,32 +849,60 @@ async def reject_document(document_id: str, notes: str = "", rejected_by: str = 
 
 @api_router.delete("/documents/{document_id}")
 async def delete_document(document_id: str):
-    """Delete a document and remove from knowledge base"""
+    """Delete a document and remove from knowledge base with timeout protection"""
     try:
-        # Get document info
-        document = await db.documents.find_one({"id": document_id})
+        # Get document info with timeout
+        document = await asyncio.wait_for(
+            db.documents.find_one({"id": document_id}),
+            timeout=10.0
+        )
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")
         
-        # Remove from vector database
-        rag = get_rag_system(EMERGENT_LLM_KEY)
-        rag.remove_document_chunks(document_id)
-        
-        # Delete file from disk
+        # Remove from vector database with timeout protection
         try:
-            import os
-            if os.path.exists(document['file_path']):
-                os.remove(document['file_path'])
+            async def remove_from_rag():
+                rag = get_rag_system(EMERGENT_LLM_KEY)
+                return rag.remove_document_chunks(document_id)
+            
+            await asyncio.wait_for(remove_from_rag(), timeout=30.0)
+            logger.info(f"Successfully removed document {document_id} from RAG system")
+        except asyncio.TimeoutError:
+            logger.warning(f"RAG removal timeout for document {document_id} - continuing with file/DB deletion")
         except Exception as e:
-            logger.warning(f"Could not delete file {document['file_path']}: {e}")
+            logger.warning(f"RAG removal failed for document {document_id}: {e} - continuing with file/DB deletion")
         
-        # Remove from database
-        await db.documents.delete_one({"id": document_id})
+        # Delete file from disk with timeout protection
+        try:
+            async def delete_file():
+                import os
+                if os.path.exists(document['file_path']):
+                    os.remove(document['file_path'])
+                    return True
+                return False
+            
+            await asyncio.wait_for(delete_file(), timeout=10.0)
+        except Exception as e:
+            logger.warning(f"Could not delete file {document.get('file_path', 'unknown')}: {e}")
+        
+        # Remove from database with timeout
+        result = await asyncio.wait_for(
+            db.documents.delete_one({"id": document_id}),
+            timeout=10.0
+        )
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Document not found in database")
         
         return {"message": "Document deleted successfully"}
         
+    except asyncio.TimeoutError:
+        logger.error(f"Timeout deleting document {document_id}")
+        raise HTTPException(status_code=408, detail="Delete operation timed out - please try again")
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error deleting document: {e}")
+        logger.error(f"Error deleting document {document_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete document")
 
 @api_router.get("/documents/{document_id}/download")
