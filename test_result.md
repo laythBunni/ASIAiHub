@@ -440,6 +440,21 @@ backend:
         agent: "testing"
         comment: "✅ ACTIVITY LOG QUICK ACTIONS BUG FIX VERIFIED! Comprehensive testing completed successfully: ✅ PUT /api/boost/tickets/{id} endpoint correctly applies status and priority changes. ✅ Audit trail creation confirmed: GET /api/boost/tickets/{id}/audit returns comprehensive audit entries. ✅ Status change audit entry: 'Status changed from open to in progress' with proper user attribution ('Admin User'). ✅ Priority change audit entry: 'Priority changed from low to TicketPriority.HIGH' with detailed change logs. ✅ User attribution working correctly: All changes properly attributed to 'updated_by' field value. ✅ Detailed change logs present: Old/new values tracked in audit entries with timestamps. ✅ 3 total audit entries found including ticket creation. The bug fix successfully creates audit trail entries for all quick action updates with proper user attribution and detailed change tracking."
 
+  - task: "RAG Search Failure Investigation"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "CRITICAL ISSUE: Chat queries returning generic 'no information' responses instead of searching uploaded documents. User queries: 'whats the IT security policy for asi' and 'whats the travel policy' return 'I don't have information about this topic in the company knowledge base' instead of searching through uploaded/approved documents."
+      - working: false
+        agent: "testing"
+        comment: "🚨 CRITICAL RAG SEARCH FAILURE ROOT CAUSE IDENTIFIED! Comprehensive investigation completed: ❌ ISSUE CONFIRMED: Chat requests timing out due to LLM (GPT-5) integration hanging. ✅ RAG SYSTEM WORKING: RAG collection has 447 chunks from 13 documents, vector search successfully returns 3 results with good similarity scores (0.62-0.75), document processing pipeline functional. ✅ EVIDENCE FROM LOGS: 'RAG search returned 3 results', 'LiteLLM completion() model= gpt-5', then request timeout. 🔍 ROOT CAUSE: RAG search finds documents correctly, but LLM calls hang/timeout before generating responses, causing users to see incomplete or generic 'no information' responses. 🔧 SOLUTION NEEDED: Fix LLM timeout configuration, implement retry logic, or switch to faster model. The RAG search functionality is NOT broken - the issue is LLM response generation timeouts preventing completion of chat responses."
+
 frontend:
   - task: "User Management Action Buttons Missing"
     implemented: true
