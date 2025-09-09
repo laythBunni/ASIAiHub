@@ -18,16 +18,30 @@ from pathlib import Path
 import PyPDF2
 from docx import Document as DocxDocument
 
-# Try to import ML dependencies - if they fail, use cloud alternatives
-try:
-    import chromadb
-    from chromadb.utils import embedding_functions
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
-    ML_DEPENDENCIES_AVAILABLE = True
-    print("✅ Local ML dependencies available (development mode)")
-except ImportError as e:
-    print(f"⚠️ ML dependencies not available, using cloud alternatives: {e}")
+# Check if we're in production environment and force cloud mode
+PRODUCTION_INDICATORS = [
+    os.environ.get('NODE_ENV') == 'production',
+    os.environ.get('ENVIRONMENT') == 'production', 
+    'emergentagent.com' in os.environ.get('REACT_APP_BACKEND_URL', ''),
+    'ai-workspace-17' in os.environ.get('REACT_APP_BACKEND_URL', ''),
+]
+
+# Force cloud mode in production to avoid memory issues
+if any(PRODUCTION_INDICATORS):
+    print("🏭 Production environment detected - forcing cloud mode for RAG operations")
     ML_DEPENDENCIES_AVAILABLE = False
+else:
+    # Try to import ML dependencies for local development
+    try:
+        import chromadb
+        from chromadb.utils import embedding_functions
+        from sentence_transformers import SentenceTransformer
+        from langchain_text_splitters import RecursiveCharacterTextSplitter
+        ML_DEPENDENCIES_AVAILABLE = True
+        print("✅ Local ML dependencies available (development mode)")
+    except ImportError as e:
+        print(f"⚠️ ML dependencies not available, using cloud alternatives: {e}")
+        ML_DEPENDENCIES_AVAILABLE = False
 
 # Import required packages
 import requests
