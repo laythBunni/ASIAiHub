@@ -847,6 +847,7 @@ async def test_embedding_generation():
             
         # Test 4: Test MongoDB connection and write
         try:
+            import os
             mongo_url = os.environ.get('MONGO_URL')
             db_name = os.environ.get('DB_NAME')
             client = AsyncIOMotorClient(mongo_url)
