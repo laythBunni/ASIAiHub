@@ -735,6 +735,136 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
             "response_type": "error"
         }
 
+@api_router.get("/debug/test-embedding-generation") 
+async def test_embedding_generation():
+    """Test OpenAI embedding generation specifically"""
+    try:
+        result = {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "test_status": "STARTING",
+            "steps": []
+        }
+        
+        # Test 1: Check EMERGENT_LLM_KEY
+        emergent_key = os.environ.get('EMERGENT_LLM_KEY')
+        if emergent_key:
+            result["steps"].append({
+                "step": "EMERGENT_KEY_CHECK",
+                "status": "SUCCESS",
+                "key_length": len(emergent_key),
+                "key_prefix": emergent_key[:10] + "..." if len(emergent_key) > 10 else emergent_key
+            })
+        else:
+            result["steps"].append({
+                "step": "EMERGENT_KEY_CHECK", 
+                "status": "FAILED",
+                "error": "EMERGENT_LLM_KEY not found"
+            })
+            return result
+            
+        # Test 2: Initialize LlmChat
+        try:
+            from emergentintegrations.llm.chat import LlmChat
+            chat = LlmChat(api_key=emergent_key)
+            result["steps"].append({
+                "step": "LLMCHAT_INITIALIZATION",
+                "status": "SUCCESS"
+            })
+        except Exception as e:
+            result["steps"].append({
+                "step": "LLMCHAT_INITIALIZATION",
+                "status": "FAILED", 
+                "error": str(e)
+            })
+            return result
+            
+        # Test 3: Generate embedding for simple text
+        try:
+            test_text = "This is a simple test for embedding generation."
+            embedding_response = await asyncio.wait_for(
+                chat.get_embedding(test_text, model="text-embedding-ada-002"),
+                timeout=30.0
+            )
+            
+            result["steps"].append({
+                "step": "EMBEDDING_GENERATION",
+                "status": "SUCCESS",
+                "embedding_type": type(embedding_response).__name__,
+                "embedding_length": len(embedding_response) if isinstance(embedding_response, list) else "not_list",
+                "first_few_values": embedding_response[:3] if isinstance(embedding_response, list) and len(embedding_response) > 3 else embedding_response
+            })
+            
+        except asyncio.TimeoutError:
+            result["steps"].append({
+                "step": "EMBEDDING_GENERATION",
+                "status": "TIMEOUT",
+                "error": "Embedding generation timed out after 30 seconds"
+            })
+        except Exception as e:
+            result["steps"].append({
+                "step": "EMBEDDING_GENERATION", 
+                "status": "FAILED",
+                "error": str(e)
+            })
+            
+        # Test 4: Test MongoDB connection and write
+        try:
+            mongo_url = os.environ.get('MONGO_URL')
+            db_name = os.environ.get('DB_NAME')
+            client = AsyncIOMotorClient(mongo_url)
+            database = client[db_name]
+            
+            # Try to write a test document
+            test_doc = {
+                "test_id": "embedding_test_" + str(int(datetime.now().timestamp())),
+                "text": "Test embedding storage",
+                "embedding": [0.1, 0.2, 0.3] if "embedding_response" not in locals() else embedding_response,
+                "created_at": datetime.now(timezone.utc)
+            }
+            
+            await database.document_chunks.insert_one(test_doc)
+            
+            result["steps"].append({
+                "step": "MONGODB_WRITE_TEST",
+                "status": "SUCCESS",
+                "collection": "document_chunks"
+            })
+            
+            # Verify the write
+            stored_doc = await database.document_chunks.find_one({"test_id": test_doc["test_id"]})
+            if stored_doc:
+                result["steps"].append({
+                    "step": "MONGODB_READ_VERIFICATION",
+                    "status": "SUCCESS",
+                    "document_found": True
+                })
+                
+                # Clean up test document
+                await database.document_chunks.delete_one({"test_id": test_doc["test_id"]})
+            else:
+                result["steps"].append({
+                    "step": "MONGODB_READ_VERIFICATION", 
+                    "status": "FAILED",
+                    "document_found": False
+                })
+                
+        except Exception as e:
+            result["steps"].append({
+                "step": "MONGODB_WRITE_TEST",
+                "status": "FAILED",
+                "error": str(e)
+            })
+            
+        result["test_status"] = "COMPLETED"
+        return result
+        
+    except Exception as e:
+        return {
+            "test_status": "CRITICAL_ERROR",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/test-mongodb-rag-directly")
 async def test_mongodb_rag_directly():
     """Direct test of MongoDB RAG system with a simple document"""
