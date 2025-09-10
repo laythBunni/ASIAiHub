@@ -782,55 +782,30 @@ async def test_embedding_generation():
             })
             return result
             
-        # Test 3: Generate embedding for simple text
+        # Test 3: Generate embedding using OpenAI directly
         try:
+            import openai
             test_text = "This is a simple test for embedding generation."
             
-            # Try different possible method names
-            methods_to_try = [
-                ('embed_text', lambda: chat.embed_text(test_text, model="text-embedding-ada-002")),
-                ('get_embedding', lambda: chat.get_embedding(test_text, model="text-embedding-ada-002")),
-                ('embed', lambda: chat.embed(test_text, model="text-embedding-ada-002")),
-                ('create_embedding', lambda: chat.create_embedding(test_text, model="text-embedding-ada-002")),
-                ('generate_embedding', lambda: chat.generate_embedding(test_text, model="text-embedding-ada-002"))
-            ]
+            openai_client = openai.AsyncOpenAI(api_key=emergent_key)
+            embedding_response = await asyncio.wait_for(
+                openai_client.embeddings.create(
+                    input=test_text,
+                    model="text-embedding-ada-002"
+                ),
+                timeout=30.0
+            )
             
-            embedding_response = None
-            working_method = None
+            embedding = embedding_response.data[0].embedding
             
-            for method_name, method_call in methods_to_try:
-                try:
-                    if hasattr(chat, method_name):
-                        embedding_response = await asyncio.wait_for(
-                            method_call(),
-                            timeout=30.0
-                        )
-                        working_method = method_name
-                        break
-                    else:
-                        continue
-                except Exception as method_error:
-                    continue
-            
-            if embedding_response and working_method:
-                result["steps"].append({
-                    "step": "EMBEDDING_GENERATION",
-                    "status": "SUCCESS",
-                    "working_method": working_method,
-                    "embedding_type": type(embedding_response).__name__,
-                    "embedding_length": len(embedding_response) if isinstance(embedding_response, list) else "not_list",
-                    "first_few_values": embedding_response[:3] if isinstance(embedding_response, list) and len(embedding_response) > 3 else str(embedding_response)[:100]
-                })
-            else:
-                # List all available methods on the chat object
-                available_methods = [method for method in dir(chat) if not method.startswith('_')]
-                result["steps"].append({
-                    "step": "EMBEDDING_GENERATION",
-                    "status": "FAILED",
-                    "error": "No working embedding method found",
-                    "available_methods": available_methods[:20],  # Limit to avoid too much data
-                    "tried_methods": [name for name, _ in methods_to_try]
-                })
+            result["steps"].append({
+                "step": "EMBEDDING_GENERATION",
+                "status": "SUCCESS",
+                "method": "openai_direct",
+                "embedding_type": type(embedding).__name__,
+                "embedding_length": len(embedding),
+                "first_few_values": embedding[:3] if len(embedding) > 3 else embedding
+            })
             
         except asyncio.TimeoutError:
             result["steps"].append({
