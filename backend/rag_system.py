@@ -175,7 +175,7 @@ class RAGSystem:
                         system_message="You are an embedding generator."
                     )
                     embedding_response = await asyncio.wait_for(
-                        chat.get_embedding(chunk_text, model="text-embedding-ada-002"),
+                        chat.embed_text(chunk_text, model="text-embedding-ada-002"),
                         timeout=30.0
                     )
                     
