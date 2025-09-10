@@ -735,7 +735,7 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
             "response_type": "error"
         }
 
-@api_router.post("/debug/test-mongodb-rag-directly")
+@api_router.get("/debug/test-mongodb-rag-directly")
 async def test_mongodb_rag_directly():
     """Direct test of MongoDB RAG system with a simple document"""
     try:
