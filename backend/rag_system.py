@@ -236,9 +236,15 @@ class RAGSystem:
             from emergentintegrations.llm.chat import LlmChat
             import asyncio
             
-            # Generate query embedding using OpenAI directly  
+            # Generate query embedding using OpenAI directly with user's API key
             import openai
-            openai_client = openai.AsyncOpenAI(api_key=self.emergent_llm_key)
+            import os
+            openai_api_key = os.environ.get('OPENAI_API_KEY')
+            if not openai_api_key:
+                logger.error("OPENAI_API_KEY not found in environment variables")
+                return []
+                
+            openai_client = openai.AsyncOpenAI(api_key=openai_api_key)
             
             query_embedding_response = await asyncio.wait_for(
                 openai_client.embeddings.create(
