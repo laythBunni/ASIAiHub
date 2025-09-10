@@ -786,7 +786,7 @@ async def test_embedding_generation():
         try:
             test_text = "This is a simple test for embedding generation."
             embedding_response = await asyncio.wait_for(
-                chat.get_embedding(test_text, model="text-embedding-ada-002"),
+                chat.embed_text(test_text, model="text-embedding-ada-002"),
                 timeout=30.0
             )
             
