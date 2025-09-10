@@ -228,7 +228,7 @@ class RAGSystem:
             db = client[db_name]
             
             # Generate query embedding
-            from emergentintegrations import LlmChat
+            from emergentintegrations.llm.chat import LlmChat
             import asyncio
             
             chat = LlmChat(api_key=self.emergent_llm_key)
