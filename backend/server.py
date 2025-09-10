@@ -1052,6 +1052,45 @@ async def test_mongodb_rag_directly():
             "timestamp": str(datetime.now(timezone.utc))
         }
 
+@api_router.get("/debug/check-backend-logs")
+async def check_backend_logs():
+    """Check recent backend logs for file processing issues"""
+    try:
+        import subprocess
+        
+        # Get recent backend logs
+        result = subprocess.run(
+            ["tail", "-n", "100", "/var/log/supervisor/backend.err.log"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        logs = result.stdout if result.stdout else "No logs found"
+        
+        # Filter for relevant log entries
+        relevant_lines = []
+        for line in logs.split('\n'):
+            if any(keyword in line.lower() for keyword in [
+                'extract_text', 'file not found', 'current working directory', 
+                'process_document', 'rag', 'error', 'exception'
+            ]):
+                relevant_lines.append(line)
+        
+        return {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "total_log_lines": len(logs.split('\n')),
+            "relevant_lines": relevant_lines[-20:],  # Last 20 relevant lines
+            "raw_logs_preview": logs.split('\n')[-10:]  # Last 10 lines of raw logs
+        }
+        
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/check-document-status")
 async def check_document_status():
     """Check the actual status of all documents"""
