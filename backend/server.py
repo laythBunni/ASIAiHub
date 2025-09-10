@@ -27,6 +27,9 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithM
 # Import RAG system
 from rag_system import get_rag_system
 
+# Import production debug router
+from production_debug import debug_router
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
