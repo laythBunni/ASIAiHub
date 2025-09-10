@@ -169,7 +169,11 @@ class RAGSystem:
             for i, chunk_text in enumerate(chunks):
                 try:
                     # Generate embedding using OpenAI
-                    chat = LlmChat(api_key=self.emergent_llm_key)
+                    chat = LlmChat(
+                        api_key=self.emergent_llm_key,
+                        session_id=f"embedding-{document_id}-{i}",
+                        system_message="You are an embedding generator."
+                    )
                     embedding_response = await asyncio.wait_for(
                         chat.get_embedding(chunk_text, model="text-embedding-ada-002"),
                         timeout=30.0
