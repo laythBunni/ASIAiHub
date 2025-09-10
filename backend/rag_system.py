@@ -227,7 +227,11 @@ class RAGSystem:
             from emergentintegrations.llm.chat import LlmChat
             import asyncio
             
-            chat = LlmChat(api_key=self.emergent_llm_key)
+            chat = LlmChat(
+                api_key=self.emergent_llm_key,
+                session_id=f"search-{int(datetime.now().timestamp())}",
+                system_message="You are a search system."
+            )
             query_embedding = await asyncio.wait_for(
                 chat.get_embedding(query, model="text-embedding-ada-002"),
                 timeout=30.0
