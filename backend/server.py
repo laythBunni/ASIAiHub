@@ -1324,9 +1324,11 @@ async def test_deployment():
     """Test if the latest code is deployed"""
     return {
         "timestamp": str(datetime.now(timezone.utc)),
-        "message": "🔥 LATEST CODE IS DEPLOYED - APPROVAL LOGGING SHOULD WORK",
-        "version": "enhanced_approval_logging_v2",
-        "approval_endpoint_available": True
+        "message": "🔥 LATEST CODE IS DEPLOYED - ENHANCED DIAGNOSTICS v3",
+        "version": "enhanced_diagnostics_v3_with_file_path_fix",
+        "approval_endpoint_available": True,
+        "file_path_fix_applied": True,
+        "enhanced_debug_info": True
     }
 
 @api_router.get("/debug/check-backend-logs")
