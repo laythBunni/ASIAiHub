@@ -1052,6 +1052,69 @@ async def test_mongodb_rag_directly():
             "timestamp": str(datetime.now(timezone.utc))
         }
 
+@api_router.get("/debug/reset-failed-documents")
+async def reset_failed_documents():
+    """Reset failed documents back to pending for reprocessing"""
+    try:
+        # Find all documents that failed or have issues
+        problem_docs = await db.documents.find({
+            "approval_status": "approved",
+            "$or": [
+                {"processing_status": "failed"},
+                {"processing_status": "timeout"},
+                {"processing_status": "completed", "processed": False},
+                {"processed": False}
+            ]
+        }).to_list(100)
+        
+        reset_results = {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "found_problem_docs": len(problem_docs),
+            "reset_status": [],
+            "reset_count": 0
+        }
+        
+        for doc in problem_docs:
+            try:
+                # Reset to pending status
+                await db.documents.update_one(
+                    {"id": doc["id"]},
+                    {
+                        "$set": {
+                            "processing_status": "pending",
+                            "processed": False,
+                            "chunks_count": 0,
+                            "notes": "Reset for reprocessing - MongoDB RAG system"
+                        }
+                    }
+                )
+                
+                reset_results["reset_status"].append({
+                    "document_id": doc["id"],
+                    "name": doc["original_name"],
+                    "old_status": doc.get("processing_status", "unknown"),
+                    "old_processed": doc.get("processed", False),
+                    "new_status": "pending"
+                })
+                reset_results["reset_count"] += 1
+                
+            except Exception as e:
+                reset_results["reset_status"].append({
+                    "document_id": doc["id"],
+                    "name": doc.get("original_name", "unknown"),
+                    "status": "RESET_ERROR",
+                    "error": str(e)
+                })
+        
+        return reset_results
+        
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/test-approval-direct/{document_id}")
 async def test_approval_direct(document_id: str):
     """Test approval endpoint directly"""
