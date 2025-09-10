@@ -765,7 +765,11 @@ async def test_embedding_generation():
         # Test 2: Initialize LlmChat
         try:
             from emergentintegrations.llm.chat import LlmChat
-            chat = LlmChat(api_key=emergent_key)
+            chat = LlmChat(
+                api_key=emergent_key,
+                session_id="embedding-test",
+                system_message="You are an embedding generator."
+            )
             result["steps"].append({
                 "step": "LLMCHAT_INITIALIZATION",
                 "status": "SUCCESS"
