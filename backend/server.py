@@ -1052,6 +1052,56 @@ async def test_mongodb_rag_directly():
             "timestamp": str(datetime.now(timezone.utc))
         }
 
+@api_router.get("/debug/check-document-status")
+async def check_document_status():
+    """Check the actual status of all documents"""
+    try:
+        # Get all documents with their current status
+        all_docs = await db.documents.find({}).to_list(100)
+        
+        status_summary = {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "total_documents": len(all_docs),
+            "status_counts": {},
+            "processing_status_counts": {},
+            "sample_documents": []
+        }
+        
+        # Count by approval status
+        for doc in all_docs:
+            approval_status = doc.get("approval_status", "unknown")
+            processing_status = doc.get("processing_status", "unknown")
+            processed = doc.get("processed", False)
+            
+            # Count approval statuses
+            status_summary["status_counts"][approval_status] = status_summary["status_counts"].get(approval_status, 0) + 1
+            
+            # Count processing statuses
+            processing_key = f"{processing_status}_{processed}"
+            status_summary["processing_status_counts"][processing_key] = status_summary["processing_status_counts"].get(processing_key, 0) + 1
+        
+        # Get sample documents to see their actual state
+        sample_docs = all_docs[:5]  # First 5 documents
+        for doc in sample_docs:
+            status_summary["sample_documents"].append({
+                "id": doc["id"],
+                "name": doc["original_name"],
+                "approval_status": doc.get("approval_status"),
+                "processing_status": doc.get("processing_status"),
+                "processed": doc.get("processed"),
+                "chunks_count": doc.get("chunks_count", 0),
+                "notes": doc.get("notes", "")
+            })
+        
+        return status_summary
+        
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/process-documents-now")
 async def process_documents_now():
     """Process documents immediately and wait for completion"""
