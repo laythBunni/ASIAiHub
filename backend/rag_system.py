@@ -510,12 +510,18 @@ class RAGSystem:
         try:
             logger.info(f"Attempting to extract text from: {file_path} (mime_type: {mime_type})")
             
-            # Ensure absolute path
+            # Ensure absolute path - files are stored in /app/backend/uploads/
             if not os.path.isabs(file_path):
-                # If relative path, make it relative to backend directory
-                original_path = file_path
-                file_path = os.path.join(os.path.dirname(__file__), file_path)
-                logger.info(f"Converted relative path '{original_path}' to absolute path: {file_path}")
+                # Convert relative path to absolute path
+                if file_path.startswith('uploads/'):
+                    # Remove 'uploads/' prefix and add full path
+                    filename = file_path[8:]  # Remove 'uploads/' prefix
+                    file_path = os.path.join('/app/backend/uploads', filename)
+                else:
+                    # If relative path, make it relative to backend directory
+                    file_path = os.path.join('/app/backend', file_path)
+                
+                logger.info(f"Converted relative path to absolute path: {file_path}")
             
             if not os.path.exists(file_path):
                 logger.error(f"FILE NOT FOUND: {file_path}")
