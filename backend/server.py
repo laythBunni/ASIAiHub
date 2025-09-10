@@ -735,6 +735,66 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
             "response_type": "error"
         }
 
+@api_router.post("/debug/migrate-documents-to-mongodb")
+async def migrate_documents_to_mongodb():
+    """Migrate existing approved documents to MongoDB RAG system"""
+    try:
+        # Find all approved documents that need MongoDB processing
+        approved_docs = await db.documents.find({
+            "approval_status": "approved"
+        }).to_list(100)
+        
+        migration_results = {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "total_approved": len(approved_docs),
+            "migration_status": [],
+            "success_count": 0,
+            "error_count": 0
+        }
+        
+        for doc in approved_docs:
+            try:
+                # Reset processing status to trigger MongoDB processing
+                await db.documents.update_one(
+                    {"id": doc["id"]},
+                    {
+                        "$set": {
+                            "processing_status": "pending",
+                            "processed": False,
+                            "chunks_count": 0,
+                            "notes": "Migrating to MongoDB RAG system"
+                        }
+                    }
+                )
+                
+                # Trigger MongoDB RAG processing
+                asyncio.create_task(process_document_with_rag(doc))
+                
+                migration_results["migration_status"].append({
+                    "document_id": doc["id"],
+                    "name": doc["original_name"],
+                    "status": "QUEUED_FOR_PROCESSING"
+                })
+                migration_results["success_count"] += 1
+                
+            except Exception as e:
+                migration_results["migration_status"].append({
+                    "document_id": doc["id"],
+                    "name": doc.get("original_name", "unknown"),
+                    "status": "ERROR",
+                    "error": str(e)
+                })
+                migration_results["error_count"] += 1
+        
+        return migration_results
+        
+    except Exception as e:
+        return {
+            "status": "MIGRATION_FAILED",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/production-rag-status")
 async def production_rag_status():
     """Debug endpoint to check production RAG system status"""
