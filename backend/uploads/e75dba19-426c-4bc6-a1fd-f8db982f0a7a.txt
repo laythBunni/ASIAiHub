@@ -1,0 +1,20 @@
+
+ASI IT Security Policy - MongoDB RAG Test
+
+PASSWORD REQUIREMENTS:
+- Minimum 12 characters with uppercase, lowercase, numbers, symbols
+- Cannot reuse last 5 passwords
+- Must be changed every 90 days
+- Use multi-factor authentication
+
+VPN REQUIREMENTS:
+- Required for all remote work
+- Use company-approved VPN clients only
+- Connect before accessing company resources
+- Report connection issues to IT immediately
+
+DATA BACKUP PROCEDURES:
+- All critical data backed up daily
+- Use company-approved cloud storage
+- Verify backup integrity weekly
+- Test restore procedures monthly
