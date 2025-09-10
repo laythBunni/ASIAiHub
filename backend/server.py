@@ -847,7 +847,6 @@ async def test_embedding_generation():
             
         # Test 4: Test MongoDB connection and write
         try:
-            import os
             mongo_url = os.environ.get('MONGO_URL')
             db_name = os.environ.get('DB_NAME')
             client = AsyncIOMotorClient(mongo_url)
@@ -857,7 +856,7 @@ async def test_embedding_generation():
             test_doc = {
                 "test_id": "embedding_test_" + str(int(datetime.now().timestamp())),
                 "text": "Test embedding storage",
-                "embedding": [0.1, 0.2, 0.3] if "embedding_response" not in locals() else embedding_response,
+                "embedding": [0.1, 0.2, 0.3] if not embedding_response else embedding_response,
                 "created_at": datetime.now(timezone.utc)
             }
             
