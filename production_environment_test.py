@@ -26,7 +26,7 @@ class ProductionEnvironmentTester:
     def __init__(self):
         # Environment URLs
         self.environments = {
-            'preview': 'https://asi-platform.preview.emergentagent.com',
+            'preview': 'https://aihub-debug.preview.emergentagent.com',
             'production_1': 'https://asiaihub.com',
             'production_2': 'https://ai-workspace-17.emergent.host'
         }

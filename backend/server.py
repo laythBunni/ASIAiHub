@@ -2822,7 +2822,7 @@ app.include_router(api_router)
 #         "https://www.asiaihub.com", 
 #         "https://ai-workspace-17.emergent.host",
 #         "http://localhost:3000",
-#         "https://asi-platform.preview.emergentagent.com"
+#         "https://aihub-debug.preview.emergentagent.com"
 #     ]
     
 #     # Handle preflight OPTIONS requests

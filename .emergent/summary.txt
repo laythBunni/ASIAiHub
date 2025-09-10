@@ -1,24 +1,23 @@
 <analysis>
-The AI engineer's journey involved taking an AI-generated application, ASI AiHub, from an MVP to a more production-ready state. Initial efforts focused on debugging core RAG and authentication functionalities. A significant portion of the trajectory was dedicated to enhancing user management features (user creation, editing, deletion, and role management) and fixing critical bugs such as chat ticket creation and activity log generation. The most challenging aspect proved to be the recurring deployment failures to the production environment, stemming from a complex interplay of hardcoded URLs, environment variable mismatches, database configuration discrepancies, frontend build issues (stack overflow), and suspected proxy/load balancer problems. The AI engineer iteratively diagnosed and fixed issues across both frontend and backend, adapting to user feedback and leveraging troubleshooting agents, ultimately restoring the preview environment to a fully functional state while the production deployment remained stalled awaiting external support.
+The trajectory outlines the evolution of the ASI AiHub application from an MVP to a more production-ready state, primarily driven by a series of critical bug fixes and architectural refinements. Initial efforts focused on debugging RAG, authentication, and enhancing user management. A recurring challenge was persistent production deployment failures, which stemmed from diverse issues: environment variable mismatches, database connectivity (local vs. Atlas), frontend build problems, and proxy/load balancer misconfigurations, especially concerning CORS headers. The AI engineer iteratively diagnosed and fixed issues, moving from local auth remnants to a deeper understanding of deployment environment nuances. A critical pivot involved realizing ChromaDB's unreliability for RAG chunk persistence in production, leading to a significant architectural shift to MongoDB for chunk storage, aiming for a more robust and scalable solution.
 </analysis>
 
 <product_requirements>
-The ASI AiHub is an integrated AI operations platform. Its initial requirements included a BOOST Ticketing System, Finance SOP management, a RAG Chat Function (James AI), platform rebranding, a universal login () with specific admin privileges, and comprehensive admin features.
-Throughout development, explicit requests included:
-1.  **User Management Fixes**: Resolve UI inconsistencies for user role changes and enable user deletion.
-2.  **Chat Ticket Creation**: Ensure the Create Ticket button in the chat interface correctly creates and assigns tickets.
-3.  **Activity Log for Quick Actions**: Implement audit trail entries for status and priority updates in the ticketing system.
-4.  **Enhanced Authentication**: Replace the universal  code with an admin-managed personal code system, restricting access to pre-registered users only, with  having exclusive user management control.
-5.  **Knowledge Management**: Fix document upload functionality.
-6.  **Admin Page Action Buttons**: Ensure Manage, Edit, and Delete buttons are visible and functional in the user management table.
-7.  **Ticket Assignee List**: Display a full, searchable list of users for ticket assignment.
-8.  **View All Tickets Button**: Implement functionality for a button to show/hide all tickets.
+The ASI AiHub is an AI operations platform, initially designed with a BOOST Ticketing System, Finance SOP management, RAG Chat Function (James AI), rebranding, and admin features.
+User requirements evolved to include:
+1.  **User Management**: Fix UI for role changes, enable user deletion, ensure Manage/Edit/Delete buttons are functional.
+2.  **Chat Ticket Creation**: Ensure the Create Ticket button correctly assigns tickets.
+3.  **Activity Log**: Implement audit trails for ticket status/priority changes.
+4.  **Enhanced Authentication**: Transition from universal  to a personal code system with admin-managed user access, restricting user management to .
+5.  **Knowledge Management**: Fix document upload functionality, ensure uploaded files appear in the approval list, and address slow document loading/deletion.
+6.  **Ticketing**: Display a full, searchable list of users for assignment and implement View All Tickets button functionality.
+7.  **General Stability**: Resolve persistent production deployment issues, including login screen display, backend 500 errors, CORS problems, and RAG system crashes/failures.
 </product_requirements>
 
 <key_technical_concepts>
--   **Backend**: FastAPI, MongoDB (Motor, Pydantic), ,  (OpenAI embeddings).
--   **Frontend**: React, Shadcn/UI, Tailwind CSS,  (for build configuration).
--   **AI/RAG**: Retrieval-Augmented Generation, Vector Embeddings, ChromaDB.
+-   **Backend**: FastAPI, MongoDB (Motor, Pydantic),  (OpenAI embeddings), .
+-   **Frontend**: React, Shadcn/UI, Tailwind CSS, .
+-   **AI/RAG**: Retrieval-Augmented Generation, Vector Embeddings, ChromaDB (initially, then deprecated for MongoDB).
 -   **Infrastructure**: Kubernetes, Supervisor, MongoDB Atlas.
 -   **Authentication**: Custom token-based, admin-managed personal codes.
 </key_technical_concepts>
@@ -26,60 +25,40 @@ Throughout development, explicit requests included:
 <code_architecture>
 
 
--   : Central FastAPI application.
-    -   **Importance**: Handles API, auth, database.
-    -   **Changes**:
-        -   MongoDB connection adapted for local/Atlas, using  and  to prevent TLS issues.
-        -   Authentication: Updated  to check  and . Added .  fixed to always be Admin. Completely replaced universal login with  validation.
-        -   Admin API:  (create users, now restricted to Admin), ,  (update , , , , ).
-        -   RAG integration:  call adjusted (async/sync for local/cloud).
-        -   Ticket API (): Fixed to use actual  from request instead of hardcoded default_user.
-        -   Ticket API (): Enhanced to create  logs for status/priority/assignment changes.
-        -   Added  helper function.
-        -   Added  endpoint.
-        -   Startup event  to generate codes for existing users.
-        -   Models (, ): Added  and  fields respectively.
-        -   :  changed to dynamic  for local/preview, then to  for production deployment.  set to .
-
--   : RAG pipeline for document processing.
-    -   **Importance**: Document parsing, chunking, embeddings, semantic search.
-    -   **Changes**:  fixed.  refined for sync/async operations. Fixed relative file path in .
-
--   : Main React component.
-    -   **Importance**: UI, routing, global state, authentication.
-    -   **Changes**:
-        -   Auth: Login form updated for  input, help text, and messages for pre-registration. Debugging messages added then removed.
-        -   Admin tab: Conditional rendering for Admin role. Route protection for .  component: Added  hook for .
-        -   User Management:  endpoint fixed from  to .  enhanced with UI feedback/delays.  (for user creation) updated endpoint from  to .
-        -   Table: Added  column display. Add User and Regenerate Code buttons conditionally rendered for Layth. Corrected Manage, Edit, Delete buttons' column alignment.
-        -   Document Upload:  function modified to correctly handle  for file uploads (avoiding ). Debugging messages added then removed for file upload.
-        -   Ticketing:  endpoint fixed from  to  for full user list. Assignee dropdown enhanced with searchable UI, display format. View all X tickets button in  given  functionality and state management.
-        -    in : Changed from hardcoded preview URL to dynamic .  constant derived from .
-
--   : Frontend dependencies.
-    -   **Importance**: Manages React project dependencies.
-    -   **Changes**: Added  for specific package versions to resolve conflicts. Increased  for memory during build.  added.
-
--   : Yarn configuration.
-    -   **Importance**: Custom Yarn settings.
-    -   **Changes**: Added  to prevent timeouts during dependency installation.
-
--   : CRACO build configuration.
-    -   **Importance**: Customizes Create React App build process.
-    -   **Changes**: Added webpack configuration for production optimization, chunk splitting, and disabling devtool to save memory.
-
+-   :
+    -   **Importance**: Main FastAPI application handling all API routes, authentication, and database interactions.
+    -   **Changes**: Initially fixed MongoDB connection, authentication logic (personal codes, admin privileges), user management, and ticket APIs. Recent major changes included removing  and old simple authentication code, implementing robust CORS middleware with dynamic origin handling, adding graceful fallbacks and timeouts for RAG operations, file uploads, and database interactions to prevent crashes, and securing admin endpoints with authentication.
+-   :
+    -   **Importance**: Implements the RAG pipeline for document processing, chunking, embedding generation, and semantic search.
+    -   **Changes**: Initially focused on  and . Recent significant changes involved introducing a cloud mode for production (using OpenAI embeddings to avoid local ML model memory issues), and then a full pivot to storing document chunks directly in MongoDB (using a  collection) to ensure persistence across container restarts, replacing the problematic ChromaDB.
+-   :
+    -   **Importance**: Main React component managing UI, routing, global state, and authentication.
+    -   **Changes**: Updated login forms for personal codes, conditional rendering for admin features, bug fixes for user management and ticketing. Recent changes include replacing the  toggle with permission-based access (), enhancing document status display (e.g., Processing..., X chunks), adding better error handling for document deletion, and optimizing initial dashboard loading to prevent long hangs by de-parallelizing heavy API calls.
+-   :
+    -   **Importance**: Backend environment variables.
+    -   **Changes**:  was removed.  and  were configured for local and then Atlas, and finally updated with user-provided MongoDB Atlas credentials.  was explicitly set to  to resolve cross-origin issues.
+-   :
+    -   **Importance**: Frontend environment variables.
+    -   **Changes**:  was updated to  for production.
 </code_architecture>
 
 <pending_tasks>
--   **Production Deployment Issues**: The application is not successfully deploying to the production environment due to build failures (RangeError: Maximum call stack size exceeded) and environment variable conflicts between preview and production.
+-   **Test MongoDB-based RAG System**: The most recent change, implementing MongoDB for RAG chunk storage, needs to be thoroughly tested in the local environment to ensure document processing, chunk persistence, and chat retrieval work as expected.
+-   **Production Deployment**: After local verification, the updated code needs to be deployed to production.
+-   **CORS Configuration (Infrastructure)**: While a code-level fix for CORS was applied, the user was advised to contact support to implement an infrastructure-level fix (e.g., same-domain proxy or edge header forwarding) for long-term stability.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the AI engineer had successfully resolved the assignee list and mystery button bugs in the preview environment. The assignee list in tickets now displays a full, searchable list of all active users with their roles and departments, and the View all X tickets button correctly toggles between showing 10 and all tickets.
+Immediately before this summary, the AI engineer had just completed a significant refactor of the RAG system to address persistent production failures related to document chunk storage. The core problem was that ChromaDB, when running in cloud mode in production, was storing document chunks in memory, causing them to disappear every time the container restarted, leading to an empty knowledge base and no information responses from James AI.
 
-However, the primary ongoing challenge remains the deployment to the live production environment. Despite numerous fixes to environment variables, database configuration, and frontend build processes, the production deployment continued to fail. The user had relayed a message from support regarding using dynamic variables instead of hardcoded URLs, which the AI engineer addressed in the  files. The very last interaction involved the user reporting still error during login on the live production URL, with console logs indicating an HTTP 500 error from the backend. The AI engineer was in the process of debugging this persistent production deployment failure, which was identified as a routing/proxy problem on the Emergent platform's infrastructure, not an application code issue. The preview environment () is confirmed working.
+The AI engineer implemented a new solution:
+1.  **MongoDB-based Chunk Storage**: Replaced ChromaDB with MongoDB for storing document chunks. A new  collection is used.
+2.  **OpenAI Embeddings for Production**: Continued to use OpenAI's  for generating embeddings in production, maintaining a lightweight approach that avoids memory exhaustion.
+3.  **Unified RAG System**: The  and  files were updated to integrate MongoDB for both storing and retrieving document chunks for RAG queries.
+
+This change aims to ensure that the knowledge base is persistent across production deployments and container restarts, resolving the critical issue of documents not being searchable after processing. The system now uses MongoDB as a reliable backend for RAG data.
 </current_work>
 
 <optional_next_step>
-The next step is to coordinate with Emergent support to resolve the production proxy/load balancer configuration issues that are causing 500 errors.
+Test the newly implemented MongoDB-based RAG system locally to confirm full functionality.
 </optional_next_step>

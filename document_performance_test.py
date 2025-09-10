@@ -31,7 +31,7 @@ class DocumentPerformanceAnalyzer:
                         return line.split('=', 1)[1].strip()
         except:
             pass
-        return "https://asi-platform.preview.emergentagent.com"
+        return "https://aihub-debug.preview.emergentagent.com"
 
     def measure_request_time(self, url, method='GET', data=None, headers=None):
         """Measure request time with detailed breakdown"""

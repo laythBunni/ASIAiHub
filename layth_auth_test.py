@@ -13,7 +13,7 @@ def test_layth_authentication():
     """Test Layth's authentication as specified in review request"""
     
     # Get backend URL from frontend/.env
-    backend_url = "https://asi-platform.preview.emergentagent.com"
+    backend_url = "https://aihub-debug.preview.emergentagent.com"
     try:
         with open('/app/frontend/.env', 'r') as f:
             for line in f:

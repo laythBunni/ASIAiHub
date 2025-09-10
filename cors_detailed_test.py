@@ -17,7 +17,7 @@ import time
 
 class DetailedCORSTest:
     def __init__(self):
-        self.backend_url = "https://asi-platform.preview.emergentagent.com"
+        self.backend_url = "https://aihub-debug.preview.emergentagent.com"
         self.api_url = f"{self.backend_url}/api"
         self.production_url = "https://ai-workspace-17.emergent.host"
         self.auth_token = None
