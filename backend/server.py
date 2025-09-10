@@ -456,21 +456,7 @@ async def process_document_with_rag(document_data: Dict[str, Any]) -> None:
         try:
             async def rag_processing_with_timeout():
                 rag = get_rag_system(EMERGENT_LLM_KEY)
-                
-                # Call the MongoDB storage directly (skip the sync wrapper)
-                text = rag.extract_text_from_file(document_data['file_path'], document_data['mime_type'])
-                if not text:
-                    logger.error(f"Could not extract text from {document_data['file_path']}")
-                    return False
-                
-                chunks = rag._simple_text_splitter(text)
-                if not chunks:
-                    logger.error(f"No chunks created for document {document_data['id']}")
-                    return False
-                
-                # Direct async MongoDB storage
-                success = await rag._store_chunks_mongodb(document_data['id'], chunks, document_data)
-                return success
+                return rag.process_and_store_document(document_data)
             
             # 60 second timeout for RAG processing
             success = await asyncio.wait_for(rag_processing_with_timeout(), timeout=60.0)
