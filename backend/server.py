@@ -503,7 +503,32 @@ async def process_document_with_rag(document_data: Dict[str, Any]) -> None:
                     return debug_info
             
             # 60 second timeout for RAG processing
-            success = await asyncio.wait_for(rag_processing_with_timeout(), timeout=60.0)
+            result = await asyncio.wait_for(rag_processing_with_timeout(), timeout=60.0)
+            
+            # Check if we got debug info (failure) or boolean (old success format)
+            if isinstance(result, dict):
+                # Got debug info - processing failed
+                await asyncio.wait_for(
+                    db.documents.update_one(
+                        {"id": document_data["id"]},
+                        {
+                            "$set": {
+                                "processing_status": "failed",
+                                "processed": False,
+                                "debug_info": result,
+                                "last_processed_at": datetime.now(timezone.utc)
+                            }
+                        }
+                    ),
+                    timeout=10.0
+                )
+                return
+            elif result:
+                # Got boolean True - success (old format)
+                success = True
+            else:
+                # Got boolean False - failure
+                success = False
             
             if success:
                 # Get collection stats with timeout
