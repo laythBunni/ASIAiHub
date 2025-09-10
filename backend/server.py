@@ -1153,6 +1153,39 @@ async def list_documents():
             "error": str(e)
         }
 
+@api_router.get("/debug/check-document-debug-info/{document_id}")
+async def check_document_debug_info(document_id: str):
+    """Check the debug info stored for a specific document"""
+    try:
+        document = await db.documents.find_one({"id": document_id})
+        
+        if not document:
+            return {
+                "status": "NOT_FOUND",
+                "document_id": document_id,
+                "message": "Document not found"
+            }
+        
+        return {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "document_id": document_id,
+            "document_name": document.get("original_name"),
+            "processing_status": document.get("processing_status"),
+            "processed": document.get("processed"),
+            "file_path": document.get("file_path"),
+            "mime_type": document.get("mime_type"),
+            "debug_info": document.get("debug_info"),
+            "last_processed_at": document.get("last_processed_at"),
+            "chunks_count": document.get("chunks_count", 0)
+        }
+        
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/simple-document-list")
 async def simple_document_list():
     """Simple endpoint to get document IDs for testing"""
