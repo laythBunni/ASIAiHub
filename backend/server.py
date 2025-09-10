@@ -1444,12 +1444,34 @@ async def approve_document(document_id: str, approved_by: str = "admin"):
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Document not found")
         
-        # Get updated document and process with RAG
+        # Get updated document and process with RAG immediately
         document = await db.documents.find_one({"id": document_id})
         if document:
-            asyncio.create_task(process_document_with_rag(document))
-        
-        return {"message": "Document approved and processing for knowledge base"}
+            try:
+                # Process document synchronously so we can catch errors
+                await process_document_with_rag(document)
+                
+                # Check if processing was successful
+                updated_doc = await db.documents.find_one({"id": document_id})
+                if updated_doc and updated_doc.get("processed"):
+                    return {
+                        "message": "Document approved and successfully processed for knowledge base",
+                        "chunks_count": updated_doc.get("chunks_count", 0),
+                        "processing_status": "completed"
+                    }
+                else:
+                    return {
+                        "message": "Document approved but processing failed",
+                        "processing_status": updated_doc.get("processing_status") if updated_doc else "unknown",
+                        "error": "RAG processing did not complete successfully"
+                    }
+            except Exception as processing_error:
+                logger.error(f"RAG processing failed for document {document_id}: {processing_error}")
+                return {
+                    "message": "Document approved but processing failed",
+                    "processing_error": str(processing_error),
+                    "processing_status": "failed"
+                }
         
     except Exception as e:
         logger.error(f"Error approving document: {e}")
