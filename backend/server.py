@@ -1084,6 +1084,40 @@ async def list_documents():
             "error": str(e)
         }
 
+@api_router.get("/debug/simple-document-list")
+async def simple_document_list():
+    """Simple endpoint to get document IDs for testing"""
+    try:
+        mongo_url = os.environ.get('MONGO_URL')
+        db_name = os.environ.get('DB_NAME')
+        client = AsyncIOMotorClient(mongo_url)
+        database = client[db_name]
+        
+        # Get just the first 5 approved documents with minimal data
+        docs = await database.documents.find(
+            {"approval_status": "approved"},
+            {"id": 1, "original_name": 1, "_id": 0}
+        ).limit(5).to_list(5)
+        
+        return {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "found_documents": len(docs),
+            "documents": [
+                {
+                    "id": doc["id"],
+                    "name": doc["original_name"],
+                    "test_url": f"https://asiaihub.com/api/debug/test-approval-direct/{doc['id']}"
+                }
+                for doc in docs
+            ]
+        }
+        
+    except Exception as e:
+        return {
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/reset-failed-documents")
 async def reset_failed_documents():
     """Reset failed documents back to pending for reprocessing"""
