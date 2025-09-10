@@ -1052,6 +1052,75 @@ async def test_mongodb_rag_directly():
             "timestamp": str(datetime.now(timezone.utc))
         }
 
+@api_router.get("/debug/process-documents-now")
+async def process_documents_now():
+    """Process documents immediately and wait for completion"""
+    try:
+        # Find documents that need processing
+        pending_docs = await db.documents.find({
+            "approval_status": "approved",
+            "processing_status": {"$in": ["pending", "processing"]}
+        }).to_list(100)
+        
+        if not pending_docs:
+            return {
+                "status": "NO_PENDING_DOCUMENTS",
+                "message": "No documents found that need processing",
+                "timestamp": str(datetime.now(timezone.utc))
+            }
+        
+        processing_results = {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "total_pending": len(pending_docs),
+            "processing_status": [],
+            "success_count": 0,
+            "error_count": 0
+        }
+        
+        # Process each document sequentially to avoid overwhelming the system
+        for doc in pending_docs:
+            try:
+                # Process document with RAG system
+                await process_document_with_rag(doc)
+                
+                # Check if processing was successful
+                updated_doc = await db.documents.find_one({"id": doc["id"]})
+                
+                if updated_doc and updated_doc.get("processed"):
+                    processing_results["processing_status"].append({
+                        "document_id": doc["id"],
+                        "name": doc["original_name"],
+                        "status": "SUCCESS",
+                        "chunks_count": updated_doc.get("chunks_count", 0)
+                    })
+                    processing_results["success_count"] += 1
+                else:
+                    processing_results["processing_status"].append({
+                        "document_id": doc["id"],
+                        "name": doc["original_name"],
+                        "status": "FAILED",
+                        "processing_status": updated_doc.get("processing_status") if updated_doc else "unknown"
+                    })
+                    processing_results["error_count"] += 1
+                
+            except Exception as e:
+                processing_results["processing_status"].append({
+                    "document_id": doc["id"],
+                    "name": doc.get("original_name", "unknown"),
+                    "status": "ERROR",
+                    "error": str(e)
+                })
+                processing_results["error_count"] += 1
+        
+        return processing_results
+        
+    except Exception as e:
+        return {
+            "status": "CRITICAL_ERROR",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/migrate-documents-to-mongodb")
 async def migrate_documents_to_mongodb():
     """Migrate existing approved documents to MongoDB RAG system"""
