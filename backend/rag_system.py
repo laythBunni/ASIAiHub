@@ -26,21 +26,13 @@ PRODUCTION_INDICATORS = [
     'ai-workspace-17' in os.environ.get('REACT_APP_BACKEND_URL', ''),
 ]
 
-# Force ChromaDB mode with persistent storage for production (avoid memory-only cloud mode)
+# Force MongoDB mode for production (reliable persistent chunk storage)
 if any(PRODUCTION_INDICATORS):
-    print("🏭 Production environment detected - using persistent ChromaDB for reliable chunk storage")
-    # Try to use ChromaDB with persistent storage in production
-    try:
-        import chromadb
-        from chromadb.utils import embedding_functions
-        # Use lighter dependencies - avoid sentence-transformers in production
-        ML_DEPENDENCIES_AVAILABLE = True
-        PRODUCTION_MODE = True
-        print("✅ Production ChromaDB mode enabled (persistent chunk storage)")
-    except ImportError as e:
-        print(f"⚠️ ChromaDB not available in production, falling back to cloud mode: {e}")
-        ML_DEPENDENCIES_AVAILABLE = False
-        PRODUCTION_MODE = True
+    print("🏭 Production environment detected - using MongoDB for reliable chunk storage")
+    # Force MongoDB cloud mode for production
+    ML_DEPENDENCIES_AVAILABLE = False
+    PRODUCTION_MODE = True
+    print("✅ Production MongoDB mode enabled (persistent chunk storage)")
 else:
     # Try to import full ML dependencies for local development
     try:
