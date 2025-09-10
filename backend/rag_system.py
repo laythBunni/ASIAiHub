@@ -168,9 +168,15 @@ class RAGSystem:
             
             for i, chunk_text in enumerate(chunks):
                 try:
-                    # Generate embedding using OpenAI directly
+                    # Generate embedding using OpenAI directly with user's API key
                     import openai
-                    openai_client = openai.AsyncOpenAI(api_key=self.emergent_llm_key)
+                    import os
+                    openai_api_key = os.environ.get('OPENAI_API_KEY')
+                    if not openai_api_key:
+                        logger.error("OPENAI_API_KEY not found in environment variables")
+                        continue
+                        
+                    openai_client = openai.AsyncOpenAI(api_key=openai_api_key)
                     
                     embedding_response = await asyncio.wait_for(
                         openai_client.embeddings.create(
