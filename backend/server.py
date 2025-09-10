@@ -835,11 +835,20 @@ async def test_embedding_generation():
             client = AsyncIOMotorClient(mongo_url)
             database = client[db_name]
             
+            # Use dummy embedding if embedding generation failed
+            test_embedding = [0.1, 0.2, 0.3]  # Default dummy embedding
+            
+            # Check if we got a real embedding from the previous step
+            if result["steps"] and result["steps"][-1].get("step") == "EMBEDDING_GENERATION":
+                if result["steps"][-1].get("status") == "SUCCESS":
+                    # We can't access the embedding variable here, so we'll use a success indicator
+                    test_embedding = [0.5] * 1536  # Standard embedding size
+            
             # Try to write a test document
             test_doc = {
                 "test_id": "embedding_test_" + str(int(datetime.now().timestamp())),
                 "text": "Test embedding storage",
-                "embedding": [0.1, 0.2, 0.3] if not embedding_response else embedding_response,
+                "embedding": test_embedding,
                 "created_at": datetime.now(timezone.utc)
             }
             
