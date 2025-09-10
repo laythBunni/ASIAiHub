@@ -230,15 +230,19 @@ class RAGSystem:
             from emergentintegrations.llm.chat import LlmChat
             import asyncio
             
-            chat = LlmChat(
-                api_key=self.emergent_llm_key,
-                session_id=f"search-{int(datetime.now().timestamp())}",
-                system_message="You are a search system."
-            )
-            query_embedding = await asyncio.wait_for(
-                chat.embed_text(query, model="text-embedding-ada-002"),
+            # Generate query embedding using OpenAI directly  
+            import openai
+            openai_client = openai.AsyncOpenAI(api_key=self.emergent_llm_key)
+            
+            query_embedding_response = await asyncio.wait_for(
+                openai_client.embeddings.create(
+                    input=query,
+                    model="text-embedding-ada-002"
+                ),
                 timeout=30.0
             )
+            
+            query_embedding = query_embedding_response.data[0].embedding
             
             # Get all chunks from MongoDB
             chunks_cursor = db[self.chunk_collection_name].find({})
