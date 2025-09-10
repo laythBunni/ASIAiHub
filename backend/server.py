@@ -1052,6 +1052,42 @@ async def test_mongodb_rag_directly():
             "timestamp": str(datetime.now(timezone.utc))
         }
 
+@api_router.get("/debug/test-approval-direct/{document_id}")
+async def test_approval_direct(document_id: str):
+    """Test approval endpoint directly"""
+    logger.info(f"🔥🔥🔥 DIRECT APPROVAL TEST STARTED for {document_id}")
+    print(f"🔥🔥🔥 DIRECT APPROVAL TEST STARTED for {document_id}")
+    
+    try:
+        # Check if document exists
+        document = await db.documents.find_one({"id": document_id})
+        if not document:
+            return {
+                "status": "DOCUMENT_NOT_FOUND",
+                "document_id": document_id,
+                "message": "🔥 Document not found in database"
+            }
+        
+        # Call the approval function directly
+        result = await approve_document(document_id, "direct_test")
+        
+        return {
+            "status": "SUCCESS",
+            "document_id": document_id, 
+            "document_name": document.get("original_name"),
+            "approval_result": result,
+            "message": "🔥 Direct approval test completed"
+        }
+        
+    except Exception as e:
+        logger.error(f"🔥🔥🔥 DIRECT APPROVAL TEST ERROR: {e}")
+        print(f"🔥🔥🔥 DIRECT APPROVAL TEST ERROR: {e}")
+        return {
+            "status": "ERROR",
+            "error": str(e),
+            "message": "🔥 Direct approval test failed"
+        }
+
 @api_router.get("/debug/test-deployment")
 async def test_deployment():
     """Test if the latest code is deployed"""
