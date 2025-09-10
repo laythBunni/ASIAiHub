@@ -2950,9 +2950,6 @@ async def logout(current_user: BetaUser = Depends(get_current_user)):
 # Include the router in the main app
 app.include_router(api_router)
 
-# Include debug router for production diagnostics
-app.include_router(debug_router)
-
 # Enhanced CORS middleware with explicit OPTIONS handling
 # @app.middleware("http")
 # async def enhanced_cors_middleware(request: Request, call_next):
