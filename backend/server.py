@@ -1531,13 +1531,29 @@ async def production_rag_status():
                 "error": str(e)
             }
         
-        # 4. Document Processing Check
+        # 4. Document Processing Check with Document List
         try:
             # Check if we have any pending documents to process
             pending_docs = await db.documents.find({
                 "approval_status": "approved",
                 "processing_status": {"$in": ["pending", "processing"]}
             }).to_list(5)
+            
+            # Get ALL approved documents for testing
+            all_approved_docs = await db.documents.find({
+                "approval_status": "approved"
+            }).limit(10).to_list(10)
+            
+            document_list = []
+            for doc in all_approved_docs:
+                document_list.append({
+                    "id": doc["id"],
+                    "name": doc["original_name"],
+                    "processing_status": doc.get("processing_status", "unknown"),
+                    "processed": doc.get("processed", False),
+                    "chunks_count": doc.get("chunks_count", 0),
+                    "test_approval_url": f"https://asiaihub.com/api/debug/test-approval-direct/{doc['id']}"
+                })
             
             result["document_processing_check"] = {
                 "pending_processing": len(pending_docs),
@@ -1550,7 +1566,9 @@ async def production_rag_status():
                         "processed": doc.get("processed", False)
                     }
                     for doc in pending_docs
-                ]
+                ],
+                "all_approved_documents": document_list,
+                "total_approved_documents": len(document_list)
             }
             
         except Exception as e:
