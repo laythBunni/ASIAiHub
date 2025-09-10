@@ -1540,7 +1540,7 @@ async def production_rag_status():
             }).to_list(5)
             
             # Get ALL approved documents for testing
-            all_approved_docs = await db.documents.find({
+            all_approved_docs = await database.documents.find({
                 "approval_status": "approved"
             }).limit(10).to_list(10)
             
