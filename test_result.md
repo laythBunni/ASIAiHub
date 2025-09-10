@@ -264,7 +264,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "User Management Action Buttons Missing"
+    - "MongoDB RAG System - Document Processing"
+    - "MongoDB RAG System - Chat Functionality"
+    - "Document Chunking Verification"
   stuck_tasks: []
   test_all: false
   test_priority: "critical_first"
