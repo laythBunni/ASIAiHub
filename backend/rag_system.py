@@ -732,7 +732,7 @@ class RAGSystem:
             context_text = "\n\n".join(context_parts)
             
             # Generate structured response with GPT-5 with timeout protection
-            from emergentintegrations import LlmChat, UserMessage
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
             import asyncio
             
             chat = LlmChat(
