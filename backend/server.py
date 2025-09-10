@@ -457,20 +457,50 @@ async def process_document_with_rag(document_data: Dict[str, Any]) -> None:
             async def rag_processing_with_timeout():
                 rag = get_rag_system(EMERGENT_LLM_KEY)
                 
-                # Call the MongoDB storage directly (skip the sync wrapper)
-                text = rag.extract_text_from_file(document_data['file_path'], document_data['mime_type'])
-                if not text:
-                    logger.error(f"Could not extract text from {document_data['file_path']}")
-                    return False
+                debug_info = {
+                    "step": "starting",
+                    "file_path": document_data.get('file_path'),
+                    "mime_type": document_data.get('mime_type'),
+                    "document_id": document_data.get('id')
+                }
                 
-                chunks = rag._simple_text_splitter(text)
-                if not chunks:
-                    logger.error(f"No chunks created for document {document_data['id']}")
-                    return False
-                
-                # Direct async MongoDB storage
-                success = await rag._store_chunks_mongodb(document_data['id'], chunks, document_data)
-                return success
+                try:
+                    # Step 1: Extract text
+                    debug_info["step"] = "extracting_text"
+                    text = rag.extract_text_from_file(document_data['file_path'], document_data['mime_type'])
+                    
+                    if not text:
+                        debug_info["error"] = f"No text extracted from {document_data['file_path']}"
+                        debug_info["file_exists"] = os.path.exists(document_data['file_path']) if document_data.get('file_path') else False
+                        return debug_info
+                    
+                    debug_info["text_length"] = len(text)
+                    debug_info["text_preview"] = text[:100] + "..." if len(text) > 100 else text
+                    
+                    # Step 2: Create chunks
+                    debug_info["step"] = "creating_chunks"
+                    chunks = rag._simple_text_splitter(text)
+                    
+                    if not chunks:
+                        debug_info["error"] = "No chunks created from text"
+                        return debug_info
+                    
+                    debug_info["chunks_created"] = len(chunks)
+                    debug_info["sample_chunk"] = chunks[0][:100] + "..." if chunks and len(chunks[0]) > 100 else chunks[0] if chunks else None
+                    
+                    # Step 3: Store in MongoDB
+                    debug_info["step"] = "storing_mongodb"
+                    success = await rag._store_chunks_mongodb(document_data['id'], chunks, document_data)
+                    
+                    debug_info["mongodb_success"] = success
+                    debug_info["step"] = "completed"
+                    
+                    return debug_info if success else {**debug_info, "error": "MongoDB storage failed"}
+                    
+                except Exception as e:
+                    debug_info["error"] = str(e)
+                    debug_info["exception_type"] = type(e).__name__
+                    return debug_info
             
             # 60 second timeout for RAG processing
             success = await asyncio.wait_for(rag_processing_with_timeout(), timeout=60.0)
