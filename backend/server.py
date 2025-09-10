@@ -735,6 +735,163 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
             "response_type": "error"
         }
 
+@api_router.post("/debug/test-mongodb-rag-directly")
+async def test_mongodb_rag_directly():
+    """Direct test of MongoDB RAG system with a simple document"""
+    try:
+        result = {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "test_status": "STARTING",
+            "steps": []
+        }
+        
+        # Step 1: Initialize RAG system
+        try:
+            rag = get_rag_system(EMERGENT_LLM_KEY)
+            result["steps"].append({
+                "step": "RAG_INITIALIZATION",
+                "status": "SUCCESS",
+                "rag_mode": getattr(rag, 'rag_mode', 'unknown')
+            })
+        except Exception as e:
+            result["steps"].append({
+                "step": "RAG_INITIALIZATION", 
+                "status": "FAILED",
+                "error": str(e)
+            })
+            return result
+        
+        # Step 2: Create test document data
+        test_doc_data = {
+            "id": "test-mongodb-rag-" + str(int(datetime.now().timestamp())),
+            "original_name": "test_mongodb_rag.txt",
+            "file_path": "/tmp/test_mongodb_rag.txt",
+            "mime_type": "text/plain",
+            "department": "Information Technology",
+            "uploaded_at": datetime.now(timezone.utc)
+        }
+        
+        # Create test file
+        test_content = """
+        MongoDB RAG Test Document
+        
+        This is a test document to verify that the MongoDB RAG system is working correctly.
+        
+        REQUIREMENTS:
+        - Documents should be chunked properly
+        - Chunks should be stored in MongoDB with embeddings
+        - Search functionality should work
+        
+        PROCEDURES:
+        1. Upload document
+        2. Process and chunk document  
+        3. Generate embeddings using OpenAI
+        4. Store in document_chunks collection
+        
+        EXPECTED OUTCOME:
+        This test should create chunks in MongoDB and enable search functionality.
+        """
+        
+        import aiofiles
+        async with aiofiles.open(test_doc_data["file_path"], 'w') as f:
+            await f.write(test_content)
+            
+        result["steps"].append({
+            "step": "TEST_FILE_CREATION",
+            "status": "SUCCESS",
+            "file_size": len(test_content)
+        })
+        
+        # Step 3: Test MongoDB chunk storage directly
+        try:
+            chunks = rag._simple_text_splitter(test_content)
+            result["steps"].append({
+                "step": "TEXT_CHUNKING",
+                "status": "SUCCESS", 
+                "chunks_created": len(chunks),
+                "sample_chunk": chunks[0][:100] + "..." if chunks else None
+            })
+            
+            # Test MongoDB storage
+            success = await rag._store_chunks_mongodb(test_doc_data["id"], chunks, test_doc_data)
+            result["steps"].append({
+                "step": "MONGODB_STORAGE",
+                "status": "SUCCESS" if success else "FAILED",
+                "chunks_stored": len(chunks) if success else 0
+            })
+            
+        except Exception as e:
+            result["steps"].append({
+                "step": "MONGODB_STORAGE",
+                "status": "FAILED",
+                "error": str(e)
+            })
+        
+        # Step 4: Verify chunks in database
+        try:
+            mongo_url = os.environ.get('MONGO_URL')
+            db_name = os.environ.get('DB_NAME')
+            client = AsyncIOMotorClient(mongo_url)
+            database = client[db_name]
+            
+            chunk_count = await database.document_chunks.count_documents({"document_id": test_doc_data["id"]})
+            
+            if chunk_count > 0:
+                sample_chunk = await database.document_chunks.find_one({"document_id": test_doc_data["id"]})
+                result["steps"].append({
+                    "step": "DATABASE_VERIFICATION",
+                    "status": "SUCCESS",
+                    "chunks_in_db": chunk_count,
+                    "sample_chunk_has_embedding": bool(sample_chunk.get("embedding") if sample_chunk else False)
+                })
+            else:
+                result["steps"].append({
+                    "step": "DATABASE_VERIFICATION",
+                    "status": "FAILED",
+                    "chunks_in_db": 0
+                })
+                
+        except Exception as e:
+            result["steps"].append({
+                "step": "DATABASE_VERIFICATION",
+                "status": "FAILED", 
+                "error": str(e)
+            })
+        
+        # Step 5: Test search functionality
+        try:
+            search_results = await rag._search_chunks_mongodb("MongoDB RAG test", limit=2)
+            result["steps"].append({
+                "step": "SEARCH_TEST",
+                "status": "SUCCESS",
+                "results_found": len(search_results),
+                "top_similarity": search_results[0].get("similarity", 0) if search_results else 0
+            })
+        except Exception as e:
+            result["steps"].append({
+                "step": "SEARCH_TEST",
+                "status": "FAILED",
+                "error": str(e)
+            })
+        
+        # Cleanup test file
+        try:
+            import os
+            if os.path.exists(test_doc_data["file_path"]):
+                os.remove(test_doc_data["file_path"])
+        except:
+            pass
+            
+        result["test_status"] = "COMPLETED"
+        return result
+        
+    except Exception as e:
+        return {
+            "test_status": "CRITICAL_ERROR",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.post("/debug/migrate-documents-to-mongodb")
 async def migrate_documents_to_mongodb():
     """Migrate existing approved documents to MongoDB RAG system"""
