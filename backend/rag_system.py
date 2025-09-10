@@ -508,14 +508,34 @@ class RAGSystem:
     def extract_text_from_file(self, file_path: str, mime_type: str) -> str:
         """Extract text from various file formats"""
         try:
+            logger.info(f"Attempting to extract text from: {file_path} (mime_type: {mime_type})")
+            
             # Ensure absolute path
             if not os.path.isabs(file_path):
                 # If relative path, make it relative to backend directory
+                original_path = file_path
                 file_path = os.path.join(os.path.dirname(__file__), file_path)
+                logger.info(f"Converted relative path '{original_path}' to absolute path: {file_path}")
             
             if not os.path.exists(file_path):
-                logger.error(f"File not found: {file_path}")
+                logger.error(f"FILE NOT FOUND: {file_path}")
+                logger.error(f"Current working directory: {os.getcwd()}")
+                logger.error(f"Backend directory: {os.path.dirname(__file__)}")
+                
+                # Try to list files in the directory to see what's available
+                try:
+                    dir_path = os.path.dirname(file_path)
+                    if os.path.exists(dir_path):
+                        files_in_dir = os.listdir(dir_path)
+                        logger.error(f"Files in directory {dir_path}: {files_in_dir}")
+                    else:
+                        logger.error(f"Directory does not exist: {dir_path}")
+                except Exception as list_error:
+                    logger.error(f"Could not list directory contents: {list_error}")
+                
                 return ""
+            
+            logger.info(f"File exists, attempting to read: {file_path}")
             
             if mime_type == "text/plain":
                 with open(file_path, 'r', encoding='utf-8') as f:
