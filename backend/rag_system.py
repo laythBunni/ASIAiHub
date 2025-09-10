@@ -186,7 +186,7 @@ class RAGSystem:
                         "document_id": document_id,
                         "chunk_index": i,
                         "text": chunk_text,
-                        "embedding": embedding_response,
+                        "embedding": embedding,
                         "metadata": {
                             "source": document_data.get('original_name', 'Unknown'),
                             "department": document_data.get('department'),
