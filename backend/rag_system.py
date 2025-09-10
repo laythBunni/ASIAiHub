@@ -512,27 +512,9 @@ class RAGSystem:
             
             # Ensure absolute path  
             if not os.path.isabs(file_path):
-                # Try multiple possible locations for uploads
-                possible_paths = [
-                    os.path.join('/app/backend/uploads', file_path.replace('uploads/', '')),
-                    os.path.join('/app/backend', file_path),
-                    os.path.join(os.path.dirname(__file__), file_path),
-                    os.path.join('/app', file_path)
-                ]
-                
-                # Use the first path that exists
-                original_path = file_path
-                for path in possible_paths:
-                    if os.path.exists(path):
-                        file_path = path
-                        logger.info(f"Found file at: {file_path}")
-                        break
-                else:
-                    # If no file found, use the backend uploads path as default
-                    file_path = os.path.join('/app/backend/uploads', file_path.replace('uploads/', ''))
-                    logger.warning(f"File not found in any location, using default: {file_path}")
-                
-                logger.info(f"Converted relative path '{original_path}' to absolute path: {file_path}")
+                # Files are uploaded to 'uploads/' relative to backend directory
+                file_path = os.path.join(os.path.dirname(__file__), file_path)
+                logger.info(f"Converted relative path to absolute path: {file_path}")
             
             if not os.path.exists(file_path):
                 logger.error(f"FILE NOT FOUND: {file_path}")
