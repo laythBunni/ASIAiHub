@@ -1527,6 +1527,24 @@ async def production_rag_status():
                     }
             else:
                 result["mongodb_check"]["chunk_count"] = 0
+            
+            # ADD DOCUMENT LIST HERE - in working section
+            try:
+                sample_docs = await database.documents.find(
+                    {"approval_status": "approved"},
+                    {"id": 1, "original_name": 1, "_id": 0}
+                ).limit(5).to_list(5)
+                
+                result["mongodb_check"]["sample_documents_for_testing"] = [
+                    {
+                        "id": doc["id"],
+                        "name": doc["original_name"],
+                        "direct_test_url": f"https://asiaihub.com/api/debug/test-approval-direct/{doc['id']}"
+                    }
+                    for doc in sample_docs
+                ]
+            except Exception as doc_err:
+                result["mongodb_check"]["sample_documents_error"] = str(doc_err)
                 
         except Exception as e:
             result["mongodb_check"] = {
