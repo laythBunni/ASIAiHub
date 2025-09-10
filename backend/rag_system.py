@@ -170,7 +170,7 @@ class RAGSystem:
             
             # Generate embeddings using OpenAI
             import asyncio
-            from emergentintegrations import LlmChat, UserMessage
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
             
             chunk_documents = []
             
