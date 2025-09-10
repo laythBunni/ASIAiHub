@@ -782,30 +782,38 @@ async def test_embedding_generation():
             })
             return result
             
-        # Test 3: Generate embedding using OpenAI directly
+        # Test 3: Generate embedding using OpenAI directly with user's API key
         try:
             import openai
             test_text = "This is a simple test for embedding generation."
             
-            openai_client = openai.AsyncOpenAI(api_key=emergent_key)
-            embedding_response = await asyncio.wait_for(
-                openai_client.embeddings.create(
-                    input=test_text,
-                    model="text-embedding-ada-002"
-                ),
-                timeout=30.0
-            )
-            
-            embedding = embedding_response.data[0].embedding
-            
-            result["steps"].append({
-                "step": "EMBEDDING_GENERATION",
-                "status": "SUCCESS",
-                "method": "openai_direct",
-                "embedding_type": type(embedding).__name__,
-                "embedding_length": len(embedding),
-                "first_few_values": embedding[:3] if len(embedding) > 3 else embedding
-            })
+            openai_api_key = os.environ.get('OPENAI_API_KEY')
+            if not openai_api_key:
+                result["steps"].append({
+                    "step": "EMBEDDING_GENERATION",
+                    "status": "FAILED",
+                    "error": "OPENAI_API_KEY not found in environment variables"
+                })
+            else:
+                openai_client = openai.AsyncOpenAI(api_key=openai_api_key)
+                embedding_response = await asyncio.wait_for(
+                    openai_client.embeddings.create(
+                        input=test_text,
+                        model="text-embedding-ada-002"
+                    ),
+                    timeout=30.0
+                )
+                
+                embedding = embedding_response.data[0].embedding
+                
+                result["steps"].append({
+                    "step": "EMBEDDING_GENERATION",
+                    "status": "SUCCESS",
+                    "method": "openai_direct_with_user_key",
+                    "embedding_type": type(embedding).__name__,
+                    "embedding_length": len(embedding),
+                    "first_few_values": embedding[:3] if len(embedding) > 3 else embedding
+                })
             
         except asyncio.TimeoutError:
             result["steps"].append({
