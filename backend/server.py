@@ -1540,20 +1540,36 @@ async def production_rag_status():
             }).to_list(5)
             
             # Get ALL approved documents for testing
-            all_approved_docs = await database.documents.find({
-                "approval_status": "approved"
-            }).limit(10).to_list(10)
-            
-            document_list = []
-            for doc in all_approved_docs:
-                document_list.append({
-                    "id": doc["id"],
-                    "name": doc["original_name"],
-                    "processing_status": doc.get("processing_status", "unknown"),
-                    "processed": doc.get("processed", False),
-                    "chunks_count": doc.get("chunks_count", 0),
-                    "test_approval_url": f"https://asiaihub.com/api/debug/test-approval-direct/{doc['id']}"
-                })
+            try:
+                all_approved_docs = await database.documents.find({
+                    "approval_status": "approved"
+                }).limit(10).to_list(10)
+                
+                document_list = []
+                for doc in all_approved_docs:
+                    try:
+                        document_list.append({
+                            "id": doc["id"],
+                            "name": doc["original_name"],
+                            "processing_status": doc.get("processing_status", "unknown"),
+                            "processed": doc.get("processed", False),
+                            "chunks_count": doc.get("chunks_count", 0),
+                            "test_approval_url": f"https://asiaihub.com/api/debug/test-approval-direct/{doc['id']}"
+                        })
+                    except Exception as doc_error:
+                        document_list.append({
+                            "id": doc.get("id", "unknown"),
+                            "name": "ERROR_PROCESSING_DOCUMENT",
+                            "error": str(doc_error)
+                        })
+                
+                document_list_success = True
+                document_list_error = None
+                
+            except Exception as list_error:
+                document_list = []
+                document_list_success = False 
+                document_list_error = str(list_error)
             
             result["document_processing_check"] = {
                 "pending_processing": len(pending_docs),
@@ -1568,7 +1584,9 @@ async def production_rag_status():
                     for doc in pending_docs
                 ],
                 "all_approved_documents": document_list,
-                "total_approved_documents": len(document_list)
+                "total_approved_documents": len(document_list),
+                "document_list_success": document_list_success,
+                "document_list_error": document_list_error
             }
             
         except Exception as e:
