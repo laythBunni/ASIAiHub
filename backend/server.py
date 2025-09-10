@@ -1052,6 +1052,16 @@ async def test_mongodb_rag_directly():
             "timestamp": str(datetime.now(timezone.utc))
         }
 
+@api_router.get("/debug/test-deployment")
+async def test_deployment():
+    """Test if the latest code is deployed"""
+    return {
+        "timestamp": str(datetime.now(timezone.utc)),
+        "message": "🔥 LATEST CODE IS DEPLOYED - APPROVAL LOGGING SHOULD WORK",
+        "version": "enhanced_approval_logging_v2",
+        "approval_endpoint_available": True
+    }
+
 @api_router.get("/debug/check-backend-logs")
 async def check_backend_logs():
     """Check recent backend logs from multiple possible locations"""
