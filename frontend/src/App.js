@@ -1736,15 +1736,43 @@ const DocumentManagement = () => {
 
   const approveDocument = async (documentId) => {
     try {
-      await apiCall('PUT', `/documents/${documentId}/approve`);
-      toast({
-        title: "✅ Document Approved!",
-        description: "Document has been approved and added to the knowledge base",
-        duration: 3000,
-      });
+      const response = await apiCall('PUT', `/documents/${documentId}/approve`);
+      console.log('🔥 APPROVAL RESPONSE:', response); // Debug logging
+      
+      // Show detailed response based on processing result
+      if (response.chunks_count > 0) {
+        toast({
+          title: "✅ Document Approved & Processed!",
+          description: `Document processed successfully with ${response.chunks_count} chunks and added to knowledge base`,
+          duration: 5000,
+        });
+      } else if (response.processing_error) {
+        toast({
+          title: "⚠️ Document Approved but Processing Failed",
+          description: `Approved but failed to process: ${response.processing_error}`,
+          duration: 8000,
+        });
+      } else if (response.error) {
+        toast({
+          title: "⚠️ Document Approved but Processing Failed", 
+          description: `Approved but failed to process: ${response.error}`,
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: "✅ Document Approved!",
+          description: response.message || "Document has been approved and added to the knowledge base",
+          duration: 3000,
+        });
+      }
       fetchDocuments();
     } catch (error) {
-      console.error('Error approving document:', error);
+      console.error('🔥 Error approving document:', error);
+      toast({
+        title: "❌ Approval Failed",
+        description: `Failed to approve document: ${error.message}`,
+        duration: 5000,
+      });
     }
   };
 
