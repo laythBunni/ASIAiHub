@@ -892,7 +892,7 @@ async def test_mongodb_rag_directly():
             "timestamp": str(datetime.now(timezone.utc))
         }
 
-@api_router.post("/debug/migrate-documents-to-mongodb")
+@api_router.get("/debug/migrate-documents-to-mongodb")
 async def migrate_documents_to_mongodb():
     """Migrate existing approved documents to MongoDB RAG system"""
     try:
