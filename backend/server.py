@@ -1054,39 +1054,59 @@ async def test_mongodb_rag_directly():
 
 @api_router.get("/debug/check-backend-logs")
 async def check_backend_logs():
-    """Check recent backend logs for file processing issues"""
+    """Check recent backend logs from multiple possible locations"""
     try:
         import subprocess
+        import glob
         
-        # Get recent backend logs
-        result = subprocess.run(
-            ["tail", "-n", "100", "/var/log/supervisor/backend.err.log"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        
-        logs = result.stdout if result.stdout else "No logs found"
-        
-        # Filter for relevant log entries
-        relevant_lines = []
-        for line in logs.split('\n'):
-            if any(keyword in line.lower() for keyword in [
-                'extract_text', 'file not found', 'current working directory', 
-                'process_document', 'rag', 'error', 'exception'
-            ]):
-                relevant_lines.append(line)
-        
-        return {
+        log_results = {
             "timestamp": str(datetime.now(timezone.utc)),
-            "total_log_lines": len(logs.split('\n')),
-            "relevant_lines": relevant_lines[-20:],  # Last 20 relevant lines
-            "raw_logs_preview": logs.split('\n')[-10:]  # Last 10 lines of raw logs
+            "log_locations": {},
+            "supervisor_status": "",
+            "recent_entries": []
         }
+        
+        # Check supervisor status
+        try:
+            status_result = subprocess.run(["supervisorctl", "status"], capture_output=True, text=True, timeout=5)
+            log_results["supervisor_status"] = status_result.stdout
+        except:
+            log_results["supervisor_status"] = "Could not get supervisor status"
+        
+        # Try multiple log locations
+        possible_log_paths = [
+            "/var/log/supervisor/backend*.log",
+            "/var/log/supervisor/*.log", 
+            "/tmp/*.log",
+            "/app/backend*.log",
+            "/app/*.log"
+        ]
+        
+        for path_pattern in possible_log_paths:
+            try:
+                log_files = glob.glob(path_pattern)
+                log_results["log_locations"][path_pattern] = log_files
+                
+                # If we find log files, try to read the most recent one
+                if log_files:
+                    latest_log = max(log_files, key=lambda x: os.path.getmtime(x) if os.path.exists(x) else 0)
+                    try:
+                        result = subprocess.run(["tail", "-n", "50", latest_log], capture_output=True, text=True, timeout=10)
+                        if result.stdout:
+                            log_results["recent_entries"].extend([
+                                f"=== FROM {latest_log} ===",
+                                result.stdout
+                            ])
+                    except:
+                        pass
+            except:
+                log_results["log_locations"][path_pattern] = "Error checking path"
+        
+        return log_results
         
     except Exception as e:
         return {
-            "status": "ERROR",
+            "status": "ERROR", 
             "error": str(e),
             "timestamp": str(datetime.now(timezone.utc))
         }
