@@ -1487,8 +1487,13 @@ async def fix_document_departments():
 @api_router.put("/documents/{document_id}/approve")
 async def approve_document(document_id: str, approved_by: str = "admin"):
     """Approve a document for inclusion in knowledge base"""
+    # Add immediate logging
+    logger.info(f"🔥 APPROVAL STARTED for document {document_id} by {approved_by}")
+    print(f"🔥 APPROVAL STARTED for document {document_id} by {approved_by}")  # Force console output
+    
     try:
         # Update document approval status
+        logger.info(f"🔥 Updating document approval status for {document_id}")
         result = await db.documents.update_one(
             {"id": document_id},
             {
@@ -1501,39 +1506,55 @@ async def approve_document(document_id: str, approved_by: str = "admin"):
         )
         
         if result.matched_count == 0:
+            logger.error(f"🔥 Document not found: {document_id}")
             raise HTTPException(status_code=404, detail="Document not found")
+        
+        logger.info(f"🔥 Document approval status updated, now fetching document data")
         
         # Get updated document and process with RAG immediately
         document = await db.documents.find_one({"id": document_id})
         if document:
+            logger.info(f"🔥 Document found, starting RAG processing: {document.get('original_name')}")
+            logger.info(f"🔥 Document file_path: {document.get('file_path')}")
+            logger.info(f"🔥 Document mime_type: {document.get('mime_type')}")
+            
             try:
                 # Process document synchronously so we can catch errors
+                logger.info(f"🔥 Calling process_document_with_rag for {document_id}")
                 await process_document_with_rag(document)
+                
+                logger.info(f"🔥 RAG processing completed, checking results")
                 
                 # Check if processing was successful
                 updated_doc = await db.documents.find_one({"id": document_id})
                 if updated_doc and updated_doc.get("processed"):
+                    logger.info(f"🔥 SUCCESS: Document processed with {updated_doc.get('chunks_count', 0)} chunks")
                     return {
                         "message": "Document approved and successfully processed for knowledge base",
                         "chunks_count": updated_doc.get("chunks_count", 0),
                         "processing_status": "completed"
                     }
                 else:
+                    processing_status = updated_doc.get("processing_status") if updated_doc else "unknown"
+                    logger.error(f"🔥 FAILURE: Processing did not complete. Status: {processing_status}")
                     return {
                         "message": "Document approved but processing failed",
-                        "processing_status": updated_doc.get("processing_status") if updated_doc else "unknown",
+                        "processing_status": processing_status,
                         "error": "RAG processing did not complete successfully"
                     }
             except Exception as processing_error:
-                logger.error(f"RAG processing failed for document {document_id}: {processing_error}")
+                logger.error(f"🔥 EXCEPTION during RAG processing for document {document_id}: {processing_error}")
                 return {
                     "message": "Document approved but processing failed",
                     "processing_error": str(processing_error),
                     "processing_status": "failed"
                 }
+        else:
+            logger.error(f"🔥 Could not fetch document after approval: {document_id}")
+            return {"message": "Document approved but could not fetch for processing"}
         
     except Exception as e:
-        logger.error(f"Error approving document: {e}")
+        logger.error(f"🔥 ERROR in approval process: {e}")
         raise HTTPException(status_code=500, detail="Failed to approve document")
 
 @api_router.put("/documents/{document_id}/reject")
