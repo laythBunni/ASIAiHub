@@ -1052,6 +1052,38 @@ async def test_mongodb_rag_directly():
             "timestamp": str(datetime.now(timezone.utc))
         }
 
+@api_router.get("/debug/list-documents")
+async def list_documents():
+    """List actual document IDs for testing"""
+    try:
+        docs = await db.documents.find({
+            "approval_status": "approved"
+        }).limit(10).to_list(10)
+        
+        document_list = []
+        for doc in docs:
+            document_list.append({
+                "id": doc["id"],
+                "name": doc["original_name"],
+                "processing_status": doc.get("processing_status", "unknown"),
+                "processed": doc.get("processed", False),
+                "chunks_count": doc.get("chunks_count", 0),
+                "test_url": f"https://asiaihub.com/api/debug/test-approval-direct/{doc['id']}"
+            })
+        
+        return {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "total_documents": len(document_list),
+            "documents": document_list,
+            "instructions": "Click any test_url to test direct approval for that document"
+        }
+        
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "error": str(e)
+        }
+
 @api_router.get("/debug/reset-failed-documents")
 async def reset_failed_documents():
     """Reset failed documents back to pending for reprocessing"""
