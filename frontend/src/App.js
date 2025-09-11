@@ -5376,18 +5376,21 @@ const SystemAdmin = () => {
       const response = await apiCall('PUT', '/admin/system-settings', systemSettings);
       if (response && !response.error) {
         toast({
-          title: "✅ Settings Saved",
-          description: "System settings updated successfully",
-          duration: 3000,
+          title: "✅ Settings Saved Successfully!",
+          description: `AI Model: ${systemSettings.ai_model?.toUpperCase()}, Cache: ${systemSettings.response_cache_hours}h, Personal Key: ${systemSettings.use_personal_openai_key ? 'Enabled' : 'Disabled'}`,
+          duration: 5000,
         });
+        
+        // Reload settings to confirm
+        await loadSystemSettings();
       } else {
         throw new Error(response?.error || 'Failed to save settings');
       }
     } catch (error) {
       console.error('Error saving system settings:', error);
       toast({
-        title: "❌ Error",
-        description: "Failed to save system settings",
+        title: "❌ Save Failed",
+        description: "Failed to save system settings. Please try again.",
         duration: 5000,
       });
     }
