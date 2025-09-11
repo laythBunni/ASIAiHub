@@ -463,8 +463,8 @@ async def process_document_with_rag(document_data: Dict[str, Any]) -> None:
                     logger.info(f"🔥 File path: {document_data.get('file_path')}")
                     logger.info(f"🔥 MIME type: {document_data.get('mime_type')}")
                     
-                    # Store the result AND any exception
-                    result = rag.process_and_store_document(document_data)
+                    # Use async method directly (cleanest approach)
+                    result = await rag.process_and_store_document_async(document_data)
                     
                     logger.info(f"🔥 RAG processing result: {result}")
                     return result
