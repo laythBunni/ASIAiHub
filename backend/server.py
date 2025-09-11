@@ -455,8 +455,24 @@ async def process_document_with_rag(document_data: Dict[str, Any]) -> None:
         # Process with RAG system with timeout and graceful fallback
         try:
             async def rag_processing_with_timeout():
-                rag = get_rag_system(EMERGENT_LLM_KEY)
-                return rag.process_and_store_document(document_data)
+                try:
+                    rag = get_rag_system(EMERGENT_LLM_KEY)
+                    
+                    # Add detailed logging
+                    logger.info(f"🔥 RAG processing starting for document {document_data.get('id')}")
+                    logger.info(f"🔥 File path: {document_data.get('file_path')}")
+                    logger.info(f"🔥 MIME type: {document_data.get('mime_type')}")
+                    
+                    # Store the result AND any exception
+                    result = rag.process_and_store_document(document_data)
+                    
+                    logger.info(f"🔥 RAG processing result: {result}")
+                    return result
+                    
+                except Exception as rag_error:
+                    logger.error(f"🔥 RAG processing exception: {rag_error}")
+                    logger.error(f"🔥 Exception type: {type(rag_error).__name__}")
+                    raise rag_error
             
             # 60 second timeout for RAG processing
             success = await asyncio.wait_for(rag_processing_with_timeout(), timeout=60.0)
