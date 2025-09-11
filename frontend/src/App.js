@@ -5014,6 +5014,7 @@ const SystemAdmin = () => {
           fetchSystemStats(),
           loadSystemSettings(),
           loadChatAnalytics(),
+          loadApiUsage(),
         ]);
         // Finally fetch permissions with the users data
         await fetchPermissions(usersData);
