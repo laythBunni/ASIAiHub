@@ -5588,15 +5588,30 @@ const SystemAdmin = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span>Allow user registration</span>
-                      <input type="checkbox" className="toggle" />
+                      <input 
+                        type="checkbox" 
+                        className="toggle" 
+                        checked={systemSettings.allow_user_registration}
+                        onChange={(e) => updateSystemSetting('allow_user_registration', e.target.checked)}
+                      />
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Require document approval</span>
-                      <input type="checkbox" className="toggle" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        className="toggle" 
+                        checked={systemSettings.require_document_approval}
+                        onChange={(e) => updateSystemSetting('require_document_approval', e.target.checked)}
+                      />
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Enable audit logging</span>
-                      <input type="checkbox" className="toggle" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        className="toggle" 
+                        checked={systemSettings.enable_audit_logging}
+                        onChange={(e) => updateSystemSetting('enable_audit_logging', e.target.checked)}
+                      />
                     </div>
                   </div>
                 </div>
@@ -5606,18 +5621,52 @@ const SystemAdmin = () => {
                   <div className="space-y-3">
                     <div>
                       <Label>Default AI Model</Label>
-                      <Select defaultValue="gpt-5">
+                      <Select 
+                        value={systemSettings.ai_model} 
+                        onValueChange={(value) => updateSystemSetting('ai_model', value)}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="gpt-5">GPT-5</SelectItem>
-                          <SelectItem value="claude-4">Claude Sonnet 4</SelectItem>
-                          <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
+                          <SelectItem value="gpt-5">GPT-5 (Latest - Highest Quality)</SelectItem>
+                          <SelectItem value="gpt-5-mini">GPT-5 Mini (Balanced - Faster)</SelectItem>
+                          <SelectItem value="gpt-4o">GPT-4o (Previous Gen - Reliable)</SelectItem>
+                          <SelectItem value="gpt-4o-mini">GPT-4o Mini (Economy - Fastest)</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Current: {systemSettings.ai_model?.toUpperCase() || 'GPT-5'} - Used for all chat responses
+                      </p>
+                    </div>
+                    <div>
+                      <Label>Response Cache Duration</Label>
+                      <Select 
+                        value={systemSettings.response_cache_hours?.toString() || '24'} 
+                        onValueChange={(value) => updateSystemSetting('response_cache_hours', parseInt(value))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1 Hour</SelectItem>
+                          <SelectItem value="6">6 Hours</SelectItem>
+                          <SelectItem value="24">24 Hours (Recommended)</SelectItem>
+                          <SelectItem value="72">3 Days</SelectItem>
+                          <SelectItem value="168">1 Week</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Cache identical questions to speed up responses
+                      </p>
                     </div>
                   </div>
+                </div>
+
+                <Button onClick={saveSystemSettings} className="w-full">
+                  Save System Settings
+                </Button>
+              </div>
                 </div>
               </div>
             </CardContent>
