@@ -1035,6 +1035,7 @@ const ChatInterface = () => {
                 });
               } else if (data.type === 'metadata') {
                 documentsReferenced = data.documents_referenced || 0;
+                responseTimeSeconds = data.response_time_seconds || null;
               }
             } catch (e) {
               // Skip malformed JSON
