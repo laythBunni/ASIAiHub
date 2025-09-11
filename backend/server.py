@@ -1759,7 +1759,9 @@ async def get_system_settings():
             "allow_user_registration": settings.get("allow_user_registration", False),
             "require_document_approval": settings.get("require_document_approval", True),
             "enable_audit_logging": settings.get("enable_audit_logging", True),
-            "response_cache_hours": settings.get("response_cache_hours", 24)
+            "response_cache_hours": settings.get("response_cache_hours", 24),
+            "use_personal_openai_key": settings.get("use_personal_openai_key", False),
+            "personal_openai_key": settings.get("personal_openai_key", "")
         }
     except Exception as e:
         logger.error(f"Error getting system settings: {e}")
