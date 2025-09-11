@@ -810,12 +810,15 @@ class RAGSystem:
             
             context_text = "\n\n".join(context_parts)
             
-            # Generate structured response with GPT-5 with timeout protection
+            # Generate structured response with selected model and API key with timeout protection
             from emergentintegrations.llm.chat import LlmChat, UserMessage
             import asyncio
             
+            # Use provided API key or fallback to emergent key
+            llm_key = api_key or self.emergent_llm_key
+            
             chat = LlmChat(
-                api_key=self.emergent_llm_key,
+                api_key=llm_key,
                 session_id=session_id,
                 system_message="""You are an AI assistant for ASI AiHub - an enterprise AI-powered knowledge management platform. You have access to approved company policy documents and procedures.
 
