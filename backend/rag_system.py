@@ -26,6 +26,14 @@ PRODUCTION_INDICATORS = [
     'ai-workspace-17' in os.environ.get('REACT_APP_BACKEND_URL', ''),
 ]
 
+# Debug environment detection
+print(f"🔍 Environment Debug:")
+print(f"   NODE_ENV: {os.environ.get('NODE_ENV')}")
+print(f"   ENVIRONMENT: {os.environ.get('ENVIRONMENT')}")
+print(f"   REACT_APP_BACKEND_URL: {os.environ.get('REACT_APP_BACKEND_URL')}")
+print(f"   Production indicators: {PRODUCTION_INDICATORS}")
+print(f"   Any production indicator: {any(PRODUCTION_INDICATORS)}")
+
 # Force MongoDB mode for production (reliable persistent chunk storage)
 if any(PRODUCTION_INDICATORS):
     print("🏭 Production environment detected - using MongoDB for reliable chunk storage")
