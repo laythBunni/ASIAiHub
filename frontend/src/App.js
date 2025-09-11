@@ -1262,6 +1262,20 @@ const ChatInterface = () => {
                         <div>
                           <StructuredResponse response={message.content} documentsReferenced={message.documents_referenced} />
                           
+                          {/* Response timing and metadata */}
+                          <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                            <div className="flex items-center gap-3">
+                              <span>🤖 {systemSettings?.ai_model?.toUpperCase() || 'GPT-5'}</span>
+                              {message.metadata?.response_time_seconds && (
+                                <span>⚡ {message.metadata.response_time_seconds.toFixed(1)}s</span>
+                              )}
+                              {message.documents_referenced > 0 && (
+                                <span>📚 {message.documents_referenced} docs</span>
+                              )}
+                            </div>
+                            <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
+                          </div>
+                          
                           {/* Add "Create Ticket" option for AI responses */}
                           <div className="mt-3 pt-3 border-t border-gray-100">
                             <div className="flex items-center justify-between">
