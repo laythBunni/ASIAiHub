@@ -5365,6 +5365,17 @@ const SystemAdmin = () => {
     }
   };
 
+  const loadApiUsage = async () => {
+    try {
+      const response = await apiCall('GET', '/admin/api-usage');
+      if (response && !response.error) {
+        setApiUsage(response);
+      }
+    } catch (error) {
+      console.error('Error loading API usage:', error);
+    }
+  };
+
   const updateSystemSetting = (key, value) => {
     setSystemSettings(prev => ({
       ...prev,
