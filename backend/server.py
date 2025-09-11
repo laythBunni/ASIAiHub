@@ -1255,11 +1255,12 @@ async def test_deployment():
     """Test if the latest code is deployed"""
     return {
         "timestamp": str(datetime.now(timezone.utc)),
-        "message": "🔥 LATEST CODE IS DEPLOYED - ENHANCED DIAGNOSTICS v3",
-        "version": "enhanced_diagnostics_v3_with_file_path_fix",
+        "message": "🔥 LATEST CODE IS DEPLOYED - SIMPLE WORKING VERSION",
+        "version": "simple_working_rag_v1",
         "approval_endpoint_available": True,
-        "file_path_fix_applied": True,
-        "enhanced_debug_info": True
+        "enhanced_debug_info": False,
+        "using_original_process_and_store_document": True,
+        "file_path_fix": "basic_relative_to_absolute"
     }
 
 @api_router.get("/debug/check-backend-logs")
