@@ -1880,44 +1880,95 @@ async def track_api_usage(model: str, prompt_tokens: int, completion_tokens: int
 async def get_chat_analytics():
     """Get chat analytics for admin dashboard"""
     try:
-        # Get all chat sessions
+        # Get all chat sessions and messages
         chat_sessions = await db.chat_sessions.find({}).to_list(100)
+        chat_messages = await db.chat_messages.find({}).to_list(1000)
         
-        # Analyze most asked questions
+        # Organize messages by session
+        messages_by_session = {}
+        for message in chat_messages:
+            session_id = message.get("session_id")
+            if session_id not in messages_by_session:
+                messages_by_session[session_id] = []
+            messages_by_session[session_id].append(message)
+        
+        # Analyze most asked questions and user activity
         question_counts = {}
         no_answer_questions = []
         user_activity = {}
+        ticket_conversations = []
+        total_response_time = 0
+        response_count = 0
         
         for session in chat_sessions:
-            messages = session.get("messages", [])
-            user_id = session.get("user_id", "anonymous")
+            session_id = session.get("id")
+            user_id = session.get("user_id", session_id.split("-")[0] if session_id else "anonymous")
+            messages = messages_by_session.get(session_id, [])
             
+            # Count user activity
             if user_id not in user_activity:
                 user_activity[user_id] = 0
-            user_activity[user_id] += len([m for m in messages if m.get("role") == "user"])
             
-            for message in messages:
+            user_messages = [m for m in messages if m.get("role") == "user"]
+            user_activity[user_id] += len(user_messages)
+            
+            # Analyze messages for questions and responses
+            for i, message in enumerate(messages):
                 if message.get("role") == "user":
-                    question = message.get("content", "").lower().strip()
+                    question = message.get("content", "").strip()
                     if len(question) > 10:  # Filter out very short questions
-                        question_counts[question] = question_counts.get(question, 0) + 1
+                        question_lower = question.lower()
+                        question_counts[question_lower] = question_counts.get(question_lower, 0) + 1
                         
-                elif message.get("role") == "assistant":
-                    response = message.get("content", {})
-                    if isinstance(response, dict) and response.get("response_type") == "no_documents_found":
-                        # Find the previous user question
-                        prev_msg = messages[messages.index(message) - 1] if messages.index(message) > 0 else None
-                        if prev_msg and prev_msg.get("role") == "user":
-                            no_answer_questions.append(prev_msg.get("content", ""))
+                        # Check if this led to a ticket
+                        next_msg = messages[i + 1] if i + 1 < len(messages) else None
+                        if next_msg and next_msg.get("role") == "assistant":
+                            try:
+                                response_content = next_msg.get("content", {})
+                                if isinstance(response_content, str):
+                                    response_content = json.loads(response_content)
+                                
+                                # Track response time if available
+                                user_time = message.get("timestamp")
+                                ai_time = next_msg.get("timestamp")
+                                if user_time and ai_time:
+                                    response_time = (ai_time - user_time).total_seconds()
+                                    total_response_time += response_time
+                                    response_count += 1
+                                
+                                # Check if response suggested creating a ticket
+                                if isinstance(response_content, dict):
+                                    if (response_content.get("response_type") == "no_documents_found" or
+                                        "contact support" in str(response_content).lower()):
+                                        no_answer_questions.append(question)
+                                    
+                                    # Track conversations that may lead to tickets
+                                    if ("ticket" in str(response_content).lower() or 
+                                        "support" in str(response_content).lower()):
+                                        ticket_conversations.append({
+                                            "session_id": session_id,
+                                            "question": question[:100],
+                                            "timestamp": message.get("timestamp", datetime.now(timezone.utc)).isoformat()
+                                        })
+                                        
+                            except Exception as e:
+                                logger.error(f"Error processing message: {e}")
+        
+        # Calculate average response time
+        avg_response_time = round(total_response_time / max(response_count, 1), 2)
         
         # Sort and get top questions
         top_questions = sorted(question_counts.items(), key=lambda x: x[1], reverse=True)[:10]
         
         return {
             "total_sessions": len(chat_sessions),
+            "total_messages": len(chat_messages),
             "top_questions": [{"question": q, "count": c} for q, c in top_questions],
             "no_answer_questions": no_answer_questions[:10],
             "user_activity": dict(sorted(user_activity.items(), key=lambda x: x[1], reverse=True)[:10]),
+            "ticket_conversations": ticket_conversations[:20],
+            "avg_response_time_seconds": avg_response_time,
+            "total_responses": response_count,
             "timestamp": str(datetime.now(timezone.utc))
         }
         
