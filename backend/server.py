@@ -1084,6 +1084,83 @@ async def list_documents():
             "error": str(e)
         }
 
+@api_router.get("/debug/check-file-exists/{document_id}")
+async def check_file_exists(document_id: str):
+    """Check if the document file actually exists on the file system"""
+    try:
+        document = await db.documents.find_one({"id": document_id})
+        
+        if not document:
+            return {
+                "status": "DOCUMENT_NOT_FOUND",
+                "document_id": document_id
+            }
+        
+        file_path = document.get("file_path")
+        
+        # Check multiple possible locations
+        possible_paths = [
+            file_path,  # Original path
+            os.path.join(os.path.dirname(__file__), file_path) if not os.path.isabs(file_path) else file_path,  # Backend relative
+            os.path.join("/app/backend", file_path) if not os.path.isabs(file_path) else file_path,  # App backend
+            os.path.join("/app", file_path) if not os.path.isabs(file_path) else file_path,  # App root
+        ]
+        
+        results = {}
+        for i, path in enumerate(possible_paths):
+            results[f"path_{i+1}"] = {
+                "path": path,
+                "exists": os.path.exists(path),
+                "is_file": os.path.isfile(path) if os.path.exists(path) else False,
+                "size": os.path.getsize(path) if os.path.exists(path) else None
+            }
+        
+        # Check if uploads directory exists
+        upload_dirs = [
+            "/app/backend/uploads",
+            "/app/uploads", 
+            os.path.join(os.path.dirname(__file__), "uploads")
+        ]
+        
+        upload_dir_info = {}
+        for i, dir_path in enumerate(upload_dirs):
+            if os.path.exists(dir_path):
+                try:
+                    files = os.listdir(dir_path)[:10]  # First 10 files
+                    upload_dir_info[f"dir_{i+1}"] = {
+                        "path": dir_path,
+                        "exists": True,
+                        "file_count": len(os.listdir(dir_path)),
+                        "sample_files": files
+                    }
+                except:
+                    upload_dir_info[f"dir_{i+1}"] = {
+                        "path": dir_path,
+                        "exists": True,
+                        "error": "Cannot read directory"
+                    }
+            else:
+                upload_dir_info[f"dir_{i+1}"] = {
+                    "path": dir_path,
+                    "exists": False
+                }
+        
+        return {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "document_id": document_id,
+            "document_name": document.get("original_name"),
+            "stored_file_path": file_path,
+            "path_checks": results,
+            "upload_directories": upload_dir_info
+        }
+        
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/check-document-debug-info/{document_id}")
 async def check_document_debug_info(document_id: str):
     """Check the debug info stored for a specific document"""
