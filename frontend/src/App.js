@@ -4954,6 +4954,7 @@ const SystemAdmin = () => {
     personal_openai_key: ''
   });
   const [chatAnalytics, setChatAnalytics] = useState(null);
+  const [apiUsage, setApiUsage] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [showBusinessUnitModal, setShowBusinessUnitModal] = useState(false);
