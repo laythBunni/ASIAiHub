@@ -1155,6 +1155,82 @@ const ChatInterface = () => {
       <div className="flex-1 flex flex-col">
         {currentSession ? (
           <>
+            {/* Session Header with Model Info */}
+            <div className="bg-white border-b px-6 py-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    Chat Session {currentSession.slice(-8)}
+                  </h2>
+                  <div className="flex items-center gap-4 mt-1">
+                    <span className="text-xs text-blue-600 font-medium">
+                      🤖 {systemSettings?.ai_model?.toUpperCase() || 'GPT-5'}
+                    </span>
+                    <span className="text-xs text-gray-600">
+                      {systemSettings?.use_personal_openai_key ? '🔑 Personal Key' : '⚡ Emergent Key'}
+                    </span>
+                    <span className="text-xs text-gray-600">
+                      📚 {documentsCount} docs
+                    </span>
+                  </div>
+                </div>
+                <Button 
+                  onClick={startNewSession}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  New
+                </Button>
+              </div>
+            </div>
+
+            {/* Enhanced Chat Input - Moved Higher */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b p-4">
+              <div className="max-w-5xl mx-auto">
+                <div className="bg-white rounded-xl shadow-md border-2 border-blue-200 p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-1">
+                      <Input
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        placeholder="💬 Ask about company policies, procedures, HR guidelines, IT requirements..."
+                        className="text-lg p-4 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                        onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                        disabled={loading}
+                      />
+                      <div className="flex justify-between items-center mt-2 text-sm">
+                        <span className="text-gray-600">
+                          💡 <strong>Try:</strong> "What is the travel policy?" • "How do I request time off?"
+                        </span>
+                        <span className="text-blue-600 font-medium">
+                          ⚡ Cache: {systemSettings?.response_cache_hours || 24}h
+                        </span>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={sendMessage} 
+                      disabled={loading || !inputMessage.trim()}
+                      className="bg-blue-600 hover:bg-blue-700 px-6 py-4 text-lg font-medium min-w-[100px]"
+                      size="lg"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          AI Thinking...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-5 h-5 mr-2" />
+                          Send
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.length === 0 ? (
