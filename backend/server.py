@@ -1674,6 +1674,52 @@ async def process_documents_now():
             "timestamp": str(datetime.now(timezone.utc))
         }
 
+@api_router.get("/debug/mongodb-direct-count")
+async def mongodb_direct_count():
+    """Directly count chunks in MongoDB collection"""
+    try:
+        mongo_url = os.environ.get('MONGO_URL')
+        db_name = os.environ.get('DB_NAME')
+        client = AsyncIOMotorClient(mongo_url)
+        database = client[db_name]
+        
+        # Count documents in chunks collection
+        chunk_count = await database.document_chunks.count_documents({})
+        
+        # Get sample chunks
+        sample_chunks = await database.document_chunks.find({}).limit(3).to_list(3)
+        
+        # Get unique document IDs
+        pipeline = [{"$group": {"_id": "$document_id"}}, {"$count": "unique_docs"}]
+        unique_result = await database.document_chunks.aggregate(pipeline).to_list(1)
+        unique_docs = unique_result[0]["unique_docs"] if unique_result else 0
+        
+        client.close()
+        
+        return {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "mongodb_url": mongo_url,
+            "database_name": db_name,
+            "collection_name": "document_chunks",
+            "total_chunks": chunk_count,
+            "unique_documents": unique_docs,
+            "sample_chunks": [
+                {
+                    "document_id": chunk.get("document_id"),
+                    "chunk_index": chunk.get("chunk_index"),
+                    "text_preview": chunk.get("text", "")[:100] + "..." if chunk.get("text") else "No text"
+                } for chunk in sample_chunks
+            ],
+            "status": "SUCCESS"
+        }
+        
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/clear-chunks")
 async def clear_document_chunks():
     """Clear all document chunks from MongoDB collection"""
