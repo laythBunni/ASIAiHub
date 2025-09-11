@@ -181,7 +181,7 @@ class RAGSystem:
                     embedding_response = await asyncio.wait_for(
                         openai_client.embeddings.create(
                             input=chunk_text,
-                            model="text-embedding-ada-002"
+                            model="text-embedding-3-small"
                         ),
                         timeout=30.0
                     )
