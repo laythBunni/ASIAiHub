@@ -267,7 +267,8 @@ class ChatMessage(BaseModel):
     role: str  # "user" or "assistant"
     content: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    attachments: List[str] = []  # Document IDs
+    attachments: List[str] = []
+    metadata: Dict[str, Any] = {}  # For storing additional info like response time  # Document IDs
 
 class ChatSession(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
