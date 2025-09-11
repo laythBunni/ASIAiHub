@@ -287,9 +287,20 @@ class RAGSystem:
             
             query_embedding = query_embedding_response.data[0].embedding
             
-            # Get all chunks from MongoDB
-            chunks_cursor = db[self.chunk_collection_name].find({})
-            chunks = await chunks_cursor.to_list(length=1000)
+            # Fetch all chunks from MongoDB with timeout
+            try:
+                chunks_cursor = db[self.chunk_collection_name].find({})
+                # Add timeout and limit to prevent hanging
+                chunks = await asyncio.wait_for(
+                    chunks_cursor.to_list(length=100),  # Reduced from 1000 to 100 for performance
+                    timeout=15.0  # 15 second timeout for MongoDB query
+                )
+            except asyncio.TimeoutError:
+                logger.error(f"MongoDB search timeout for query: {query}")
+                return []
+            except Exception as e:
+                logger.error(f"MongoDB search error: {e}")
+                return []
             
             if not chunks:
                 logger.warning("No chunks found in MongoDB")
