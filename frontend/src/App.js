@@ -5318,12 +5318,6 @@ const SystemAdmin = () => {
     }
   };
 
-  // Load system settings on component mount
-  useEffect(() => {
-    loadSystemSettings();
-    loadChatAnalytics();
-  }, []);
-
   const loadSystemSettings = async () => {
     try {
       const response = await apiCall('GET', '/admin/system-settings');
