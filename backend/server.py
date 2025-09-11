@@ -1655,22 +1655,26 @@ async def production_rag_status():
                     file_check_results = []
                     for doc in sample_docs[:3]:  # Check first 3 documents
                         file_path = doc.get("file_path", "")
-                        
+                        if not file_path:
+                            continue
+                            
                         # Check multiple possible locations
                         possible_paths = [
                             file_path,  # Original path
-                            os.path.join(os.path.dirname(__file__), file_path) if not os.path.isabs(file_path) else file_path,
-                            os.path.join("/app/backend", file_path) if not os.path.isabs(file_path) else file_path,
-                            os.path.join("/app", file_path) if not os.path.isabs(file_path) else file_path,
+                            os.path.join("/app/backend", file_path),
+                            os.path.join("/app", file_path),
                         ]
                         
                         file_found = False
                         working_path = None
                         for path in possible_paths:
-                            if os.path.exists(path) and os.path.isfile(path):
-                                file_found = True
-                                working_path = path
-                                break
+                            try:
+                                if os.path.exists(path) and os.path.isfile(path):
+                                    file_found = True
+                                    working_path = path
+                                    break
+                            except:
+                                continue
                         
                         file_check_results.append({
                             "document_id": doc["id"],
@@ -1678,7 +1682,7 @@ async def production_rag_status():
                             "stored_path": file_path,
                             "file_exists": file_found,
                             "working_path": working_path,
-                            "file_size": os.path.getsize(working_path) if working_path else None
+                            "file_size": os.path.getsize(working_path) if working_path and file_found else None
                         })
                     
                     result["mongodb_check"]["file_existence_check"] = file_check_results
@@ -1688,8 +1692,8 @@ async def production_rag_status():
                     upload_dir_info = []
                     
                     for dir_path in upload_dirs:
-                        if os.path.exists(dir_path):
-                            try:
+                        try:
+                            if os.path.exists(dir_path):
                                 files = os.listdir(dir_path)
                                 upload_dir_info.append({
                                     "path": dir_path,
@@ -1697,16 +1701,16 @@ async def production_rag_status():
                                     "file_count": len(files),
                                     "sample_files": files[:5]  # First 5 files
                                 })
-                            except:
+                            else:
                                 upload_dir_info.append({
                                     "path": dir_path,
-                                    "exists": True,
-                                    "error": "Cannot read directory"
+                                    "exists": False
                                 })
-                        else:
+                        except Exception as dir_error:
                             upload_dir_info.append({
                                 "path": dir_path,
-                                "exists": False
+                                "exists": "ERROR",
+                                "error": str(dir_error)
                             })
                     
                     result["mongodb_check"]["upload_directories"] = upload_dir_info
