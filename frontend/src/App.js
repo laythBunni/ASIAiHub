@@ -4949,7 +4949,9 @@ const SystemAdmin = () => {
     allow_user_registration: false,
     require_document_approval: true,
     enable_audit_logging: true,
-    response_cache_hours: 24
+    response_cache_hours: 24,
+    use_personal_openai_key: false,
+    personal_openai_key: ''
   });
   const [chatAnalytics, setChatAnalytics] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
