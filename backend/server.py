@@ -724,12 +724,20 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
             logger.info(f"Cache hit for query: {message[:50]}...")
             return cache_result
         
-        # Get system settings for AI model selection
+        # Get system settings for AI model selection and API key
         settings = await db.system_settings.find_one({"_id": "global"})
         ai_model = settings.get("ai_model", "gpt-5") if settings else "gpt-5"
+        use_personal_key = settings.get("use_personal_openai_key", False) if settings else False
+        personal_key = settings.get("personal_openai_key", "") if settings else ""
+        
+        # Determine which API key to use
+        api_key_to_use = personal_key if (use_personal_key and personal_key) else EMERGENT_LLM_KEY
+        key_source = "personal" if (use_personal_key and personal_key) else "emergent"
+        
+        logger.info(f"Using {key_source} API key for model {ai_model}")
         
         # Get RAG system instance
-        rag = get_rag_system(EMERGENT_LLM_KEY)
+        rag = get_rag_system(api_key_to_use)
         
         # Debug: Test search before RAG response
         logger.info(f"Testing RAG search for query: {message}")
@@ -739,7 +747,7 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
             logger.info(f"Top result similarity: {search_results[0].get('similarity_score', 'N/A')}")
         
         # Use the advanced RAG system for semantic search and response generation
-        result = await rag.generate_rag_response(message, session_id, ai_model=ai_model)
+        result = await rag.generate_rag_response(message, session_id, ai_model=ai_model, api_key=api_key_to_use, key_source=key_source)
         
         # Cache the result
         await cache_response(message, result)
