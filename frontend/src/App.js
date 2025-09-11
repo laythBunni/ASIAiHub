@@ -1217,25 +1217,47 @@ const ChatInterface = () => {
                   </span>
                 </div>
               </div>
-              <div className="flex space-x-3">
-                <Input
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Ask about leave policies, IT requirements, expense reporting..."
-                  className="flex-1"
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                />
-                <Button 
-                  onClick={sendMessage} 
-                  disabled={loading || !inputMessage.trim()}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </Button>
+              
+              {/* Enhanced Chat Input - Centered and Prominent */}
+              <div className="border-t bg-gray-50 p-6">
+                <div className="max-w-4xl mx-auto">
+                  <div className="bg-white rounded-lg shadow-sm border p-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-1">
+                        <Input
+                          value={inputMessage}
+                          onChange={(e) => setInputMessage(e.target.value)}
+                          placeholder="💬 Ask about company policies, procedures, HR guidelines, IT requirements..."
+                          className="text-lg p-4 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                          onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                          disabled={loading}
+                        />
+                        <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
+                          <span>💡 Try: "What is the travel policy?" or "How do I request time off?"</span>
+                          <span>{documentsCount} documents available</span>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={sendMessage} 
+                        disabled={loading || !inputMessage.trim()}
+                        className="bg-blue-600 hover:bg-blue-700 px-6 py-4 text-lg font-medium"
+                        size="lg"
+                      >
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-5 h-5 mr-2" />
+                            Send
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </>
