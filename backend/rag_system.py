@@ -64,6 +64,11 @@ class RAGSystem:
     def __init__(self, emergent_llm_key: str):
         self.emergent_llm_key = emergent_llm_key
         
+        # Initialize attributes that are needed regardless of initialization path
+        self.chunk_collection_name = "document_chunks"
+        self.documents = {}
+        self.embedding_cache = {}
+        
         if ML_DEPENDENCIES_AVAILABLE:
             # Development mode: Use local ML dependencies
             self._init_local_rag()
