@@ -4987,6 +4987,8 @@ const SystemAdmin = () => {
         await Promise.all([
           fetchBusinessUnits(),
           fetchSystemStats(),
+          loadSystemSettings(),
+          loadChatAnalytics(),
         ]);
         // Finally fetch permissions with the users data
         await fetchPermissions(usersData);
