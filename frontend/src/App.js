@@ -5667,8 +5667,6 @@ const SystemAdmin = () => {
                   Save System Settings
                 </Button>
               </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
