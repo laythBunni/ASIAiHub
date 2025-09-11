@@ -106,17 +106,65 @@ class ProductionRAGTester:
             print(f"❌ Failed - Error: {str(e)}")
             return False, {}
 
+    def authenticate_admin(self):
+        """Authenticate as admin user to access protected endpoints"""
+        print(f"\n🔐 AUTHENTICATING AS ADMIN...")
+        
+        # Use Layth's Phase 2 credentials
+        login_data = {
+            "email": "layth.bunni@adamsmithinternational.com",
+            "personal_code": "899443"
+        }
+        
+        success, response = self.run_test(
+            "Admin Authentication",
+            "POST",
+            "/auth/login",
+            200,
+            login_data
+        )
+        
+        if success:
+            # Try different token field names
+            token = response.get('access_token') or response.get('token')
+            if token:
+                self.auth_token = token
+                print(f"✅ ADMIN AUTHENTICATED SUCCESSFULLY!")
+                print(f"   👤 User: {response.get('user', {}).get('email')}")
+                print(f"   👑 Role: {response.get('user', {}).get('role')}")
+                print(f"   🔑 Token: {token[:20]}...")
+                return True, response
+            else:
+                print(f"❌ No token received in response")
+                return False, response
+        else:
+            print(f"❌ Admin authentication failed")
+            return False, {}
+
+    def get_auth_headers(self):
+        """Get authentication headers for API calls"""
+        if self.auth_token:
+            return {'Authorization': f'Bearer {self.auth_token}'}
+        return {}
+
     def test_1_verify_document_exists(self):
         """Test 1: Verify the target document exists in the system"""
         print(f"\n🎯 TEST 1: VERIFY TARGET DOCUMENT EXISTS")
         print("=" * 50)
+        
+        # First authenticate
+        auth_success, _ = self.authenticate_admin()
+        if not auth_success:
+            print(f"❌ Cannot authenticate - skipping document check")
+            return False, {}
         
         # Check if document exists in admin documents list
         success, response = self.run_test(
             f"Check Document {self.target_document_id} Exists",
             "GET",
             "/documents/admin",
-            200
+            200,
+            headers=self.get_auth_headers()
         )
         
         if success and isinstance(response, list):
@@ -137,6 +185,11 @@ class ProductionRAGTester:
             else:
                 print(f"❌ TARGET DOCUMENT NOT FOUND!")
                 print(f"   Found {len(response)} documents, but target ID not among them")
+                # Show first few documents for debugging
+                if len(response) > 0:
+                    print(f"   📋 Available documents:")
+                    for i, doc in enumerate(response[:3]):
+                        print(f"      {i+1}. {doc.get('original_name')} (ID: {doc.get('id')})")
                 return False, {}
         else:
             print(f"❌ Failed to retrieve documents list")
