@@ -854,11 +854,40 @@ class RAGSystem:
             )
             
             # Add timeout protection to LLM call
+            start_time = datetime.now()
             try:
                 response = await asyncio.wait_for(
                     chat.send_message(user_message), 
                     timeout=45.0  # 45 second timeout
                 )
+                processing_time = (datetime.now() - start_time).total_seconds()
+                
+                # Track API usage if using personal key
+                if key_source == "personal":
+                    try:
+                        # Estimate token usage (rough calculation)
+                        prompt_text = f"{context_text}\n{query}"
+                        prompt_tokens = len(prompt_text.split()) * 1.3  # Rough token estimate
+                        completion_tokens = len(str(response).split()) * 1.3
+                        
+                        # Estimate cost based on model (approximate rates per 1K tokens)
+                        cost_per_1k_tokens = {
+                            "gpt-5": 0.03,  # Estimated
+                            "gpt-5-mini": 0.015,
+                            "gpt-4o": 0.01,
+                            "gpt-4o-mini": 0.005
+                        }
+                        rate = cost_per_1k_tokens.get(ai_model, 0.01)
+                        estimated_cost = ((prompt_tokens + completion_tokens) / 1000) * rate
+                        
+                        # Track the usage (will import later in server.py)
+                        logger.info(f"Personal API usage: {ai_model}, {int(prompt_tokens + completion_tokens)} tokens, ${estimated_cost:.4f}")
+                        
+                    except Exception as usage_error:
+                        logger.error(f"Error calculating API usage: {usage_error}")
+                
+                logger.info(f"LLM response generated in {processing_time:.2f}s using {ai_model} ({key_source} key)")
+                
             except asyncio.TimeoutError:
                 logger.warning(f"LLM timeout for query: {query[:50]}... - using fallback response")
                 # Return fallback response with relevant documents found
