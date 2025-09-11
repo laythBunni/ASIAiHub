@@ -122,9 +122,9 @@ backend:
 
   - task: "MongoDB RAG System - Document Processing"
     implemented: true
-    working: true
+    working: false
     file: "/app/backend/rag_system.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "critical"
     needs_retesting: false
     status_history:
@@ -134,6 +134,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ MONGODB RAG DOCUMENT PROCESSING FULLY OPERATIONAL! Comprehensive testing completed successfully: ✅ DOCUMENT UPLOAD: POST /api/documents/upload working perfectly - uploaded test documents (ASI Travel Policy, IT Security Policy) with proper metadata and file processing. ✅ DOCUMENT APPROVAL: PUT /api/documents/{id}/approve working correctly - approval triggers automatic RAG processing pipeline. ✅ DOCUMENT CHUNKING: Documents properly chunked using _simple_text_splitter() - verified 28 chunks created from IT Security test document. ✅ MONGODB STORAGE: Chunks successfully stored in MongoDB 'document_chunks' collection with OpenAI embeddings - verified 486 total chunks from 17 documents. ✅ CHUNK COUNT DISPLAY: Document metadata correctly shows chunks_count and processing_status='completed'. ✅ OPENAI EMBEDDINGS: text-embedding-ada-002 model generating embeddings for each chunk successfully. Complete pipeline working: Upload → Approval → Processing → Chunking → Embedding Generation → MongoDB Storage → Chunk Persistence."
+      - working: false
+        agent: "testing"
+        comment: "🚨 CRITICAL PRODUCTION ISSUE IDENTIFIED - CHUNKS STORED IN WRONG DATABASE! Comprehensive investigation reveals the root cause of the production document processing issue: ✅ DOCUMENT PROCESSING WORKING: Documents are being processed successfully (15/15 documents show processing_status='completed', processed=true, correct chunks_count). ❌ CHUNKS IN WRONG DATABASE: All 561 chunks are stored in ChromaDB instead of MongoDB! MongoDB document_chunks collection has 0 chunks. ❌ PRODUCTION MODE DETECTION FAILING: RAG system not detecting production environment correctly - using ChromaDB (development mode) instead of MongoDB (production mode). ❌ CHAT SYSTEM BROKEN: Frontend chat looks for chunks in MongoDB but finds none, causing 'no information in knowledge base' responses. 🔍 EVIDENCE: ChromaDB search works perfectly (finds travel policy documents), but MongoDB is empty. 🎯 ROOT CAUSE: Environment detection logic in rag_system.py fails to detect production mode, defaulting to ChromaDB storage instead of MongoDB. URGENT FIX NEEDED: Force MongoDB mode or fix production detection logic."
 
   - task: "MongoDB RAG System - Chat Functionality"  
     implemented: true
