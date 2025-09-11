@@ -1784,6 +1784,90 @@ async def update_system_settings(settings: dict):
         logger.error(f"Error updating system settings: {e}")
         return {"error": str(e)}
 
+@api_router.get("/admin/api-usage")
+async def get_api_usage():
+    """Get API usage statistics"""
+    try:
+        # Get usage data from last 30 days
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        
+        usage_records = await db.api_usage.find({
+            "timestamp": {"$gte": thirty_days_ago}
+        }).sort("timestamp", -1).to_list(1000)
+        
+        # Calculate totals
+        total_requests = len(usage_records)
+        total_tokens = sum(record.get("total_tokens", 0) for record in usage_records)
+        total_cost = sum(record.get("cost_usd", 0) for record in usage_records)
+        
+        # Group by day for chart
+        daily_usage = {}
+        for record in usage_records:
+            date_key = record["timestamp"].strftime("%Y-%m-%d")
+            if date_key not in daily_usage:
+                daily_usage[date_key] = {"requests": 0, "tokens": 0, "cost": 0}
+            daily_usage[date_key]["requests"] += 1
+            daily_usage[date_key]["tokens"] += record.get("total_tokens", 0)
+            daily_usage[date_key]["cost"] += record.get("cost_usd", 0)
+        
+        # Group by model
+        model_usage = {}
+        for record in usage_records:
+            model = record.get("model", "unknown")
+            if model not in model_usage:
+                model_usage[model] = {"requests": 0, "tokens": 0, "cost": 0}
+            model_usage[model]["requests"] += 1
+            model_usage[model]["tokens"] += record.get("total_tokens", 0)
+            model_usage[model]["cost"] += record.get("cost_usd", 0)
+        
+        # Recent requests
+        recent_requests = usage_records[:10]
+        
+        return {
+            "summary": {
+                "total_requests_30d": total_requests,
+                "total_tokens_30d": total_tokens,
+                "total_cost_30d": round(total_cost, 4),
+                "avg_cost_per_request": round(total_cost / max(total_requests, 1), 4)
+            },
+            "daily_usage": daily_usage,
+            "model_usage": model_usage,
+            "recent_requests": [
+                {
+                    "timestamp": record["timestamp"].isoformat(),
+                    "model": record.get("model", "unknown"),
+                    "tokens": record.get("total_tokens", 0),
+                    "cost": record.get("cost_usd", 0),
+                    "query_preview": record.get("query", "")[:50] + "..."
+                } for record in recent_requests
+            ],
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting API usage: {e}")
+        return {"error": str(e)}
+
+async def track_api_usage(model: str, prompt_tokens: int, completion_tokens: int, cost_usd: float, query: str, source: str = "chat"):
+    """Track API usage for monitoring and billing"""
+    try:
+        usage_record = {
+            "timestamp": datetime.now(timezone.utc),
+            "model": model,
+            "source": source,  # "chat", "embeddings", "processing"
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
+            "cost_usd": cost_usd,
+            "query": query[:200]  # First 200 chars for debugging
+        }
+        
+        await db.api_usage.insert_one(usage_record)
+        logger.info(f"Tracked API usage: {model}, {prompt_tokens + completion_tokens} tokens, ${cost_usd}")
+        
+    except Exception as e:
+        logger.error(f"Error tracking API usage: {e}")
+
 @api_router.get("/admin/chat-analytics")
 async def get_chat_analytics():
     """Get chat analytics for admin dashboard"""
