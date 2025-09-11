@@ -212,10 +212,28 @@ class RAGSystem:
                     continue
             
             if chunk_documents:
-                # Store chunks in MongoDB
-                await db[self.chunk_collection_name].insert_many(chunk_documents)
-                logger.info(f"Successfully stored {len(chunk_documents)} chunks in MongoDB for document {document_id}")
-                return True
+                try:
+                    # Store chunks in MongoDB with explicit error handling
+                    insert_result = await db[self.chunk_collection_name].insert_many(chunk_documents)
+                    
+                    # Verify insertion was successful
+                    if insert_result.acknowledged and len(insert_result.inserted_ids) == len(chunk_documents):
+                        logger.info(f"Successfully stored {len(insert_result.inserted_ids)} chunks in MongoDB for document {document_id}")
+                        
+                        # Double-check by counting stored chunks
+                        stored_count = await db[self.chunk_collection_name].count_documents({"document_id": document_id})
+                        logger.info(f"Verification: {stored_count} chunks found in MongoDB for document {document_id}")
+                        
+                        return True
+                    else:
+                        logger.error(f"MongoDB insertion not acknowledged or partial failure for document {document_id}")
+                        logger.error(f"Expected: {len(chunk_documents)}, Inserted: {len(insert_result.inserted_ids) if insert_result.acknowledged else 0}")
+                        return False
+                        
+                except Exception as mongo_error:
+                    logger.error(f"MongoDB insertion failed for document {document_id}: {mongo_error}")
+                    logger.error(f"MongoDB error type: {type(mongo_error).__name__}")
+                    return False
             else:
                 logger.error(f"No chunks could be processed for document {document_id}")
                 return False
