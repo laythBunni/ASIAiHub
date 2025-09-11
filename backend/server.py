@@ -1661,6 +1661,40 @@ async def process_documents_now():
             "timestamp": str(datetime.now(timezone.utc))
         }
 
+@api_router.get("/debug/clear-chunks")
+async def clear_document_chunks():
+    """Clear all document chunks from MongoDB collection"""
+    try:
+        mongo_url = os.environ.get('MONGO_URL')
+        db_name = os.environ.get('DB_NAME')
+        client = AsyncIOMotorClient(mongo_url)
+        database = client[db_name]
+        
+        # Count chunks before deletion
+        chunk_count_before = await database.document_chunks.count_documents({})
+        
+        # Delete all chunks
+        delete_result = await database.document_chunks.delete_many({})
+        
+        # Verify deletion
+        chunk_count_after = await database.document_chunks.count_documents({})
+        
+        return {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "status": "SUCCESS",
+            "chunks_before": chunk_count_before,
+            "chunks_deleted": delete_result.deleted_count,
+            "chunks_after": chunk_count_after,
+            "message": f"Successfully cleared {delete_result.deleted_count} chunks from document_chunks collection"
+        }
+        
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/migrate-documents-to-mongodb")
 async def migrate_documents_to_mongodb():
     """Migrate existing approved documents to MongoDB RAG system"""
