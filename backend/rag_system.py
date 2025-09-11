@@ -844,7 +844,7 @@ class RAGSystem:
                 7. Focus on company-specific policies and procedures
                 
                 Document context will be provided with source attributions."""
-            ).with_model("openai", "gpt-5")
+            ).with_model("openai", ai_model)
             
             user_message = UserMessage(
                 text=f"Query: {query}\n\nRelevant Company Documentation:\n{context_text}"
