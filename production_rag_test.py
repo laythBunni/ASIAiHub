@@ -41,6 +41,7 @@ class ProductionRAGTester:
         self.tests_run = 0
         self.tests_passed = 0
         self.session_id = f"production-rag-test-{int(time.time())}"
+        self.auth_token = None
         
         print(f"🎯 PRODUCTION RAG TESTING")
         print(f"📍 Backend URL: {self.base_url}")
