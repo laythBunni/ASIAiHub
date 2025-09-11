@@ -105,6 +105,18 @@
 user_problem_statement: "PRODUCTION ENVIRONMENT CRITICAL ISSUES: User reported three critical failures on asiaihub.com production: 1) Login failure for layth.bunni@adamsmithinternational.com - shows processing but never completes, 2) Chat failure - James AI shows processing but responses never appear/save, 3) RAG system failure - James returns 'no information in knowledge base' despite 20 documents uploaded. All systems worked in preview/testing but failing in production."
 
 backend:
+  - task: "RAG System Event Loop Fix"
+    implemented: true
+    working: "unknown"
+    file: "/app/backend/rag_system.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "IMPLEMENTED EVENT LOOP FIX: Applied user's specific instructions to fix RuntimeError in production ASGI context. Key changes: 1) Added async process_and_store_document_async() method that handles full RAG processing pipeline, 2) Replaced sync wrapper with safe event loop detection using asyncio.get_running_loop(), 3) Updated server.py to call async method directly in rag_processing_with_timeout(), 4) Updated embedding model from text-embedding-ada-002 to text-embedding-3-small, 5) Eliminated all manual event loop creation (no new_event_loop, run_until_complete). Current test status: Document with existing file (Global Financial Manual 2024.pdf, 1.5MB) still shows processing_status='failed', chunks_count=0, last_processed_at=null suggesting processing never starts. Need comprehensive testing to verify fix works."
+
   - task: "MongoDB RAG System - Document Processing"
     implemented: true
     working: true
