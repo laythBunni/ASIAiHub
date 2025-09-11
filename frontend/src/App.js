@@ -1740,11 +1740,17 @@ const DocumentManagement = () => {
       console.log('🔥 APPROVAL RESPONSE:', response); // Debug logging
       
       // Show detailed response based on processing result
-      if (response.chunks_count > 0) {
+      if (response.processing_status === 'completed') {
         toast({
           title: "✅ Document Approved & Processed!",
-          description: `Document processed successfully with ${response.chunks_count} chunks and added to knowledge base`,
+          description: `Document processed successfully and added to knowledge base`,
           duration: 5000,
+        });
+      } else if (response.processing_status === 'failed') {
+        toast({
+          title: "⚠️ Document Approved but Processing Failed",
+          description: `Approved but failed to process for RAG system`,
+          duration: 8000,
         });
       } else if (response.processing_error) {
         toast({
