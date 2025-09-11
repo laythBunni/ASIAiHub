@@ -4921,6 +4921,15 @@ const SystemAdmin = () => {
   const [businessUnits, setBusinessUnits] = useState([]);
   const [permissions, setPermissions] = useState({});
   const [systemStats, setSystemStats] = useState({});
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [systemSettings, setSystemSettings] = useState({
+    ai_model: 'gpt-5',
+    allow_user_registration: false,
+    require_document_approval: true,
+    enable_audit_logging: true,
+    response_cache_hours: 24
+  });
+  const [chatAnalytics, setChatAnalytics] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [showBusinessUnitModal, setShowBusinessUnitModal] = useState(false);
