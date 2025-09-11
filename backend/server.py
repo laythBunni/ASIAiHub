@@ -1177,6 +1177,133 @@ async def check_file_exists(document_id: str):
             "timestamp": str(datetime.now(timezone.utc))
         }
 
+@api_router.get("/debug/test-openai-key")
+async def test_openai_key():
+    """Test OpenAI API key directly"""
+    try:
+        import openai
+        
+        # Get the OpenAI API key from environment
+        openai_api_key = os.environ.get('OPENAI_API_KEY')
+        
+        result = {
+            "timestamp": str(datetime.now(timezone.utc)),
+            "test_status": "STARTING",
+            "steps": []
+        }
+        
+        # Step 1: Check if key exists
+        if openai_api_key:
+            result["steps"].append({
+                "step": "KEY_CHECK",
+                "status": "SUCCESS",
+                "key_length": len(openai_api_key),
+                "key_prefix": openai_api_key[:20] + "..." if len(openai_api_key) > 20 else openai_api_key,
+                "key_suffix": "..." + openai_api_key[-10:] if len(openai_api_key) > 20 else openai_api_key
+            })
+        else:
+            result["steps"].append({
+                "step": "KEY_CHECK",
+                "status": "FAILED",
+                "error": "OPENAI_API_KEY not found in environment"
+            })
+            return result
+        
+        # Step 2: Test OpenAI client initialization
+        try:
+            openai_client = openai.AsyncOpenAI(api_key=openai_api_key)
+            result["steps"].append({
+                "step": "CLIENT_INIT",
+                "status": "SUCCESS"
+            })
+        except Exception as e:
+            result["steps"].append({
+                "step": "CLIENT_INIT", 
+                "status": "FAILED",
+                "error": str(e)
+            })
+            return result
+            
+        # Step 3: Test simple completion call
+        try:
+            completion_response = await asyncio.wait_for(
+                openai_client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": "Say 'OpenAI API test successful' and nothing else."}],
+                    max_tokens=10
+                ),
+                timeout=30.0
+            )
+            
+            response_text = completion_response.choices[0].message.content
+            
+            result["steps"].append({
+                "step": "COMPLETION_TEST",
+                "status": "SUCCESS", 
+                "response": response_text,
+                "model_used": completion_response.model,
+                "tokens_used": completion_response.usage.total_tokens if completion_response.usage else None
+            })
+            
+        except asyncio.TimeoutError:
+            result["steps"].append({
+                "step": "COMPLETION_TEST",
+                "status": "TIMEOUT",
+                "error": "OpenAI completion timed out after 30 seconds"
+            })
+        except Exception as e:
+            result["steps"].append({
+                "step": "COMPLETION_TEST",
+                "status": "FAILED",
+                "error": str(e)
+            })
+        
+        # Step 4: Test embedding generation (the one used in RAG)
+        try:
+            test_text = "This is a test for embedding generation in production."
+            
+            embedding_response = await asyncio.wait_for(
+                openai_client.embeddings.create(
+                    input=test_text,
+                    model="text-embedding-ada-002"
+                ),
+                timeout=30.0
+            )
+            
+            embedding = embedding_response.data[0].embedding
+            
+            result["steps"].append({
+                "step": "EMBEDDING_TEST",
+                "status": "SUCCESS",
+                "embedding_length": len(embedding),
+                "model_used": embedding_response.model,
+                "tokens_used": embedding_response.usage.total_tokens if embedding_response.usage else None,
+                "embedding_preview": embedding[:3] if len(embedding) > 3 else embedding
+            })
+            
+        except asyncio.TimeoutError:
+            result["steps"].append({
+                "step": "EMBEDDING_TEST", 
+                "status": "TIMEOUT",
+                "error": "OpenAI embedding timed out after 30 seconds"
+            })
+        except Exception as e:
+            result["steps"].append({
+                "step": "EMBEDDING_TEST",
+                "status": "FAILED",
+                "error": str(e)
+            })
+        
+        result["test_status"] = "COMPLETED"
+        return result
+        
+    except Exception as e:
+        return {
+            "test_status": "CRITICAL_ERROR",
+            "error": str(e),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+
 @api_router.get("/debug/check-document-debug-info/{document_id}")
 async def check_document_debug_info(document_id: str):
     """Check the debug info stored for a specific document"""
