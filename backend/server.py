@@ -24,11 +24,12 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 # Import emergent integrations
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
 
-# Import RAG system
-from rag_system import get_rag_system
-
+# Load environment variables FIRST
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Import RAG system AFTER environment is loaded
+from rag_system import get_rag_system
 
 # MongoDB connection with MongoDB's recommended Stable API configuration
 mongo_url = os.environ['MONGO_URL']
