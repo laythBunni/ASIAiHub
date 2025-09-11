@@ -1643,9 +1643,10 @@ async def production_rag_status():
             
             # ADD DOCUMENT LIST HERE - in working section
             try:
+                # Get ALL approved documents for testing with file paths
                 sample_docs = await database.documents.find(
                     {"approval_status": "approved"},
-                    {"id": 1, "original_name": 1, "_id": 0}
+                    {"id": 1, "original_name": 1, "file_path": 1, "_id": 0}
                 ).limit(5).to_list(5)
                 
                 # ADD FILE EXISTENCE CHECK HERE
