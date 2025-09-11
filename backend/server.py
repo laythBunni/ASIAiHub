@@ -2069,15 +2069,30 @@ async def approve_document(document_id: str, approved_by: str = "admin"):
         # Get updated document and process with RAG immediately
         document = await db.documents.find_one({"id": document_id})
         if document:
-            logger.info(f"🔥 Document found, starting RAG processing: {document.get('original_name')}")
-            logger.info(f"🔥 About to call process_document_with_rag...")
+            # Store debug trace directly in database
+            debug_trace = []
             
             try:
+                debug_trace.append("Document found, starting RAG processing")
+                debug_trace.append("About to call process_document_with_rag...")
+                
+                # Store initial debug trace
+                await db.documents.update_one(
+                    {"id": document_id},
+                    {"$set": {"debug_trace": debug_trace, "debug_updated_at": datetime.now(timezone.utc)}}
+                )
+                
                 # Process document synchronously so we can catch errors
-                logger.info(f"🔥 Calling process_document_with_rag for {document_id}")
+                debug_trace.append("Calling process_document_with_rag")
                 await process_document_with_rag(document)
                 
-                logger.info(f"🔥 process_document_with_rag completed, checking results")
+                debug_trace.append("process_document_with_rag completed")
+                
+                # Update debug trace after processing
+                await db.documents.update_one(
+                    {"id": document_id},
+                    {"$set": {"debug_trace": debug_trace}}
+                )
                 
                 logger.info(f"🔥 RAG processing completed, checking results")
                 
