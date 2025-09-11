@@ -347,6 +347,7 @@ class ChatResponse(BaseModel):
     suggested_ticket: Optional[Dict[str, Any]] = None
     documents_referenced: int = 0
     response_type: str = "structured"
+    response_time_seconds: Optional[float] = None
 
 class TicketCreate(BaseModel):
     subject: str
