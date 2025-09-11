@@ -1213,7 +1213,8 @@ const ChatInterface = () => {
                   <span>Ask anything about company policies and procedures</span>
                   <span className="flex items-center">
                     <Bot className="w-3 h-3 mr-1" />
-                    Powered by GPT-5
+                    Current Model: {systemSettings?.ai_model?.toUpperCase() || 'GPT-5'} 
+                    {systemSettings?.use_personal_openai_key ? ' (Personal Key)' : ' (Emergent Key)'}
                   </span>
                 </div>
               </div>
