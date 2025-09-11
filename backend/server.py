@@ -1648,6 +1648,71 @@ async def production_rag_status():
                     {"id": 1, "original_name": 1, "_id": 0}
                 ).limit(5).to_list(5)
                 
+                # ADD FILE EXISTENCE CHECK HERE
+                try:
+                    # Check file existence for sample documents
+                    file_check_results = []
+                    for doc in sample_docs[:3]:  # Check first 3 documents
+                        file_path = doc.get("file_path", "")
+                        
+                        # Check multiple possible locations
+                        possible_paths = [
+                            file_path,  # Original path
+                            os.path.join(os.path.dirname(__file__), file_path) if not os.path.isabs(file_path) else file_path,
+                            os.path.join("/app/backend", file_path) if not os.path.isabs(file_path) else file_path,
+                            os.path.join("/app", file_path) if not os.path.isabs(file_path) else file_path,
+                        ]
+                        
+                        file_found = False
+                        working_path = None
+                        for path in possible_paths:
+                            if os.path.exists(path) and os.path.isfile(path):
+                                file_found = True
+                                working_path = path
+                                break
+                        
+                        file_check_results.append({
+                            "document_id": doc["id"],
+                            "name": doc["original_name"],
+                            "stored_path": file_path,
+                            "file_exists": file_found,
+                            "working_path": working_path,
+                            "file_size": os.path.getsize(working_path) if working_path else None
+                        })
+                    
+                    result["mongodb_check"]["file_existence_check"] = file_check_results
+                    
+                    # Also check upload directories
+                    upload_dirs = ["/app/backend/uploads", "/app/uploads", "/tmp/uploads"]
+                    upload_dir_info = []
+                    
+                    for dir_path in upload_dirs:
+                        if os.path.exists(dir_path):
+                            try:
+                                files = os.listdir(dir_path)
+                                upload_dir_info.append({
+                                    "path": dir_path,
+                                    "exists": True,
+                                    "file_count": len(files),
+                                    "sample_files": files[:5]  # First 5 files
+                                })
+                            except:
+                                upload_dir_info.append({
+                                    "path": dir_path,
+                                    "exists": True,
+                                    "error": "Cannot read directory"
+                                })
+                        else:
+                            upload_dir_info.append({
+                                "path": dir_path,
+                                "exists": False
+                            })
+                    
+                    result["mongodb_check"]["upload_directories"] = upload_dir_info
+                    
+                except Exception as file_check_error:
+                    result["mongodb_check"]["file_check_error"] = str(file_check_error)
+                
                 result["mongodb_check"]["sample_documents_for_testing"] = [
                     {
                         "id": doc["id"],
