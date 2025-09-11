@@ -1066,6 +1066,12 @@ const ChatInterface = () => {
             }
             lastMessage.documents_referenced = documentsReferenced;
             lastMessage.response_type = 'completed';
+            // Add response timing metadata if available
+            if (responseTimeSeconds !== null) {
+              lastMessage.metadata = {
+                response_time_seconds: responseTimeSeconds
+              };
+            }
           }
         }
         return newMessages;
