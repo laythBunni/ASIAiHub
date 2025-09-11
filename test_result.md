@@ -309,7 +309,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "RAG System Event Loop Fix"
     - "MongoDB RAG System - Document Processing"
     - "Document Processing Pipeline Verification"
   stuck_tasks: []
