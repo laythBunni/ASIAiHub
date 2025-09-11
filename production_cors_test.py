@@ -16,7 +16,7 @@ def test_production_cors_issue():
     print(f"📅 Timestamp: {datetime.now().isoformat()}")
     
     # Production URLs
-    backend_url = "https://aihub-debug.preview.emergentagent.com"
+    backend_url = "https://doc-embeddings.preview.emergentagent.com"
     production_frontend = "https://asiaihub.com"
     
     print(f"\n🌐 Testing Configuration:")

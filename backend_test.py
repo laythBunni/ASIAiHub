@@ -3713,7 +3713,7 @@ class ASIOSAPITester:
         try:
             url = f"{self.api_url}/"
             response = requests.options(url, headers={
-                'Origin': 'https://aihub-debug.preview.emergentagent.com',
+                'Origin': 'https://doc-embeddings.preview.emergentagent.com',
                 'Access-Control-Request-Method': 'POST'
             })
             
@@ -5285,7 +5285,7 @@ if __name__ == "__main__":
             
             # Test with a simple GET request to check CORS headers
             response = requests.get(f"{self.api_url}/", headers={
-                'Origin': 'https://aihub-debug.preview.emergentagent.com',
+                'Origin': 'https://doc-embeddings.preview.emergentagent.com',
                 'Access-Control-Request-Method': 'POST',
                 'Access-Control-Request-Headers': 'Content-Type,Authorization'
             })
@@ -5310,7 +5310,7 @@ if __name__ == "__main__":
                 print(f"   ✅ CORS allows frontend origin")
             else:
                 print(f"   ⚠️  CORS may not allow frontend origin")
-                print(f"   Frontend URL: https://aihub-debug.preview.emergentagent.com")
+                print(f"   Frontend URL: https://doc-embeddings.preview.emergentagent.com")
                 print(f"   Allowed Origin: {allow_origin}")
         
         except Exception as e:

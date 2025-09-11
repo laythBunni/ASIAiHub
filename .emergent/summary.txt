@@ -1,23 +1,59 @@
 <analysis>
-The trajectory outlines the evolution of the ASI AiHub application from an MVP to a more production-ready state, primarily driven by a series of critical bug fixes and architectural refinements. Initial efforts focused on debugging RAG, authentication, and enhancing user management. A recurring challenge was persistent production deployment failures, which stemmed from diverse issues: environment variable mismatches, database connectivity (local vs. Atlas), frontend build problems, and proxy/load balancer misconfigurations, especially concerning CORS headers. The AI engineer iteratively diagnosed and fixed issues, moving from local auth remnants to a deeper understanding of deployment environment nuances. A critical pivot involved realizing ChromaDB's unreliability for RAG chunk persistence in production, leading to a significant architectural shift to MongoDB for chunk storage, aiming for a more robust and scalable solution.
+The trajectory details the arduous journey of stabilizing the ASI AiHub application, transitioning its RAG system from an unreliable ChromaDB to a persistent MongoDB solution. Initial local tests passed, but persistent production failures necessitated deep debugging. Key challenges included environment variable mismatches, frontend URL misconfigurations, and, critically,  event loop conflicts in FastAPI's ASGI environment. The AI engineer iteratively introduced diagnostics, fixed embedding API key usage (switching from  for embeddings to direct OpenAI with a user-provided key), and ultimately, with the user's help, resolved the core asynchronous execution issue that prevented RAG processing from ever starting in production. The process highlighted the complexities of debugging environment-specific behaviors and the importance of precise  handling.
 </analysis>
 
 <product_requirements>
-The ASI AiHub is an AI operations platform, initially designed with a BOOST Ticketing System, Finance SOP management, RAG Chat Function (James AI), rebranding, and admin features.
-User requirements evolved to include:
+The ASI AiHub is an AI operations platform, initially designed with a BOOST Ticketing System, Finance SOP management, RAG Chat Function (James AI), rebranding, and admin features. User requirements evolved to include:
 1.  **User Management**: Fix UI for role changes, enable user deletion, ensure Manage/Edit/Delete buttons are functional.
 2.  **Chat Ticket Creation**: Ensure the Create Ticket button correctly assigns tickets.
 3.  **Activity Log**: Implement audit trails for ticket status/priority changes.
 4.  **Enhanced Authentication**: Transition from universal  to a personal code system with admin-managed user access, restricting user management to .
-5.  **Knowledge Management**: Fix document upload functionality, ensure uploaded files appear in the approval list, and address slow document loading/deletion.
+5.  **Knowledge Management**: The primary focus of the work so far has been to fix document upload functionality, ensure uploaded files appear in the approval list, and address slow document loading/deletion. Critically, to ensure the RAG chat function returns detailed, structured answers based on the knowledge base (not just no information) and that uploaded documents are properly chunked and persistently stored using the new MongoDB system.
 6.  **Ticketing**: Display a full, searchable list of users for assignment and implement View All Tickets button functionality.
 7.  **General Stability**: Resolve persistent production deployment issues, including login screen display, backend 500 errors, CORS problems, and RAG system crashes/failures.
 </product_requirements>
 
 <key_technical_concepts>
--   **Backend**: FastAPI, MongoDB (Motor, Pydantic),  (OpenAI embeddings), .
--   **Frontend**: React, Shadcn/UI, Tailwind CSS, .
--   **AI/RAG**: Retrieval-Augmented Generation, Vector Embeddings, ChromaDB (initially, then deprecated for MongoDB).
+-   **Backend**: FastAPI, MongoDB (Motor, Pydantic),  (for LLM chat), usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit (for embeddings), .
+-   **Frontend**: React, Shadcn/UI, Tailwind CSS.
+-   **AI/RAG**: Retrieval-Augmented Generation, Vector Embeddings (OpenAI's  and ).
 -   **Infrastructure**: Kubernetes, Supervisor, MongoDB Atlas.
 -   **Authentication**: Custom token-based, admin-managed personal codes.
 </key_technical_concepts>
@@ -27,38 +63,76 @@ User requirements evolved to include:
 
 -   :
     -   **Importance**: Main FastAPI application handling all API routes, authentication, and database interactions.
-    -   **Changes**: Initially fixed MongoDB connection, authentication logic (personal codes, admin privileges), user management, and ticket APIs. Recent major changes included removing  and old simple authentication code, implementing robust CORS middleware with dynamic origin handling, adding graceful fallbacks and timeouts for RAG operations, file uploads, and database interactions to prevent crashes, and securing admin endpoints with authentication.
+    -   **Changes**: Fixed MongoDB connection, authentication logic, user management, and ticket APIs. Implemented robust CORS middleware. Added graceful fallbacks and timeouts for RAG operations, file uploads, and database interactions. Multiple debug endpoints were added and iteratively refined (, , , , , , , , , , ). The  function was modified to directly await RAG processing and to store detailed debug information in the document object upon failure.
 -   :
     -   **Importance**: Implements the RAG pipeline for document processing, chunking, embedding generation, and semantic search.
-    -   **Changes**: Initially focused on  and . Recent significant changes involved introducing a cloud mode for production (using OpenAI embeddings to avoid local ML model memory issues), and then a full pivot to storing document chunks directly in MongoDB (using a  collection) to ensure persistence across container restarts, replacing the problematic ChromaDB.
+    -   **Changes**: Initially focused on ChromaDB, then transitioned to MongoDB for chunk storage ( collection) to ensure persistence. Introduced cloud mode for production using OpenAI embeddings. The  function was extensively refactored. Initially, it used 's  for embeddings, which was found to lack embedding capabilities, leading to a direct integration with the usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit Python library using a dedicated . The most significant change involved a minimal surgical fix to address a  caused by  in an ASGI context. This involved introducing  and wrapping the  method to handle event loops safely using  or  based on the execution context. Updated embedding model from  to .
 -   :
     -   **Importance**: Main React component managing UI, routing, global state, and authentication.
-    -   **Changes**: Updated login forms for personal codes, conditional rendering for admin features, bug fixes for user management and ticketing. Recent changes include replacing the  toggle with permission-based access (), enhancing document status display (e.g., Processing..., X chunks), adding better error handling for document deletion, and optimizing initial dashboard loading to prevent long hangs by de-parallelizing heavy API calls.
+    -   **Changes**: Updated login forms for personal codes, conditional rendering for admin features. Enhanced document status display and error handling for document deletion. The  function was updated to display actual response data from the backend (success messages with chunk counts or specific error details) instead of generic toasts.
 -   :
     -   **Importance**: Backend environment variables.
-    -   **Changes**:  was removed.  and  were configured for local and then Atlas, and finally updated with user-provided MongoDB Atlas credentials.  was explicitly set to  to resolve cross-origin issues.
+    -   **Changes**:  was removed.  and  were configured for MongoDB Atlas.  was explicitly set.  is used for chat.  was added to facilitate direct OpenAI embedding calls.
 -   :
     -   **Importance**: Frontend environment variables.
-    -   **Changes**:  was updated to  for production.
+    -   **Changes**:  was configured for production to  initially, then was briefly misconfigured to a debug preview URL, and eventually corrected to .
 </code_architecture>
 
 <pending_tasks>
--   **Test MongoDB-based RAG System**: The most recent change, implementing MongoDB for RAG chunk storage, needs to be thoroughly tested in the local environment to ensure document processing, chunk persistence, and chat retrieval work as expected.
--   **Production Deployment**: After local verification, the updated code needs to be deployed to production.
--   **CORS Configuration (Infrastructure)**: While a code-level fix for CORS was applied, the user was advised to contact support to implement an infrastructure-level fix (e.g., same-domain proxy or edge header forwarding) for long-term stability.
+-   **Run Document Approval Test (Production)**: Execute the direct document approval endpoint () in the production environment to verify the event loop fix.
+-   **Migrate Existing Documents**: If the single document test passes, run the migration endpoint () to process all 26 existing approved documents.
+-   **Verify New Document Uploads and Chat**: After migration, test the end-to-end flow for new document uploads and ensure the RAG chat provides detailed responses based on the knowledge base.
+-   **CORS Configuration (Infrastructure)**: Implement an infrastructure-level fix for CORS issues, as advised previously.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary, the AI engineer had just completed a significant refactor of the RAG system to address persistent production failures related to document chunk storage. The core problem was that ChromaDB, when running in cloud mode in production, was storing document chunks in memory, causing them to disappear every time the container restarted, leading to an empty knowledge base and no information responses from James AI.
+Immediately before this summary request, the AI engineer, with critical input from the user, was debugging a persistent  that prevented RAG document processing in the production environment, despite working correctly in the preview. The root cause was identified as an  event loop conflict: the  module was attempting to create and run a new event loop () from within an already running ASGI (FastAPI/Uvicorn) request handler, which is not allowed and raises a . This caused  to fail silently, marking documents as failed without ever starting the actual processing (evidenced by ).
 
-The AI engineer implemented a new solution:
-1.  **MongoDB-based Chunk Storage**: Replaced ChromaDB with MongoDB for storing document chunks. A new  collection is used.
-2.  **OpenAI Embeddings for Production**: Continued to use OpenAI's  for generating embeddings in production, maintaining a lightweight approach that avoids memory exhaustion.
-3.  **Unified RAG System**: The  and  files were updated to integrate MongoDB for both storing and retrieving document chunks for RAG queries.
+The AI engineer has just implemented the minimal surgical fix to address this. This involved:
+1.  Refactoring the document processing logic into an  method, . This method performs the core RAG steps: text extraction (), chunking (), and asynchronous storage to MongoDB ().
+2.  Modifying the original  method to act as a synchronous wrapper. This wrapper now intelligently checks if an event loop is already running using . If a loop exists (production ASGI context), it safely schedules the  coroutine using  and awaits its result. If no loop is running (e.g., in a standalone script or test), it uses  to execute the async method directly.
+3.  The  and  methods were also updated to use  client with , reflecting the latest embedding model.
 
-This change aims to ensure that the knowledge base is persistent across production deployments and container restarts, resolving the critical issue of documents not being searchable after processing. The system now uses MongoDB as a reliable backend for RAG data.
+This fix is intended to allow the RAG processing to run correctly within the existing asynchronous context of the production FastAPI application, resolving the  and enabling successful document chunking and storage. The version has been updated to .
 </current_work>
 
 <optional_next_step>
-Test the newly implemented MongoDB-based RAG system locally to confirm full functionality.
+Test the event loop fix by running the direct document approval endpoint for an existing document in production.
 </optional_next_step>

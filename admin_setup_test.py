@@ -6,7 +6,7 @@ import json
 def test_admin_setup():
     """Test admin user setup and registration code creation"""
     
-    base_url = "https://aihub-debug.preview.emergentagent.com/api"
+    base_url = "https://doc-embeddings.preview.emergentagent.com/api"
     
     print("🔧 Testing Admin Setup for Beta Authentication")
     print("=" * 50)
