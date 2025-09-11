@@ -934,39 +934,36 @@ class RAGSystem:
                 client = AsyncIOMotorClient(mongo_url)
                 database = client[db_name]
                 
+                async def get_mongodb_stats():
+                    """Async function to get MongoDB stats"""
+                    total_chunks = await database[self.chunk_collection_name].count_documents({})
+                    
+                    # Get unique documents count
+                    pipeline = [{"$group": {"_id": "$document_id"}}, {"$count": "unique_docs"}]
+                    cursor = database[self.chunk_collection_name].aggregate(pipeline)
+                    unique_result = await cursor.to_list(1)
+                    unique_documents = unique_result[0]["unique_docs"] if unique_result else 0
+                    
+                    return {
+                        "total_chunks": total_chunks,
+                        "unique_documents": unique_documents,
+                        "mode": "mongodb_cloud",
+                        "collection_name": self.chunk_collection_name
+                    }
+                
                 # Run async operation in sync context
                 try:
-                    loop = asyncio.get_running_loop()
+                    # Check if we're in an event loop
+                    loop = asyncio.get_running_loop() 
+                    # We're in an event loop, need to use thread executor
                     import concurrent.futures
                     with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future = asyncio.run_coroutine_threadsafe(
-                            database[self.chunk_collection_name].count_documents({}),
-                            loop
-                        )
-                        total_chunks = future.result(timeout=10)
-                        
-                        # Get unique documents count
-                        pipeline = [{"$group": {"_id": "$document_id"}}, {"$count": "unique_docs"}]
-                        future = asyncio.run_coroutine_threadsafe(
-                            database[self.chunk_collection_name].aggregate(pipeline).to_list(1),
-                            loop
-                        )
-                        unique_result = future.result(timeout=10)
-                        unique_documents = unique_result[0]["unique_docs"] if unique_result else 0
+                        future = executor.submit(asyncio.run, get_mongodb_stats())
+                        return future.result(timeout=10)
                         
                 except RuntimeError:
-                    # No running loop
-                    total_chunks = asyncio.run(database[self.chunk_collection_name].count_documents({}))
-                    pipeline = [{"$group": {"_id": "$document_id"}}, {"$count": "unique_docs"}]
-                    unique_result = asyncio.run(database[self.chunk_collection_name].aggregate(pipeline).to_list(1))
-                    unique_documents = unique_result[0]["unique_docs"] if unique_result else 0
-                
-                return {
-                    "total_chunks": total_chunks,
-                    "unique_documents": unique_documents,
-                    "mode": "mongodb_cloud",
-                    "collection_name": self.chunk_collection_name
-                }
+                    # No running loop - safe to use asyncio.run
+                    return asyncio.run(get_mongodb_stats())
             else:
                 # ChromaDB mode - original logic
                 collection_info = self.collection.get(include=["metadatas"])
