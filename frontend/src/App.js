@@ -5916,11 +5916,131 @@ const SystemAdmin = () => {
             </Card>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex gap-2">
             <Button onClick={loadChatAnalytics} variant="outline">
               🔄 Refresh Analytics
             </Button>
+            <Button onClick={loadApiUsage} variant="outline">
+              📊 Refresh Usage
+            </Button>
           </div>
+        </TabsContent>
+
+        {/* API Usage Tab */}
+        <TabsContent value="usage" className="space-y-4">
+          {systemSettings.use_personal_openai_key ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">🚀 Total Requests (30d)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold">{apiUsage?.summary?.total_requests_30d || 0}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">🔤 Total Tokens (30d)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold">{apiUsage?.summary?.total_tokens_30d?.toLocaleString() || 0}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">💰 Total Cost (30d)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold">${apiUsage?.summary?.total_cost_30d || 0}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">⚡ Avg Cost/Request</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold">${apiUsage?.summary?.avg_cost_per_request || 0}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Model Usage Breakdown */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>🤖 Usage by Model</CardTitle>
+                    <p className="text-sm text-gray-500">Breakdown by AI model used</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {Object.entries(apiUsage?.model_usage || {}).map(([model, usage], index) => (
+                        <div key={index} className="border rounded-lg p-3">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-medium text-lg">{model.toUpperCase()}</span>
+                            <Badge variant="outline">{usage.requests} requests</Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                            <div>🔤 Tokens: {usage.tokens?.toLocaleString()}</div>
+                            <div>💰 Cost: ${usage.cost?.toFixed(4)}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Recent API Calls */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>🕒 Recent API Calls</CardTitle>
+                    <p className="text-sm text-gray-500">Latest requests to OpenAI</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {apiUsage?.recent_requests?.map((request, index) => (
+                        <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm font-medium">{request.model}</span>
+                            <span className="text-xs text-gray-500">{new Date(request.timestamp).toLocaleString()}</span>
+                          </div>
+                          <div className="text-xs text-gray-600 mb-2">{request.query_preview}</div>
+                          <div className="flex justify-between text-xs">
+                            <span>🔤 {request.tokens} tokens</span>
+                            <span className="font-medium">${request.cost}</span>
+                          </div>
+                        </div>
+                      )) || (
+                        <p className="text-gray-500 text-center py-4">No recent requests</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-600">
+                  💡 <strong>Tip:</strong> Monitor your usage to optimize costs. Consider using GPT-4o-mini for routine queries.
+                </p>
+                <Button onClick={loadApiUsage} variant="outline">
+                  🔄 Refresh Usage Data
+                </Button>
+              </div>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="text-center py-12">
+                <div className="text-6xl mb-4">🔑</div>
+                <h3 className="text-xl font-semibold mb-2">Personal OpenAI Key Required</h3>
+                <p className="text-gray-600 mb-4">
+                  Enable "Use Personal OpenAI API Key" in System Settings to track your API usage and costs.
+                </p>
+                <Button onClick={() => setActiveTab('system')} className="bg-blue-600 hover:bg-blue-700">
+                  Go to System Settings
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
