@@ -1373,8 +1373,18 @@ async def simple_document_list():
 
 @api_router.get("/debug/reset-failed-documents")
 async def reset_failed_documents():
-    """Reset failed documents back to pending for reprocessing"""
+    """Reset failed documents back to pending for reprocessing AND clear all chunks"""
     try:
+        # First, clear all document chunks
+        mongo_url = os.environ.get('MONGO_URL')
+        db_name = os.environ.get('DB_NAME')
+        client = AsyncIOMotorClient(mongo_url)
+        database = client[db_name]
+        
+        # Count and clear chunks
+        chunk_count_before = await database.document_chunks.count_documents({})
+        chunk_delete_result = await database.document_chunks.delete_many({})
+        
         # Find all documents that failed or have issues
         problem_docs = await db.documents.find({
             "approval_status": "approved",
@@ -1388,6 +1398,8 @@ async def reset_failed_documents():
         
         reset_results = {
             "timestamp": str(datetime.now(timezone.utc)),
+            "chunks_cleared": chunk_delete_result.deleted_count,
+            "chunks_before": chunk_count_before,
             "found_problem_docs": len(problem_docs),
             "reset_status": [],
             "reset_count": 0
