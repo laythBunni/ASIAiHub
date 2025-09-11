@@ -751,8 +751,8 @@ class RAGSystem:
             logger.error(f"Error removing document chunks: {e}")
             return False
     
-    async def generate_rag_response(self, query: str, session_id: str = None, ai_model: str = "gpt-5") -> Dict[str, Any]:
-        """Generate response using RAG with MongoDB or ChromaDB"""
+    async def generate_rag_response(self, query: str, session_id: str = None, ai_model: str = "gpt-5", api_key: str = None, key_source: str = "emergent") -> Dict[str, Any]:
+        """Generate response using RAG with MongoDB or ChromaDB and usage tracking"""
         try:
             # Search for relevant documents using unified search method
             search_results = await self.search_documents(query, limit=5)
