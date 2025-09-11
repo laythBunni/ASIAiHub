@@ -5705,7 +5705,7 @@ const SystemAdmin = () => {
 
                 <div>
                   <h3 className="text-lg font-medium mb-3">AI Settings</h3>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div>
                       <Label>Default AI Model</Label>
                       <Select 
@@ -5723,9 +5723,42 @@ const SystemAdmin = () => {
                         </SelectContent>
                       </Select>
                       <p className="text-sm text-gray-500 mt-1">
-                        Current: {systemSettings.ai_model?.toUpperCase() || 'GPT-5'} - Used for all chat responses
+                        Current: <span className="font-semibold text-blue-600">{systemSettings.ai_model?.toUpperCase() || 'GPT-5'}</span> - Used for all chat responses
                       </p>
                     </div>
+
+                    <div className="border rounded-lg p-4 bg-blue-50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <Label className="text-base font-medium">Use Personal OpenAI API Key</Label>
+                          <p className="text-sm text-gray-600">Direct access to OpenAI with your own billing</p>
+                        </div>
+                        <input 
+                          type="checkbox" 
+                          className="toggle" 
+                          checked={systemSettings.use_personal_openai_key}
+                          onChange={(e) => updateSystemSetting('use_personal_openai_key', e.target.checked)}
+                        />
+                      </div>
+                      
+                      {systemSettings.use_personal_openai_key && (
+                        <div>
+                          <Label>OpenAI API Key</Label>
+                          <Input
+                            type="password"
+                            value={systemSettings.personal_openai_key}
+                            onChange={(e) => updateSystemSetting('personal_openai_key', e.target.value)}
+                            placeholder="sk-..."
+                            className="mt-1"
+                          />
+                          <div className="mt-2 text-xs text-gray-600">
+                            <p>✅ <strong>Benefits:</strong> Latest models, faster responses, full control, direct billing</p>
+                            <p>🔗 Get your key at: <a href="https://platform.openai.com/api-keys" target="_blank" className="text-blue-600 underline">platform.openai.com/api-keys</a></p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <div>
                       <Label>Response Cache Duration</Label>
                       <Select 
