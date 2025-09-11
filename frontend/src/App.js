@@ -5861,10 +5861,10 @@ const SystemAdmin = () => {
 
         {/* Chat Analytics Tab */}
         <TabsContent value="analytics" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">📊 Total Sessions</CardTitle>
+                <CardTitle className="text-sm">💬 Total Sessions</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold">{chatAnalytics?.total_sessions || 0}</p>
@@ -5872,18 +5872,26 @@ const SystemAdmin = () => {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">🔥 Top Questions</CardTitle>
+                <CardTitle className="text-sm">📝 Total Messages</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">{chatAnalytics?.top_questions?.length || 0}</p>
+                <p className="text-2xl font-bold">{chatAnalytics?.total_messages || 0}</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">❓ No Answer Questions</CardTitle>
+                <CardTitle className="text-sm">🎫 Ticket Conversations</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">{chatAnalytics?.no_answer_questions?.length || 0}</p>
+                <p className="text-2xl font-bold">{chatAnalytics?.ticket_conversations?.length || 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">⚡ Avg Response Time</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{chatAnalytics?.avg_response_time_seconds || 0}s</p>
               </CardContent>
             </Card>
           </div>
