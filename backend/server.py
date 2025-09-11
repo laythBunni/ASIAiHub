@@ -716,8 +716,18 @@ async def categorize_ticket_with_ai(subject: str, description: str) -> Dict[str,
         }
 
 async def process_rag_query(message: str, document_ids: List[str], session_id: str) -> Dict[str, Any]:
-    """Process RAG query using advanced semantic search"""
+    """Process RAG query using advanced semantic search with caching and model selection"""
     try:
+        # Check cache first
+        cache_result = await check_response_cache(message)
+        if cache_result:
+            logger.info(f"Cache hit for query: {message[:50]}...")
+            return cache_result
+        
+        # Get system settings for AI model selection
+        settings = await db.system_settings.find_one({"_id": "global"})
+        ai_model = settings.get("ai_model", "gpt-5") if settings else "gpt-5"
+        
         # Get RAG system instance
         rag = get_rag_system(EMERGENT_LLM_KEY)
         
@@ -729,7 +739,10 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
             logger.info(f"Top result similarity: {search_results[0].get('similarity_score', 'N/A')}")
         
         # Use the advanced RAG system for semantic search and response generation
-        result = await rag.generate_rag_response(message, session_id)
+        result = await rag.generate_rag_response(message, session_id, ai_model=ai_model)
+        
+        # Cache the result
+        await cache_response(message, result)
         
         return result
         
@@ -751,6 +764,50 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
             "documents_referenced": 0,
             "response_type": "error"
         }
+
+async def check_response_cache(message: str) -> Dict[str, Any]:
+    """Check if we have a cached response for this message"""
+    try:
+        import hashlib
+        message_hash = hashlib.md5(message.lower().strip().encode()).hexdigest()
+        
+        # Look for cached response within 24 hours
+        cache_cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+        cached = await db.response_cache.find_one({
+            "message_hash": message_hash,
+            "created_at": {"$gte": cache_cutoff}
+        })
+        
+        if cached:
+            return cached["response"]
+        return None
+        
+    except Exception as e:
+        logger.error(f"Error checking response cache: {e}")
+        return None
+
+async def cache_response(message: str, response: Dict[str, Any]):
+    """Cache a response for future use"""
+    try:
+        import hashlib
+        message_hash = hashlib.md5(message.lower().strip().encode()).hexdigest()
+        
+        cache_entry = {
+            "message_hash": message_hash,
+            "original_message": message,
+            "response": response,
+            "created_at": datetime.now(timezone.utc)
+        }
+        
+        # Upsert (update or insert)
+        await db.response_cache.update_one(
+            {"message_hash": message_hash},
+            {"$set": cache_entry},
+            upsert=True
+        )
+        
+    except Exception as e:
+        logger.error(f"Error caching response: {e}")
 
 @api_router.get("/debug/test-embedding-generation") 
 async def test_embedding_generation():
