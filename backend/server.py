@@ -1476,7 +1476,7 @@ async def test_deployment():
     return {
         "timestamp": str(datetime.now(timezone.utc)),
         "message": "🔥 LATEST CODE IS DEPLOYED - SIMPLE WORKING VERSION",
-        "version": "debug_logging_v1", 
+        "version": "event_loop_fix_v1", 
         "approval_endpoint_available": True,
         "enhanced_debug_info": False,
         "using_original_process_and_store_document": True,
