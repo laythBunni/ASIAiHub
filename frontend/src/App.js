@@ -1994,13 +1994,13 @@ const DocumentManagement = () => {
                               {(doc.file_size / 1024).toFixed(1)} KB
                             </Badge>
                             {getStatusBadge(doc)}
-                            {doc.processed && doc.chunks_count > 0 && (
-                              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                                {doc.chunks_count} chunks
+                            {doc.processed && doc.processing_status === 'completed' && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-700">
+                                ✅ Processed
                               </Badge>
                             )}
-                            {doc.processed && (!doc.chunks_count || doc.chunks_count === 0) && (
-                              <Badge variant="outline" className="bg-gray-100 text-gray-600">
+                            {doc.processed && doc.processing_status === 'pending' && (
+                              <Badge variant="outline" className="bg-blue-100 text-blue-600">
                                 Processing...
                               </Badge>
                             )}
