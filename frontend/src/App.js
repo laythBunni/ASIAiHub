@@ -1294,62 +1294,6 @@ const ChatInterface = () => {
                 ))
               )}
             </div>
-
-            {/* Input Area */}
-            <div className="border-t border-gray-200 p-6">
-              <div className="mb-3">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                  <span>Ask anything about company policies and procedures</span>
-                  <span className="flex items-center">
-                    <Bot className="w-3 h-3 mr-1" />
-                    Current Model: {systemSettings?.ai_model?.toUpperCase() || 'GPT-5'} 
-                    {systemSettings?.use_personal_openai_key ? ' (Personal Key)' : ' (Emergent Key)'}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Enhanced Chat Input - Centered and Prominent */}
-              <div className="border-t bg-gray-50 p-6">
-                <div className="max-w-4xl mx-auto">
-                  <div className="bg-white rounded-lg shadow-sm border p-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-1">
-                        <Input
-                          value={inputMessage}
-                          onChange={(e) => setInputMessage(e.target.value)}
-                          placeholder="💬 Ask about company policies, procedures, HR guidelines, IT requirements..."
-                          className="text-lg p-4 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                          onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                          disabled={loading}
-                        />
-                        <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
-                          <span>💡 Try: "What is the travel policy?" or "How do I request time off?"</span>
-                          <span>{documentsCount} documents available</span>
-                        </div>
-                      </div>
-                      <Button 
-                        onClick={sendMessage} 
-                        disabled={loading || !inputMessage.trim()}
-                        className="bg-blue-600 hover:bg-blue-700 px-6 py-4 text-lg font-medium"
-                        size="lg"
-                      >
-                        {loading ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="w-5 h-5 mr-2" />
-                            Send
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-500">
