@@ -1,0 +1,23 @@
+
+        CHUNKS INVESTIGATION TEST DOCUMENT
+        
+        This document is created to investigate why chunks_count is 0.
+        
+        INVESTIGATION FINDINGS:
+        - MongoDB mode is working (mongodb_cloud)
+        - OpenAI API key is working
+        - Documents are being processed successfully
+        - But chunks_count remains 0
+        
+        POSSIBLE CAUSES:
+        1. Chunks are being created but not counted properly
+        2. Chunks are being stored but document metadata not updated
+        3. Processing completes but chunk creation fails silently
+        4. Environment loading order issue (fixed but may have residual effects)
+        
+        This document should be chunked into multiple pieces if the system is working.
+        Each chunk should have OpenAI embeddings and be stored in MongoDB.
+        The document metadata should show chunks_count > 0.
+        
+        TEST KEYWORDS: investigation, chunks, mongodb, embeddings, processing
+        
