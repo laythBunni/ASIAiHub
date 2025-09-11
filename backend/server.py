@@ -1965,10 +1965,19 @@ async def approve_document(document_id: str, approved_by: str = "admin"):
                 else:
                     processing_status = updated_doc.get("processing_status") if updated_doc else "unknown"
                     logger.error(f"🔥 FAILURE: Processing did not complete. Status: {processing_status}")
+                    # Return detailed error information
                     return {
                         "message": "Document approved but processing failed",
                         "processing_status": processing_status,
-                        "error": "RAG processing did not complete successfully"
+                        "error": "RAG processing did not complete successfully",
+                        "debug_details": {
+                            "document_found_after_processing": bool(updated_doc),
+                            "processed_flag": updated_doc.get("processed") if updated_doc else None,
+                            "processing_status": updated_doc.get("processing_status") if updated_doc else None,
+                            "chunks_count": updated_doc.get("chunks_count") if updated_doc else None,
+                            "file_path": updated_doc.get("file_path") if updated_doc else None,
+                            "last_processed_at": str(updated_doc.get("last_processed_at")) if updated_doc and updated_doc.get("last_processed_at") else None
+                        }
                     }
             except Exception as processing_error:
                 logger.error(f"🔥 EXCEPTION during RAG processing for document {document_id}: {processing_error}")
