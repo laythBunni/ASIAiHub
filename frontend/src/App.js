@@ -5750,6 +5750,104 @@ const SystemAdmin = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Chat Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">📊 Total Sessions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{chatAnalytics?.total_sessions || 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">🔥 Top Questions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{chatAnalytics?.top_questions?.length || 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">❓ No Answer Questions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{chatAnalytics?.no_answer_questions?.length || 0}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Most Asked Questions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>🔥 Most Asked Questions</CardTitle>
+                <p className="text-sm text-gray-500">Questions users ask most frequently</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {chatAnalytics?.top_questions?.slice(0, 10).map((item, index) => (
+                    <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <span className="text-sm flex-1 mr-2">{item.question}</span>
+                      <Badge variant="secondary">{item.count}x</Badge>
+                    </div>
+                  )) || (
+                    <p className="text-gray-500 text-center py-4">No data available</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Knowledge Gaps */}
+            <Card>
+              <CardHeader>
+                <CardTitle>❓ Knowledge Gaps</CardTitle>
+                <p className="text-sm text-gray-500">Questions that couldn't be answered</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {chatAnalytics?.no_answer_questions?.slice(0, 10).map((question, index) => (
+                    <div key={index} className="p-2 bg-red-50 border-l-4 border-red-200 rounded">
+                      <span className="text-sm text-red-800">{question}</span>
+                    </div>
+                  )) || (
+                    <p className="text-gray-500 text-center py-4">No knowledge gaps found</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* User Activity */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>👥 User Activity</CardTitle>
+                <p className="text-sm text-gray-500">Most active users by question count</p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(chatAnalytics?.user_activity || {}).map(([user, count], index) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-blue-50 rounded">
+                      <span className="font-medium">{user}</span>
+                      <Badge variant="outline">{count} questions</Badge>
+                    </div>
+                  ))}
+                </div>
+                {(!chatAnalytics?.user_activity || Object.keys(chatAnalytics.user_activity).length === 0) && (
+                  <p className="text-gray-500 text-center py-4">No user activity data</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={loadChatAnalytics} variant="outline">
+              🔄 Refresh Analytics
+            </Button>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Permission Management Modal */}
