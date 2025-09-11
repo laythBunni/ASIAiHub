@@ -1674,6 +1674,104 @@ async def process_documents_now():
             "timestamp": str(datetime.now(timezone.utc))
         }
 
+# System Settings Management
+@api_router.get("/admin/system-settings")
+async def get_system_settings():
+    """Get current system settings"""
+    try:
+        settings = await db.system_settings.find_one({"_id": "global"})
+        if not settings:
+            # Default settings
+            default_settings = {
+                "_id": "global",
+                "ai_model": "gpt-5",
+                "allow_user_registration": False,
+                "require_document_approval": True,
+                "enable_audit_logging": True,
+                "response_cache_hours": 24,
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }
+            await db.system_settings.insert_one(default_settings)
+            settings = default_settings
+            
+        return {
+            "ai_model": settings.get("ai_model", "gpt-5"),
+            "allow_user_registration": settings.get("allow_user_registration", False),
+            "require_document_approval": settings.get("require_document_approval", True),
+            "enable_audit_logging": settings.get("enable_audit_logging", True),
+            "response_cache_hours": settings.get("response_cache_hours", 24)
+        }
+    except Exception as e:
+        logger.error(f"Error getting system settings: {e}")
+        return {"error": str(e)}
+
+@api_router.put("/admin/system-settings")
+async def update_system_settings(settings: dict):
+    """Update system settings"""
+    try:
+        settings["updated_at"] = datetime.now(timezone.utc)
+        
+        await db.system_settings.update_one(
+            {"_id": "global"},
+            {"$set": settings},
+            upsert=True
+        )
+        
+        return {"message": "System settings updated successfully"}
+    except Exception as e:
+        logger.error(f"Error updating system settings: {e}")
+        return {"error": str(e)}
+
+@api_router.get("/admin/chat-analytics")
+async def get_chat_analytics():
+    """Get chat analytics for admin dashboard"""
+    try:
+        # Get all chat sessions
+        chat_sessions = await db.chat_sessions.find({}).to_list(100)
+        
+        # Analyze most asked questions
+        question_counts = {}
+        no_answer_questions = []
+        user_activity = {}
+        
+        for session in chat_sessions:
+            messages = session.get("messages", [])
+            user_id = session.get("user_id", "anonymous")
+            
+            if user_id not in user_activity:
+                user_activity[user_id] = 0
+            user_activity[user_id] += len([m for m in messages if m.get("role") == "user"])
+            
+            for message in messages:
+                if message.get("role") == "user":
+                    question = message.get("content", "").lower().strip()
+                    if len(question) > 10:  # Filter out very short questions
+                        question_counts[question] = question_counts.get(question, 0) + 1
+                        
+                elif message.get("role") == "assistant":
+                    response = message.get("content", {})
+                    if isinstance(response, dict) and response.get("response_type") == "no_documents_found":
+                        # Find the previous user question
+                        prev_msg = messages[messages.index(message) - 1] if messages.index(message) > 0 else None
+                        if prev_msg and prev_msg.get("role") == "user":
+                            no_answer_questions.append(prev_msg.get("content", ""))
+        
+        # Sort and get top questions
+        top_questions = sorted(question_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        return {
+            "total_sessions": len(chat_sessions),
+            "top_questions": [{"question": q, "count": c} for q, c in top_questions],
+            "no_answer_questions": no_answer_questions[:10],
+            "user_activity": dict(sorted(user_activity.items(), key=lambda x: x[1], reverse=True)[:10]),
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting chat analytics: {e}")
+        return {"error": str(e)}
+
 @api_router.get("/debug/mongodb-direct-count")
 async def mongodb_direct_count():
     """Directly count chunks in MongoDB collection"""
