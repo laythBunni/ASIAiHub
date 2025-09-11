@@ -488,7 +488,8 @@ class ProductionRAGTester:
                 "Check Test Document Status",
                 "GET",
                 "/documents/admin",
-                200
+                200,
+                headers=self.get_auth_headers()
             )
             
             if doc_check_success and isinstance(doc_check_response, list):
