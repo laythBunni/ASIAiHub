@@ -841,10 +841,22 @@ const ChatInterface = () => {
   useEffect(() => {
     fetchSessions();
     fetchDocumentsCount();
+    loadChatSystemSettings();
     
     // Check for shared conversation link
     checkForSharedSession();
   }, []);
+
+  const loadChatSystemSettings = async () => {
+    try {
+      const response = await apiCall('GET', '/admin/system-settings');
+      if (response && !response.error) {
+        setSystemSettings(response);
+      }
+    } catch (error) {
+      console.error('Error loading system settings:', error);
+    }
+  };
 
   const checkForSharedSession = () => {
     const urlParams = new URLSearchParams(window.location.search);
