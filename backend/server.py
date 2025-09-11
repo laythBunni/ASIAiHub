@@ -2812,24 +2812,32 @@ async def send_chat_message(request: ChatRequest):
         raise HTTPException(status_code=500, detail="Failed to process chat message")
 
 async def send_chat_message_non_streaming(request: ChatRequest):
-    """Original non-streaming chat message handler"""
+    """Original non-streaming chat message handler with response timing"""
+    start_time = datetime.now(timezone.utc)
+    
     # Process RAG query
     result = await process_rag_query(request.message, request.document_ids, request.session_id)
+    
+    end_time = datetime.now(timezone.utc)
+    response_time = (end_time - start_time).total_seconds()
     
     # Save user message
     user_message = ChatMessage(
         session_id=request.session_id,
         role="user",
         content=request.message,
-        attachments=request.document_ids
+        attachments=request.document_ids,
+        timestamp=start_time
     )
     await db.chat_messages.insert_one(user_message.dict())
     
-    # Save AI response (convert structured response to JSON string for storage)
+    # Save AI response with timing info
     ai_message = ChatMessage(
         session_id=request.session_id,
         role="assistant",
-        content=json.dumps(result["response"]) if isinstance(result["response"], dict) else result["response"]
+        content=json.dumps(result["response"]) if isinstance(result["response"], dict) else result["response"],
+        timestamp=end_time,
+        metadata={"response_time_seconds": response_time}
     )
     await db.chat_messages.insert_one(ai_message.dict())
     
@@ -2839,24 +2847,30 @@ async def send_chat_message_non_streaming(request: ChatRequest):
         session = ChatSession(
             id=request.session_id,
             title=request.message[:50] + "..." if len(request.message) > 50 else request.message,
-            messages_count=2
+            messages_count=2,
+            created_at=start_time,
+            updated_at=end_time
         )
         await db.chat_sessions.insert_one(session.dict())
     else:
         await db.chat_sessions.update_one(
             {"id": request.session_id},
             {
-                "$set": {"updated_at": datetime.now(timezone.utc)},
+                "$set": {"updated_at": end_time},
                 "$inc": {"messages_count": 2}
             }
         )
+    
+    # Add timing info to response
+    result["response_time_seconds"] = response_time
     
     return ChatResponse(
         session_id=request.session_id,
         response=result["response"],
         suggested_ticket=result["suggested_ticket"],
         documents_referenced=result.get("documents_referenced", 0),
-        response_type=result.get("response_type", "structured")
+        response_type=result.get("response_type", "structured"),
+        response_time_seconds=response_time
     )
 
 async def generate_streaming_response(request: ChatRequest):
