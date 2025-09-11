@@ -5316,7 +5316,64 @@ const SystemAdmin = () => {
     }
   };
 
+  // Load system settings on component mount
+  useEffect(() => {
+    loadSystemSettings();
+    loadChatAnalytics();
+  }, []);
 
+  const loadSystemSettings = async () => {
+    try {
+      const response = await apiCall('GET', '/admin/system-settings');
+      if (response && !response.error) {
+        setSystemSettings(response);
+      }
+    } catch (error) {
+      console.error('Error loading system settings:', error);
+    }
+  };
+
+  const loadChatAnalytics = async () => {
+    try {
+      const response = await apiCall('GET', '/admin/chat-analytics');
+      if (response && !response.error) {
+        setChatAnalytics(response);
+      }
+    } catch (error) {
+      console.error('Error loading chat analytics:', error);
+    }
+  };
+
+  const updateSystemSetting = (key, value) => {
+    setSystemSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const saveSystemSettings = async () => {
+    try {
+      const response = await apiCall('PUT', '/admin/system-settings', systemSettings);
+      if (response && !response.error) {
+        toast({
+          title: "✅ Settings Saved",
+          description: "System settings updated successfully",
+          duration: 3000,
+        });
+      } else {
+        throw new Error(response?.error || 'Failed to save settings');
+      }
+    } catch (error) {
+      console.error('Error saving system settings:', error);
+      toast({
+        title: "❌ Error",
+        description: "Failed to save system settings",
+        duration: 5000,
+      });
+    }
+  };
+
+  // Load system stats on component mount
 
   return (
     <div className="space-y-6">
