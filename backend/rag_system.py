@@ -249,7 +249,7 @@ class RAGSystem:
             query_embedding_response = await asyncio.wait_for(
                 openai_client.embeddings.create(
                     input=query,
-                    model="text-embedding-ada-002"
+                    model="text-embedding-3-small"
                 ),
                 timeout=30.0
             )
