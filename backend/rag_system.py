@@ -346,44 +346,58 @@ class RAGSystem:
         return chunks
 
     def process_and_store_document(self, document_data: Dict[str, Any]) -> bool:
-        """Process document and store chunks - MongoDB or ChromaDB based on mode"""
+        """Process and store document with event loop detection"""
         try:
-            # Extract text from file
             text = self.extract_text_from_file(document_data['file_path'], document_data['mime_type'])
-            if not text:
+            if not text or not text.strip():
+                logger.error(f"No text extracted from document {document_data.get('id', 'unknown')}")
                 return False
-            
-            # Split into chunks
+
+            # Use appropriate text splitter based on mode
             if self.rag_mode == "mongodb_cloud":
                 chunks = self._simple_text_splitter(text)
-            elif hasattr(self, 'text_splitter'):
-                chunks = self.text_splitter.split_text(text)
-            else:
-                chunks = self._simple_text_splitter(text)
-            
-            if not chunks:
-                logger.warning(f"No chunks created for document {document_data['id']}")
-                return False
-            
-            # Store chunks based on mode
-            if self.rag_mode == "mongodb_cloud":
-                # Use MongoDB storage (async)
-                import asyncio
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    success = loop.run_until_complete(
-                        self._store_chunks_mongodb(document_data['id'], chunks, document_data)
-                    )
-                    return success
-                finally:
-                    loop.close()
-            else:
-                # Use ChromaDB storage (existing method)
-                return self._store_chunks_chromadb(document_data, chunks)
                 
+                # EVENT LOOP DETECTION AND SAFE HANDLING
+                try:
+                    # Check if we're already in a running event loop (ASGI context)
+                    loop = asyncio.get_running_loop()
+                    logger.info(f"Detected running event loop, using thread-safe approach for document {document_data.get('id')}")
+                    
+                    # Schedule the async work in the existing loop from a thread
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = asyncio.run_coroutine_threadsafe(
+                            self._store_chunks_mongodb(document_data['id'], chunks, document_data),
+                            loop
+                        )
+                        return future.result(timeout=55)
+                        
+                except RuntimeError:
+                    # No running loop - safe to create new one
+                    logger.info(f"No running event loop detected, creating new loop for document {document_data.get('id')}")
+                    return asyncio.run(self._store_chunks_mongodb(document_data['id'], chunks, document_data))
+                    
+            elif hasattr(self, "text_splitter"):
+                # ChromaDB path (sync)
+                chunks = self.text_splitter.split_text(text)
+                return self._store_chunks_chromadb(document_data, chunks)
+            else:
+                # Fallback to simple splitter + MongoDB
+                chunks = self._simple_text_splitter(text)
+                try:
+                    loop = asyncio.get_running_loop()
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = asyncio.run_coroutine_threadsafe(
+                            self._store_chunks_mongodb(document_data['id'], chunks, document_data),
+                            loop
+                        )
+                        return future.result(timeout=55)
+                except RuntimeError:
+                    return asyncio.run(self._store_chunks_mongodb(document_data['id'], chunks, document_data))
+                    
         except Exception as e:
-            logger.error(f"Error processing document {document_data.get('id', 'unknown')}: {e}")
+            logger.error(f"Error processing document {document_data.get('id','unknown')}: {e}")
             return False
 
     def _store_chunks_chromadb(self, document_data: Dict, chunks: List[str]) -> bool:
