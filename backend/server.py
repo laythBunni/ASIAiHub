@@ -2070,13 +2070,14 @@ async def approve_document(document_id: str, approved_by: str = "admin"):
         document = await db.documents.find_one({"id": document_id})
         if document:
             logger.info(f"🔥 Document found, starting RAG processing: {document.get('original_name')}")
-            logger.info(f"🔥 Document file_path: {document.get('file_path')}")
-            logger.info(f"🔥 Document mime_type: {document.get('mime_type')}")
+            logger.info(f"🔥 About to call process_document_with_rag...")
             
             try:
                 # Process document synchronously so we can catch errors
                 logger.info(f"🔥 Calling process_document_with_rag for {document_id}")
                 await process_document_with_rag(document)
+                
+                logger.info(f"🔥 process_document_with_rag completed, checking results")
                 
                 logger.info(f"🔥 RAG processing completed, checking results")
                 
