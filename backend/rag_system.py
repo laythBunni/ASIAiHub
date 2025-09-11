@@ -922,35 +922,83 @@ class RAGSystem:
     def get_collection_stats(self) -> Dict[str, Any]:
         """Get statistics about the document collection"""
         try:
-            collection_info = self.collection.get(include=["metadatas"])
-            
-            total_chunks = len(collection_info['ids']) if collection_info['ids'] else 0
-            
-            # Count unique documents
-            unique_docs = set()
-            departments = set()
-            
-            if collection_info['metadatas']:
-                for metadata in collection_info['metadatas']:
-                    if metadata.get('document_id'):
-                        unique_docs.add(metadata['document_id'])
-                    if metadata.get('department'):
-                        departments.add(metadata['department'])
-            
-            return {
-                "total_chunks": total_chunks,
-                "unique_documents": len(unique_docs),
-                "departments": list(departments),
-                "collection_name": self.collection.name
-            }
-            
+            if self.rag_mode == "mongodb_cloud":
+                # MongoDB mode - get stats from MongoDB collection
+                import asyncio
+                import os
+                from motor.motor_asyncio import AsyncIOMotorClient
+                
+                # Get MongoDB connection
+                mongo_url = os.environ.get('MONGO_URL')
+                db_name = os.environ.get('DB_NAME')
+                client = AsyncIOMotorClient(mongo_url)
+                database = client[db_name]
+                
+                # Run async operation in sync context
+                try:
+                    loop = asyncio.get_running_loop()
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = asyncio.run_coroutine_threadsafe(
+                            database[self.chunk_collection_name].count_documents({}),
+                            loop
+                        )
+                        total_chunks = future.result(timeout=10)
+                        
+                        # Get unique documents count
+                        pipeline = [{"$group": {"_id": "$document_id"}}, {"$count": "unique_docs"}]
+                        future = asyncio.run_coroutine_threadsafe(
+                            database[self.chunk_collection_name].aggregate(pipeline).to_list(1),
+                            loop
+                        )
+                        unique_result = future.result(timeout=10)
+                        unique_documents = unique_result[0]["unique_docs"] if unique_result else 0
+                        
+                except RuntimeError:
+                    # No running loop
+                    total_chunks = asyncio.run(database[self.chunk_collection_name].count_documents({}))
+                    pipeline = [{"$group": {"_id": "$document_id"}}, {"$count": "unique_docs"}]
+                    unique_result = asyncio.run(database[self.chunk_collection_name].aggregate(pipeline).to_list(1))
+                    unique_documents = unique_result[0]["unique_docs"] if unique_result else 0
+                
+                return {
+                    "total_chunks": total_chunks,
+                    "unique_documents": unique_documents,
+                    "mode": "mongodb_cloud",
+                    "collection_name": self.chunk_collection_name
+                }
+            else:
+                # ChromaDB mode - original logic
+                collection_info = self.collection.get(include=["metadatas"])
+                
+                total_chunks = len(collection_info['ids']) if collection_info['ids'] else 0
+                
+                # Count unique documents
+                unique_docs = set()
+                departments = set()
+                
+                if collection_info['metadatas']:
+                    for metadata in collection_info['metadatas']:
+                        if metadata.get('document_id'):
+                            unique_docs.add(metadata['document_id'])
+                        if metadata.get('department'):
+                            departments.add(metadata['department'])
+                
+                return {
+                    "total_chunks": total_chunks,
+                    "unique_documents": len(unique_docs),
+                    "departments": list(departments),
+                    "collection_name": self.collection.name
+                }
+                
         except Exception as e:
             logger.error(f"Error getting collection stats: {e}")
             return {
                 "total_chunks": 0,
                 "unique_documents": 0,
                 "departments": [],
-                "collection_name": "asi_os_documents"
+                "error": str(e),
+                "mode": getattr(self, 'rag_mode', 'unknown')
             }
 
 # Global RAG system instance
