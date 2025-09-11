@@ -5896,7 +5896,7 @@ const SystemAdmin = () => {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Most Asked Questions */}
             <Card>
               <CardHeader>
@@ -5917,6 +5917,31 @@ const SystemAdmin = () => {
               </CardContent>
             </Card>
 
+            {/* Ticket-Related Conversations */}
+            <Card>
+              <CardHeader>
+                <CardTitle>🎫 Conversations Leading to Tickets</CardTitle>
+                <p className="text-sm text-gray-500">Chats that may require support tickets</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {chatAnalytics?.ticket_conversations?.slice(0, 8).map((conversation, index) => (
+                    <div key={index} className="p-3 bg-orange-50 border-l-4 border-orange-200 rounded">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-sm font-medium text-orange-800">Session: {conversation.session_id.slice(-8)}</span>
+                        <span className="text-xs text-gray-500">{new Date(conversation.timestamp).toLocaleDateString()}</span>
+                      </div>
+                      <span className="text-sm text-orange-700">{conversation.question}</span>
+                    </div>
+                  )) || (
+                    <p className="text-gray-500 text-center py-4">No ticket-related conversations found</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Knowledge Gaps */}
             <Card>
               <CardHeader>
@@ -5937,13 +5962,13 @@ const SystemAdmin = () => {
             </Card>
 
             {/* User Activity */}
-            <Card className="lg:col-span-2">
+            <Card>
               <CardHeader>
                 <CardTitle>👥 User Activity</CardTitle>
                 <p className="text-sm text-gray-500">Most active users by question count</p>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
                   {Object.entries(chatAnalytics?.user_activity || {}).map(([user, count], index) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-blue-50 rounded">
                       <span className="font-medium">{user}</span>
