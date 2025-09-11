@@ -996,6 +996,7 @@ const ChatInterface = () => {
       const decoder = new TextDecoder();
       let fullResponse = '';
       let documentsReferenced = 0;
+      let responseTimeSeconds = null;
 
       while (true) {
         const { done, value } = await reader.read();
