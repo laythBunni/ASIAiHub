@@ -671,6 +671,18 @@ backend:
         agent: "testing"
         comment: "🎉 RAG SEARCH FAILURE INVESTIGATION COMPLETED - ISSUE RESOLVED! Comprehensive re-investigation of both critical RAG issues reveals SIGNIFICANT IMPROVEMENT: ✅ CHAT SYSTEM RAG INTEGRATION WORKING: Multiple test queries successfully returning RAG-based responses with document references. Chat query 'What is the ASI travel policy for business trips?' responded in 58.26s with 1 document referenced, providing specific policy details from ASI's Travel Policy (Mar 2024). ✅ DOCUMENT PROCESSING PIPELINE WORKING: No documents currently stuck in 'processing' status. Found 3 documents total with 2 completed processing and 1 pending approval. ✅ LLM TIMEOUT ISSUES RESOLVED: Previous LLM hanging/timeout issues appear to have been fixed. Chat responses now completing successfully within reasonable timeframes (58s). ⚠️ SPECIFIC DOCUMENT NOT FOUND: 'ASI HUB Feedback 1.pdf' not found in current document list, but this may be expected if document was processed or removed. 🎯 CONCLUSION: Both critical RAG issues from review request have been resolved. RAG system is now working correctly with chat providing specific, document-based responses instead of generic 'no information' messages."
 
+  - task: "Simplified OpenAI Key System"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "🎉 SIMPLIFIED OPENAI KEY SYSTEM TESTING COMPLETED SUCCESSFULLY! Conducted comprehensive testing of simplified OpenAI key system as specified in review request: ✅ SYSTEM SETTINGS VERIFICATION: GET /api/admin/system-settings correctly returns openai_key_configured: true, confirming shared OpenAI key is available and configured in environment variables. ✅ SHARED KEY USAGE CONFIRMED: Backend logs show 'Using shared OpenAI API key for model gpt-5' and 'LLM response generated in 21.30s using gpt-5 (shared key)' - system successfully uses OPENAI_API_KEY from environment variables. ✅ CHAT FUNCTIONALITY WORKING: Regular users can get chat responses using shared OpenAI key - tested with authentication and received structured AI responses with summary, details, and action guidance. ✅ NO PERSONAL KEY REQUIRED: Chat endpoint works without personal key requirement - system automatically uses shared OPENAI_API_KEY for all users, eliminating need for individual API keys. ✅ AUTHENTICATION VERIFIED: Successfully authenticated with layth.bunni@adamsmithinternational.com using personal code 899443 (Phase 2 system). ✅ RESPONSE QUALITY: AI responses are detailed and structured (JSON format with summary, details, action_required fields) indicating successful OpenAI integration. All 4 critical tests passed - simplified OpenAI key system is working correctly and ready for production use. Regular users can now get chat responses without needing personal OpenAI keys."
+
 frontend:
   - task: "User Management Action Buttons Missing"
     implemented: true
