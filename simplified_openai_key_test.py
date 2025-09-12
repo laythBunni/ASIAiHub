@@ -169,13 +169,53 @@ class SimplifiedOpenAIKeyTester:
             print(f"   ❌ Failed to get system settings")
             return False
 
+    def authenticate_regular_user(self):
+        """Authenticate as a regular user (non-admin)"""
+        print("\n👤 Authenticating Regular User...")
+        
+        # Create a regular user login
+        regular_login_data = {
+            "email": "regular.user@example.com",
+            "personal_code": "ASI2025"  # This should create a Manager user
+        }
+        
+        success, response = self.run_test(
+            "Regular User Login", 
+            "POST", 
+            "/auth/login", 
+            200, 
+            regular_login_data
+        )
+        
+        if success:
+            user_data = response.get('user', {})
+            token = response.get('access_token') or response.get('token')
+            
+            print(f"   ✅ Regular user login successful")
+            print(f"   👤 User: {user_data.get('email')}")
+            print(f"   👑 Role: {user_data.get('role')}")
+            print(f"   🔑 Token: {token[:20] if token else 'None'}...")
+            
+            self.regular_user_token = token
+            return True
+        else:
+            print(f"   ❌ Regular user authentication failed")
+            return False
+
     def test_regular_user_chat_functionality(self):
         """Test 2: Regular user should be able to get chat responses using shared key"""
         print("\n💬 TEST 2: Regular User Chat Functionality...")
         print("=" * 60)
         
-        # Create a regular user session (no personal key required)
-        print("   📝 Testing chat without personal key requirement...")
+        # First authenticate as regular user
+        if not self.authenticate_regular_user():
+            print("❌ Cannot authenticate regular user - cannot test chat functionality")
+            return False
+        
+        # Test chat with regular user authentication (but using shared OpenAI key)
+        print("   📝 Testing chat with regular user authentication using shared OpenAI key...")
+        
+        regular_headers = {'Authorization': f'Bearer {self.regular_user_token}'}
         
         chat_data = {
             "session_id": self.session_id,
@@ -188,7 +228,8 @@ class SimplifiedOpenAIKeyTester:
             "POST", 
             "/chat/send", 
             200, 
-            chat_data
+            chat_data,
+            headers=regular_headers
         )
         
         if success:
