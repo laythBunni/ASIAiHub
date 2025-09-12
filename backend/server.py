@@ -2735,7 +2735,6 @@ async def delete_document(document_id: str):
         # Delete file from disk with timeout protection
         try:
             async def delete_file():
-                import os
                 if os.path.exists(document['file_path']):
                     os.remove(document['file_path'])
                     return True
