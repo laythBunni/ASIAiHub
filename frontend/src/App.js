@@ -824,20 +824,20 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button className="w-full h-20 flex flex-col gap-2 bg-purple-600 hover:bg-purple-700 cursor-default">
+            <Button className="w-full h-20 flex flex-col gap-2 bg-red-500 hover:bg-red-600 cursor-default">
               <div className="w-6 h-6">🎯</div>
               <span>IR35 Assessor</span>
               <span className="text-xs opacity-75">Coming Soon</span>
             </Button>
-            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-purple-200 hover:bg-purple-50 cursor-default">
-              <div className="w-6 h-6 text-purple-600">📋</div>
+            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-red-200 hover:bg-red-50 cursor-default">
+              <div className="w-6 h-6 text-red-600">📋</div>
               <span>Project Finance SOP Creator</span>
-              <span className="text-xs text-purple-400">Coming Soon</span>
+              <span className="text-xs text-red-400">Coming Soon</span>
             </Button>
-            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-purple-200 hover:bg-purple-50 cursor-default">
-              <div className="w-6 h-6 text-purple-600">🔄</div>
+            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-red-200 hover:bg-red-50 cursor-default">
+              <div className="w-6 h-6 text-red-600">🔄</div>
               <span>Many More Tools</span>
-              <span className="text-xs text-purple-400">Coming Soon</span>
+              <span className="text-xs text-red-400">Coming Soon</span>
             </Button>
           </div>
         </CardContent>
