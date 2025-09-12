@@ -995,7 +995,7 @@ async def test_mongodb_rag_directly():
         
         # Step 1: Initialize RAG system
         try:
-            rag = get_rag_system(EMERGENT_LLM_KEY)
+            rag = get_rag_system(os.environ.get('OPENAI_API_KEY'))
             result["steps"].append({
                 "step": "RAG_INITIALIZATION",
                 "status": "SUCCESS",
