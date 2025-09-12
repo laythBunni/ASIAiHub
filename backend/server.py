@@ -729,12 +729,12 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
         # Get system settings for AI model selection and API key
         settings = await db.system_settings.find_one({"_id": "global"})
         ai_model = settings.get("ai_model", "gpt-5") if settings else "gpt-5"
-        use_personal_key = settings.get("use_personal_openai_key", False) if settings else False
+        use_personal_key = settings.get("use_personal_openai_key", True) if settings else True
         personal_key = settings.get("personal_openai_key", "") if settings else ""
         
-        # Determine which API key to use
-        api_key_to_use = personal_key if (use_personal_key and personal_key) else EMERGENT_LLM_KEY
-        key_source = "personal" if (use_personal_key and personal_key) else "emergent"
+        # Always prioritize personal key when available
+        api_key_to_use = personal_key if personal_key else EMERGENT_LLM_KEY
+        key_source = "personal" if personal_key else "emergent"
         
         logger.info(f"Using {key_source} API key for model {ai_model}")
         
