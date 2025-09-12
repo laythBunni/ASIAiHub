@@ -67,7 +67,8 @@ def debug_chat_messages():
                 
                 if messages:
                     print(f"\n📨 Sample messages:")
-                    for i, msg in enumerate(messages[:3]):  # Show first 3 messages
+                    sample_messages = messages[:3] if len(messages) > 3 else messages
+                    for i, msg in enumerate(sample_messages):  # Show first 3 messages
                         print(f"   Message {i+1}:")
                         print(f"     ID: {msg.get('id')}")
                         print(f"     Role: {msg.get('role')}")
