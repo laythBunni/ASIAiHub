@@ -63,10 +63,12 @@ def debug_chat_messages():
             
             if response.status_code == 200:
                 messages = response.json()
-                print(f"✅ Retrieved {len(messages)} messages")
+                print(f"✅ Retrieved messages")
+                print(f"   Messages type: {type(messages)}")
+                print(f"   Messages content: {messages}")
                 
-                if messages:
-                    print(f"\n📨 Sample messages:")
+                if isinstance(messages, list) and messages:
+                    print(f"\n📨 Sample messages ({len(messages)} total):")
                     sample_messages = messages[:3] if len(messages) > 3 else messages
                     for i, msg in enumerate(sample_messages):  # Show first 3 messages
                         print(f"   Message {i+1}:")
