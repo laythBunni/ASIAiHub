@@ -2955,7 +2955,7 @@ async def send_chat_message(request: ChatRequest, current_user: BetaUser = Depen
             )
         else:
             # Original non-streaming response
-            return await send_chat_message_non_streaming(request)
+            return await send_chat_message_non_streaming(request, current_user)
         
     except Exception as e:
         logger.error(f"Error in chat: {e}")
