@@ -1794,6 +1794,154 @@ async def update_system_settings(settings: dict):
         logger.error(f"Error updating system settings: {e}")
         return {"error": str(e)}
 
+@api_router.get("/chat/sessions/{session_id}/messages")
+async def get_session_messages(session_id: str):
+    """Get all messages for a specific chat session"""
+    try:
+        # Get session info
+        session = await db.chat_sessions.find_one({"id": session_id})
+        if not session:
+            return {"error": "Session not found"}
+        
+        # Get all messages for this session
+        messages = await db.chat_messages.find(
+            {"session_id": session_id}
+        ).sort("timestamp", 1).to_list(100)
+        
+        # Format messages for display
+        formatted_messages = []
+        for message in messages:
+            formatted_message = {
+                "role": message.get("role"),
+                "content": message.get("content"),
+                "timestamp": message.get("timestamp").isoformat() if message.get("timestamp") else None,
+                "metadata": message.get("metadata", {})
+            }
+            
+            # Parse JSON content for assistant messages
+            if message.get("role") == "assistant" and isinstance(message.get("content"), str):
+                try:
+                    formatted_message["content"] = json.loads(message.get("content"))
+                except:
+                    pass  # Keep as string if not valid JSON
+            
+            formatted_messages.append(formatted_message)
+        
+        return {
+            "session_id": session_id,
+            "session_title": session.get("title", "Chat Session"),
+            "created_at": session.get("created_at").isoformat() if session.get("created_at") else None,
+            "messages": formatted_messages,
+            "total_messages": len(formatted_messages)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting session messages: {e}")
+        return {"error": str(e)}
+
+@api_router.get("/admin/system-kpis")
+async def get_system_kpis():
+    """Get system performance KPIs"""
+    try:
+        # Get date range (last 30 days)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        
+        # Chat analytics
+        total_sessions = await db.chat_sessions.count_documents({
+            "created_at": {"$gte": thirty_days_ago}
+        })
+        
+        total_messages = await db.chat_messages.count_documents({
+            "timestamp": {"$gte": thirty_days_ago}
+        })
+        
+        # Calculate average response time
+        recent_messages = await db.chat_messages.find({
+            "role": "assistant",
+            "timestamp": {"$gte": seven_days_ago},
+            "metadata.response_time_seconds": {"$exists": True}
+        }).to_list(1000)
+        
+        response_times = [m.get("metadata", {}).get("response_time_seconds", 0) for m in recent_messages if m.get("metadata", {}).get("response_time_seconds")]
+        avg_response_time = sum(response_times) / len(response_times) if response_times else 0
+        
+        # Ticket analytics
+        tickets = await db.tickets.find({
+            "created_at": {"$gte": thirty_days_ago}
+        }).to_list(1000)
+        
+        # Calculate ticket resolution times by priority
+        ticket_kpis = {
+            "High": {"total": 0, "resolved": 0, "avg_resolution_hours": 0, "open": 0},
+            "Medium": {"total": 0, "resolved": 0, "avg_resolution_hours": 0, "open": 0},
+            "Low": {"total": 0, "resolved": 0, "avg_resolution_hours": 0, "open": 0}
+        }
+        
+        for ticket in tickets:
+            priority = ticket.get("priority", "Medium")
+            if priority in ticket_kpis:
+                ticket_kpis[priority]["total"] += 1
+                
+                if ticket.get("status") in ["Resolved", "Closed"]:
+                    ticket_kpis[priority]["resolved"] += 1
+                    
+                    # Calculate resolution time
+                    created = ticket.get("created_at")
+                    updated = ticket.get("updated_at")
+                    if created and updated:
+                        resolution_time = (updated - created).total_seconds() / 3600  # hours
+                        ticket_kpis[priority]["avg_resolution_hours"] += resolution_time
+                else:
+                    ticket_kpis[priority]["open"] += 1
+        
+        # Calculate averages
+        for priority in ticket_kpis:
+            if ticket_kpis[priority]["resolved"] > 0:
+                ticket_kpis[priority]["avg_resolution_hours"] = round(
+                    ticket_kpis[priority]["avg_resolution_hours"] / ticket_kpis[priority]["resolved"], 1
+                )
+        
+        # Document processing KPIs
+        approved_docs = await db.documents.count_documents({
+            "approval_status": "approved",
+            "approved_at": {"$gte": thirty_days_ago}
+        })
+        
+        processed_docs = await db.documents.count_documents({
+            "approval_status": "approved", 
+            "processed": True,
+            "approved_at": {"$gte": thirty_days_ago}
+        })
+        
+        processing_success_rate = round((processed_docs / max(approved_docs, 1)) * 100, 1)
+        
+        return {
+            "period": "Last 30 days",
+            "chat_analytics": {
+                "total_sessions": total_sessions,
+                "total_messages": total_messages,
+                "avg_response_time_seconds": round(avg_response_time, 1),
+                "sessions_per_day": round(total_sessions / 30, 1)
+            },
+            "ticket_analytics": {
+                "by_priority": ticket_kpis,
+                "total_tickets": sum(kpi["total"] for kpi in ticket_kpis.values()),
+                "total_resolved": sum(kpi["resolved"] for kpi in ticket_kpis.values()),
+                "total_open": sum(kpi["open"] for kpi in ticket_kpis.values())
+            },
+            "document_processing": {
+                "documents_approved": approved_docs,
+                "documents_processed": processed_docs,
+                "processing_success_rate": processing_success_rate
+            },
+            "timestamp": str(datetime.now(timezone.utc))
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting system KPIs: {e}")
+        return {"error": str(e)}
+
 @api_router.get("/admin/api-usage")
 async def get_api_usage():
     """Get API usage statistics"""
