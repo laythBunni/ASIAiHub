@@ -753,8 +753,8 @@ const Dashboard = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <a href="https://asi.online/time_log_management?time_screens=time_management&type_log=input" target="_blank" rel="noopener noreferrer">
-              <Button className="w-full h-20 flex flex-col gap-2 bg-blue-100 hover:bg-blue-200 text-white">
-                <div className="w-6 h-6 text-white">📝</div>
+              <Button className="w-full h-20 flex flex-col gap-2 bg-blue-100 hover:bg-blue-200 text-blue-800">
+                <div className="w-6 h-6 text-blue-700">📝</div>
                 <span>Submit Time Log</span>
               </Button>
             </a>
