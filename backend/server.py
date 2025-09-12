@@ -726,20 +726,24 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
             logger.info(f"Cache hit for query: {message[:50]}...")
             return cache_result
         
-        # Get system settings for AI model selection and API key
+        # Get system settings for AI model selection
         settings = await db.system_settings.find_one({"_id": "global"})
         ai_model = settings.get("ai_model", "gpt-5") if settings else "gpt-5"
-        use_personal_key = settings.get("use_personal_openai_key", True) if settings else True
-        personal_key = settings.get("personal_openai_key", "") if settings else ""
         
-        # Always prioritize personal key when available
-        api_key_to_use = personal_key if personal_key else EMERGENT_LLM_KEY
-        key_source = "personal" if personal_key else "emergent"
+        # Always use OpenAI API key from environment (admin's key for everyone)
+        openai_api_key = os.environ.get('OPENAI_API_KEY')
+        if not openai_api_key:
+            logger.error("OPENAI_API_KEY not found in environment variables")
+            return {
+                "response": "Configuration error: OpenAI API key not available.",
+                "documents_referenced": 0,
+                "response_type": "error"
+            }
         
-        logger.info(f"Using {key_source} API key for model {ai_model}")
+        logger.info(f"Using shared OpenAI API key for model {ai_model}")
         
         # Get RAG system instance
-        rag = get_rag_system(api_key_to_use)
+        rag = get_rag_system(openai_api_key)
         
         # Debug: Test search before RAG response
         logger.info(f"Testing RAG search for query: {message}")
