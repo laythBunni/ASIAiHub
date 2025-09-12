@@ -817,7 +817,7 @@ const Dashboard = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-emerald-600" />
+            <TrendingUp className="w-5 h-5 text-purple-600" />
             AI Hub Tools
           </CardTitle>
           <CardDescription>Intelligent automation and analysis tools</CardDescription>
