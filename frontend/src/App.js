@@ -812,6 +812,36 @@ const Dashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Hub Tools */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-emerald-600" />
+            AI Hub Tools
+          </CardTitle>
+          <CardDescription>Intelligent automation and analysis tools</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50 cursor-default opacity-75">
+              <div className="w-6 h-6 text-emerald-600">🎯</div>
+              <span className="text-sm font-medium">IR35 Assessor</span>
+              <span className="text-xs text-gray-500">Coming Soon</span>
+            </Button>
+            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50 cursor-default opacity-75">
+              <div className="w-6 h-6 text-emerald-600">📋</div>
+              <span className="text-sm font-medium">Project Finance SOP Creator</span>
+              <span className="text-xs text-gray-500">Coming Soon</span>
+            </Button>
+            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50 cursor-default opacity-75">
+              <div className="w-6 h-6 text-emerald-600">🔄</div>
+              <span className="text-sm font-medium">Many More Tools</span>
+              <span className="text-xs text-gray-500">Coming Soon</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
