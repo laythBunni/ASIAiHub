@@ -2950,7 +2950,7 @@ async def send_chat_message(request: ChatRequest, current_user: BetaUser = Depen
         if request.stream:
             # Return streaming response
             return StreamingResponse(
-                generate_streaming_response(request),
+                generate_streaming_response(request, current_user),
                 media_type="text/plain"
             )
         else:
