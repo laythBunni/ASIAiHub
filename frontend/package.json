@@ -54,12 +54,11 @@
     "vaul": "^1.1.2",
     "zod": "^3.24.4"
   },
-    "scripts": {
+  "scripts": {
     "start": "react-scripts start",
     "build": "GENERATE_SOURCEMAP=false NODE_OPTIONS='--max-old-space-size=4096' react-scripts build",
     "test": "react-scripts test"
-  }
-
+  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -72,14 +71,7 @@
       "last 1 safari version"
     ]
   },
-  "resolutions": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0"
-  },
   "devDependencies": {
-    "@craco/craco": "^7.1.0",
     "@eslint/js": "9.23.0",
     "autoprefixer": "^10.4.20",
     "eslint": "9.23.0",
@@ -93,6 +85,8 @@
   "overrides": {
     "date-fns": "^3.6.0"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "packageManager": "npm@10"
 }
