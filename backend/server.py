@@ -1770,7 +1770,7 @@ async def get_system_settings():
             "require_document_approval": settings.get("require_document_approval", True),
             "enable_audit_logging": settings.get("enable_audit_logging", True),
             "response_cache_hours": settings.get("response_cache_hours", 24),
-            "use_personal_openai_key": settings.get("use_personal_openai_key", False),
+            "use_personal_openai_key": settings.get("use_personal_openai_key", True),
             "personal_openai_key": settings.get("personal_openai_key", "")
         }
     except Exception as e:
