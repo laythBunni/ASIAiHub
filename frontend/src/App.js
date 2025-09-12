@@ -834,7 +834,7 @@ const ChatInterface = () => {
   const [documentsCount, setDocumentsCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [ticketFromChat, setTicketFromChat] = useState({ show: false, userQuestion: '', aiResponse: '' });
-  const [systemSettings, setSystemSettings] = useState({ ai_model: 'gpt-5', use_personal_openai_key: true });
+  const [systemSettings, setSystemSettings] = useState({ ai_model: 'gpt-5' });
   const { apiCall } = useAPI();
   const { toast } = useToast();
   const { token } = useAuth();
