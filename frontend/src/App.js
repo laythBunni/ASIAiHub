@@ -5451,7 +5451,7 @@ const SystemAdmin = () => {
   const viewConversation = async (sessionId) => {
     try {
       // Navigate to chat interface and load the conversation
-      window.location.href = `/chat?session=${sessionId}`;
+      navigate(`/chat?session=${sessionId}`);
     } catch (error) {
       console.error('Error navigating to conversation:', error);
       toast({
