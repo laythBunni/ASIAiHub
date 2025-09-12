@@ -5565,7 +5565,7 @@ const SystemAdmin = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-7 overflow-x-auto">
           <TabsTrigger value="users">Users & Permissions</TabsTrigger>
           <TabsTrigger value="business">Business Units</TabsTrigger>
           <TabsTrigger value="system">System Settings</TabsTrigger>
