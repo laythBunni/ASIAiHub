@@ -354,6 +354,12 @@ class SimplifiedOpenAIKeyTester:
         print("\n🔐 TEST 4: Shared Key Usage Verification...")
         print("=" * 60)
         
+        if not hasattr(self, 'regular_user_token') or not self.regular_user_token:
+            print("❌ No regular user token - cannot test shared key usage")
+            return False
+        
+        regular_headers = {'Authorization': f'Bearer {self.regular_user_token}'}
+        
         # Test chat with detailed logging to verify key source
         print("   🔍 Testing chat with backend logging to verify key source...")
         
@@ -368,7 +374,8 @@ class SimplifiedOpenAIKeyTester:
             "POST", 
             "/chat/send", 
             200, 
-            chat_data
+            chat_data,
+            headers=regular_headers
         )
         
         if success:
