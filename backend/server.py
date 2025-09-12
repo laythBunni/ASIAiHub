@@ -4696,7 +4696,7 @@ app.include_router(api_router)
 #         "https://www.asiaihub.com", 
 #         "https://ai-workspace-17.emergent.host",
 #         "http://localhost:3000",
-#         "https://doc-embeddings.preview.emergentagent.com"
+#         "https://smart-assist-18.preview.emergentagent.com"
 #     ]
     
 #     # Handle preflight OPTIONS requests

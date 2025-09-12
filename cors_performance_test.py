@@ -36,7 +36,7 @@ class CORSPerformanceInvestigator:
                         return line.split('=', 1)[1].strip()
         except:
             pass
-        return "https://doc-embeddings.preview.emergentagent.com"  # Fallback
+        return "https://smart-assist-18.preview.emergentagent.com"  # Fallback
 
     def log_test(self, name, success, details=""):
         """Log test results"""
@@ -174,7 +174,7 @@ class CORSPerformanceInvestigator:
         test_origins = [
             'https://asiaihub.com',
             'https://ai-workspace-17.emergent.host', 
-            'https://doc-embeddings.preview.emergentagent.com'
+            'https://smart-assist-18.preview.emergentagent.com'
         ]
         
         for origin in test_origins:

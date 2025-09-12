@@ -1,20 +1,31 @@
 <analysis>
-The trajectory details the arduous journey of stabilizing the ASI AiHub application, transitioning its RAG system from an unreliable ChromaDB to a persistent MongoDB solution. Initial local tests passed, but persistent production failures necessitated deep debugging. Key challenges included environment variable mismatches, frontend URL misconfigurations, and, critically,  event loop conflicts in FastAPI's ASGI environment. The AI engineer iteratively introduced diagnostics, fixed embedding API key usage (switching from  for embeddings to direct OpenAI with a user-provided key), and ultimately, with the user's help, resolved the core asynchronous execution issue that prevented RAG processing from ever starting in production. The process highlighted the complexities of debugging environment-specific behaviors and the importance of precise  handling.
+The trajectory chronicles an iterative development and debugging process for the ASI AiHub application. Initially, the AI engineer focused on resolving critical production stability issues, particularly a persistent  related to  event loop conflicts in the RAG system, and transitioning from ChromaDB to a persistent MongoDB for document chunk storage. This involved refactoring asynchronous methods, addressing environment variable mismatches (e.g., frontend URL misconfigurations), and fixing an environment loading order bug that incorrectly initialized the RAG system.
+
+As core stability was achieved, the development shifted to feature enhancements. This included implementing an admin dashboard for AI model selection (including GPT-5), response caching, comprehensive chat analytics with ticket-related tracking, an API usage dashboard, a KPI dashboard, and UI improvements for the chat interface. The engineer also integrated a personal OpenAI API key option with usage tracking, moving away from the Emergent LLM key. Extensive testing, both backend and frontend, was performed at various stages to ensure functionality and prevent regressions. The process highlighted complex environment-specific debugging and the continuous refinement of both technical architecture and user-facing features based on direct user feedback.
 </analysis>
 
 <product_requirements>
-The ASI AiHub is an AI operations platform, initially designed with a BOOST Ticketing System, Finance SOP management, RAG Chat Function (James AI), rebranding, and admin features. User requirements evolved to include:
-1.  **User Management**: Fix UI for role changes, enable user deletion, ensure Manage/Edit/Delete buttons are functional.
-2.  **Chat Ticket Creation**: Ensure the Create Ticket button correctly assigns tickets.
-3.  **Activity Log**: Implement audit trails for ticket status/priority changes.
-4.  **Enhanced Authentication**: Transition from universal  to a personal code system with admin-managed user access, restricting user management to .
-5.  **Knowledge Management**: The primary focus of the work so far has been to fix document upload functionality, ensure uploaded files appear in the approval list, and address slow document loading/deletion. Critically, to ensure the RAG chat function returns detailed, structured answers based on the knowledge base (not just no information) and that uploaded documents are properly chunked and persistently stored using the new MongoDB system.
-6.  **Ticketing**: Display a full, searchable list of users for assignment and implement View All Tickets button functionality.
-7.  **General Stability**: Resolve persistent production deployment issues, including login screen display, backend 500 errors, CORS problems, and RAG system crashes/failures.
+The ASI AiHub is an AI operations platform designed with a BOOST Ticketing System, Finance SOP management, RAG Chat Function (James AI), rebranding, and admin features. The user's requirements evolved throughout the development:
+
+1.  **General Stability & Core Functionality (Initial Focus):**
+    *   Resolve persistent production deployment issues, including login, backend errors, CORS, and RAG system crashes.
+    *   Fix document upload functionality, ensure files appear for approval, and address slow loading/deletion.
+    *   Ensure RAG chat returns detailed, structured answers from the knowledge base, with documents properly chunked and persistently stored in MongoDB.
+    *   Transition from a universal  login code to a personal code system with admin-managed access.
+2.  **User Management:** Fix UI for role changes, enable user deletion, and ensure Manage/Edit/Delete buttons are functional.
+3.  **Chat Ticket Creation:** Ensure the Create Ticket button correctly assigns tickets.
+4.  **Activity Log:** Implement audit trails for ticket status/priority changes.
+5.  **Ticketing:** Display a full, searchable list of users for assignment; implement View All Tickets button.
+6.  **UI/UX Enhancements:** Center the chat input, provide real-time streaming responses, and improve response speed.
+7.  **AI Model Management:** Allow admins to select the default OpenAI model (e.g., GPT-5, GPT-4o) from the dashboard.
+8.  **Chat History & Analytics:** Implement user-specific chat history, provide an admin view of all chat history, track most asked questions, knowledge gaps, and conversations leading to tickets (clickable).
+9.  **Performance Optimization:** Implement response caching (e.g., 24 hours) for faster answers.
+10. **Custom API Integration:** Enable using a personal OpenAI API key instead of the Emergent LLM key, with usage tracking.
+11. **Performance Monitoring:** Create a KPI dashboard for system performance, including ticket resolution times and chat response averages.
 </product_requirements>
 
 <key_technical_concepts>
--   **Backend**: FastAPI, MongoDB (Motor, Pydantic),  (for LLM chat), usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+- **Backend**: FastAPI, MongoDB (Motor, Pydantic),  (LLM chat), usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
               [-o ORGANIZATION] [-t {openai,azure}]
               [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
               [--azure-ad-token AZURE_AD_TOKEN] [-V]
@@ -51,88 +62,48 @@ options:
                         https://www.microsoft.com/en-
                         us/security/business/identity-access/microsoft-entra-
                         id
-  -V, --version         show program's version number and exit (for embeddings), .
--   **Frontend**: React, Shadcn/UI, Tailwind CSS.
--   **AI/RAG**: Retrieval-Augmented Generation, Vector Embeddings (OpenAI's  and ).
--   **Infrastructure**: Kubernetes, Supervisor, MongoDB Atlas.
--   **Authentication**: Custom token-based, admin-managed personal codes.
+  -V, --version         show program's version number and exit (embeddings/chat), .
+- **Frontend**: React, Shadcn/UI, Tailwind CSS, Playwright (for testing).
+- **AI/RAG**: Retrieval-Augmented Generation, Vector Embeddings (OpenAI's , GPT-5, GPT-4o).
+- **Infrastructure**: Kubernetes, Supervisor, MongoDB Atlas.
+- **Authentication**: Custom token-based, admin-managed personal codes.
 </key_technical_concepts>
 
 <code_architecture>
 
 
 -   :
-    -   **Importance**: Main FastAPI application handling all API routes, authentication, and database interactions.
-    -   **Changes**: Fixed MongoDB connection, authentication logic, user management, and ticket APIs. Implemented robust CORS middleware. Added graceful fallbacks and timeouts for RAG operations, file uploads, and database interactions. Multiple debug endpoints were added and iteratively refined (, , , , , , , , , , ). The  function was modified to directly await RAG processing and to store detailed debug information in the document object upon failure.
+    -   **Importance**: The central FastAPI application, managing all API routes, authentication, and database interactions.
+    -   **Changes**: Fixed MongoDB connection and authentication. Implemented CORS middleware. Added numerous debug endpoints (e.g., , , ). The RAG document processing integration was refactored for  compatibility. Updated chat () and document processing to use new system settings (AI model, caching). Added endpoints for system settings (), chat analytics (), API usage (), KPI dashboard (), and specific chat session messages (). Crucially, the  call was moved before  import to ensure environment variables are loaded prior to RAG system initialization, fixing an environment loading order bug. Chat session and message storage for analytics, and response timing metadata were also added.
+
 -   :
-    -   **Importance**: Implements the RAG pipeline for document processing, chunking, embedding generation, and semantic search.
-    -   **Changes**: Initially focused on ChromaDB, then transitioned to MongoDB for chunk storage ( collection) to ensure persistence. Introduced cloud mode for production using OpenAI embeddings. The  function was extensively refactored. Initially, it used 's  for embeddings, which was found to lack embedding capabilities, leading to a direct integration with the usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
-              [-o ORGANIZATION] [-t {openai,azure}]
-              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
-              [--azure-ad-token AZURE_AD_TOKEN] [-V]
-              {api,tools,migrate,grit} ...
+    -   **Importance**: Core RAG pipeline for document processing, chunking, embedding generation, and semantic search.
+    -   **Changes**: Transitioned from ChromaDB to MongoDB for chunk storage, leveraging OpenAI embeddings (). Introduced  and a synchronous wrapper to safely handle  event loops in an ASGI context. The  method was updated to correctly query MongoDB. The RAG system now dynamically selects the LLM model based on admin settings, integrates response caching, and can utilize either the Emergent LLM Key or a user-provided . It also tracks token usage and costs. Production mode detection logic () was debugged and fixed.
 
-positional arguments:
-  {api,tools,migrate,grit}
-    api                 Direct API calls
-    tools               Client side tools for convenience
-
-options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Set verbosity.
-  -b API_BASE, --api-base API_BASE
-                        What API base url to use.
-  -k API_KEY, --api-key API_KEY
-                        What API key to use.
-  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
-                        What proxy to use.
-  -o ORGANIZATION, --organization ORGANIZATION
-                        Which organization to run as (will use your default
-                        organization if not specified)
-  -t {openai,azure}, --api-type {openai,azure}
-                        The backend API to call, must be `openai` or `azure`
-  --api-version API_VERSION
-                        The Azure API version, e.g.
-                        'https://learn.microsoft.com/en-us/azure/ai-
-                        services/openai/reference#rest-api-versioning'
-  --azure-endpoint AZURE_ENDPOINT
-                        The Azure endpoint, e.g.
-                        'https://endpoint.openai.azure.com'
-  --azure-ad-token AZURE_AD_TOKEN
-                        A token from Azure Active Directory,
-                        https://www.microsoft.com/en-
-                        us/security/business/identity-access/microsoft-entra-
-                        id
-  -V, --version         show program's version number and exit Python library using a dedicated . The most significant change involved a minimal surgical fix to address a  caused by  in an ASGI context. This involved introducing  and wrapping the  method to handle event loops safely using  or  based on the execution context. Updated embedding model from  to .
 -   :
     -   **Importance**: Main React component managing UI, routing, global state, and authentication.
-    -   **Changes**: Updated login forms for personal codes, conditional rendering for admin features. Enhanced document status display and error handling for document deletion. The  function was updated to display actual response data from the backend (success messages with chunk counts or specific error details) instead of generic toasts.
+    -   **Changes**: Enhanced login for personal codes. Document status display was updated to use  for ✓ Processed checkmarks. Admin panel now includes 7 tabs: Users & Permissions, Business Units, System Settings, KPI Dashboard, Chat Analytics, API Usage, and Audit Logs. The System Settings tab includes AI model selection, cache duration, and a personal OpenAI key toggle. The chat interface ( component) was repositioned to the upper-middle, enlarged, and now dynamically displays the current AI model, key source, and response timing. Chat Analytics displays session details, top questions, ticket conversations (now clickable), and user activity. New modals for viewing conversation details were added.
+
 -   :
     -   **Importance**: Backend environment variables.
-    -   **Changes**:  was removed.  and  were configured for MongoDB Atlas.  was explicitly set.  is used for chat.  was added to facilitate direct OpenAI embedding calls.
+    -   **Changes**:  removed. , , , , and  were configured.  was added and verified for correct environment detection.
+
 -   :
     -   **Importance**: Frontend environment variables.
-    -   **Changes**:  was configured for production to  initially, then was briefly misconfigured to a debug preview URL, and eventually corrected to .
+    -   **Changes**:  was crucial; it was initially , then temporarily misconfigured, and finally set correctly to  for production deployments and  for the preview environment to ensure proper frontend-backend communication in each respective environment.
 </code_architecture>
 
 <pending_tasks>
--   **Run Document Approval Test (Production)**: Execute the direct document approval endpoint () in the production environment to verify the event loop fix.
--   **Migrate Existing Documents**: If the single document test passes, run the migration endpoint () to process all 26 existing approved documents.
--   **Verify New Document Uploads and Chat**: After migration, test the end-to-end flow for new document uploads and ensure the RAG chat provides detailed responses based on the knowledge base.
--   **CORS Configuration (Infrastructure)**: Implement an infrastructure-level fix for CORS issues, as advised previously.
+-   **Fix Historic Chat Modal**: Implement functionality to make conversations in the Conversations Leading to Tickets section clickable, displaying the full chat history within a modal.
+-   **Remove System Key Toggle**: Modify the system to exclusively use the user's personal OpenAI key and remove the toggle option for the system key.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the AI engineer, with critical input from the user, was debugging a persistent  that prevented RAG document processing in the production environment, despite working correctly in the preview. The root cause was identified as an  event loop conflict: the  module was attempting to create and run a new event loop () from within an already running ASGI (FastAPI/Uvicorn) request handler, which is not allowed and raises a . This caused  to fail silently, marking documents as failed without ever starting the actual processing (evidenced by ).
+Immediately before this summary request, the AI engineer had just completed a comprehensive frontend testing phase. This testing, as detailed in Chat Message 651, confirmed 100% pass rates for all existing functionalities (login, dashboard, document management, chat, ticketing, user management) and all newly implemented features. The new features validated include the enhanced 7-tab admin interface (Users & Permissions, Business Units, System Settings, KPI Dashboard, Chat Analytics, API Usage, Audit Logs), personal OpenAI key integration with usage tracking, enhanced chat UI (centered input, model display, response timing), and comprehensive analytics dashboards.
 
-The AI engineer has just implemented the minimal surgical fix to address this. This involved:
-1.  Refactoring the document processing logic into an  method, . This method performs the core RAG steps: text extraction (), chunking (), and asynchronous storage to MongoDB ().
-2.  Modifying the original  method to act as a synchronous wrapper. This wrapper now intelligently checks if an event loop is already running using . If a loop exists (production ASGI context), it safely schedules the  coroutine using  and awaits its result. If no loop is running (e.g., in a standalone script or test), it uses  to execute the async method directly.
-3.  The  and  methods were also updated to use  client with , reflecting the latest embedding model.
-
-This fix is intended to allow the RAG processing to run correctly within the existing asynchronous context of the production FastAPI application, resolving the  and enabling successful document chunking and storage. The version has been updated to .
+The AI engineer's last action was to present these successful testing results, indicating the system was production-ready for deployment. However, the user then provided new feedback (Chat Message 652), stating that historic chats were not showing when clicked in the chat window (referring to the clickable conversations in Chat Analytics) and requesting the removal of the system key, defaulting to the personal OpenAI key. The AI engineer acknowledged these new requests (Chat Message 653) and outlined a plan to address them, starting with fixing the conversation modal functionality.
 </current_work>
 
 <optional_next_step>
-Test the event loop fix by running the direct document approval endpoint for an existing document in production.
+Fix the historic chat modal to make conversations clickable and display the full chat history, and remove the system key toggle to use only the user's OpenAI key.
 </optional_next_step>

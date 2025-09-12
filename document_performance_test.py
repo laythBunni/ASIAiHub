@@ -31,7 +31,7 @@ class DocumentPerformanceAnalyzer:
                         return line.split('=', 1)[1].strip()
         except:
             pass
-        return "https://doc-embeddings.preview.emergentagent.com"
+        return "https://smart-assist-18.preview.emergentagent.com"
 
     def measure_request_time(self, url, method='GET', data=None, headers=None):
         """Measure request time with detailed breakdown"""

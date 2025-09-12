@@ -18,7 +18,7 @@ from datetime import datetime
 class RAGEnvironmentAnalyzer:
     def __init__(self):
         self.environments = {
-            'preview': 'https://doc-embeddings.preview.emergentagent.com',
+            'preview': 'https://smart-assist-18.preview.emergentagent.com',
             'production_1': 'https://asiaihub.com',
             'production_2': 'https://ai-workspace-17.emergent.host'
         }
