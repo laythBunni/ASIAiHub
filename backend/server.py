@@ -2723,7 +2723,7 @@ async def delete_document(document_id: str):
         # Remove from vector database with timeout protection
         try:
             async def remove_from_rag():
-                rag = get_rag_system(EMERGENT_LLM_KEY)
+                rag = get_rag_system(os.environ.get('OPENAI_API_KEY'))
                 return rag.remove_document_chunks(document_id)
             
             await asyncio.wait_for(remove_from_rag(), timeout=30.0)
