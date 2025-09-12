@@ -753,7 +753,7 @@ async def process_rag_query(message: str, document_ids: List[str], session_id: s
             logger.info(f"Top result similarity: {search_results[0].get('similarity_score', 'N/A')}")
         
         # Use the advanced RAG system for semantic search and response generation
-        result = await rag.generate_rag_response(message, session_id, ai_model=ai_model, api_key=api_key_to_use, key_source=key_source)
+        result = await rag.generate_rag_response(message, session_id, ai_model=ai_model, api_key=openai_api_key, key_source="shared")
         
         # Cache the result
         await cache_response(message, result)
