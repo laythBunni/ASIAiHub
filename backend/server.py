@@ -2426,7 +2426,7 @@ async def production_rag_status():
         
         # 3. RAG System Check
         try:
-            rag = get_rag_system(EMERGENT_LLM_KEY)
+            rag = get_rag_system(os.environ.get('OPENAI_API_KEY'))
             
             result["rag_system_check"] = {
                 "initialization_status": "SUCCESS",
