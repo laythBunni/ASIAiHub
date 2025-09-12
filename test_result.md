@@ -60,6 +60,30 @@
 ##     -agent: "main"  # or "testing" or "user"
 ##     -message: "Communication message between agents"
 
+  - task: "Historic Chat Modal Fix"
+    implemented: false
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "USER FEEDBACK: Historic chats were not showing when clicked in the chat window. Referring to the clickable conversations in Chat Analytics 'Conversations Leading to Tickets' section. Current implementation opens a modal instead of loading the conversation in the main chat interface."
+
+  - task: "Remove System Key Toggle"
+    implemented: false
+    working: false
+    file: "/app/frontend/src/App.js, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "USER REQUEST: Remove the system key toggle and make the application exclusively use the user's personal OpenAI key. Currently there's a toggle between system key and personal OpenAI key in the System Settings admin panel."
+
 # Protocol Guidelines for Main agent
 #
 # 1. Update Test Result File Before Testing:
