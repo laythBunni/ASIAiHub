@@ -1760,8 +1760,6 @@ async def get_system_settings():
                 "require_document_approval": True,
                 "enable_audit_logging": True,
                 "response_cache_hours": 24,
-                "use_personal_openai_key": True,
-                "personal_openai_key": "",
                 "created_at": datetime.now(timezone.utc),
                 "updated_at": datetime.now(timezone.utc)
             }
