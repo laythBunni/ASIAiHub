@@ -272,7 +272,7 @@ class ChatMessage(BaseModel):
 
 class ChatSession(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str = "default_user"  # For MVP, using default user
+    user_email: str  # Email of the user who created this session
     title: str = "New Conversation"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
