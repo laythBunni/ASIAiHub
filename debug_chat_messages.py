@@ -104,9 +104,10 @@ def debug_chat_messages():
                             messages = response.json()
                             print(f"✅ Now retrieved {len(messages)} messages")
                             
-                            if messages:
+                            if isinstance(messages, list) and messages:
                                 print(f"📨 Latest messages:")
-                                for msg in messages[-2:]:  # Show last 2 messages
+                                latest_messages = messages[-2:] if len(messages) >= 2 else messages
+                                for msg in latest_messages:  # Show last 2 messages
                                     print(f"   Role: {msg.get('role')}")
                                     print(f"   Content: {msg.get('content', '')[:100]}...")
                                     print(f"   ---")
