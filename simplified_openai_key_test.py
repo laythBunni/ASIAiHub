@@ -403,7 +403,8 @@ class SimplifiedOpenAIKeyTester:
                 "Get Session Messages", 
                 "GET", 
                 f"/chat/sessions/{chat_data['session_id']}/messages", 
-                200
+                200,
+                headers=regular_headers
             )
             
             if session_success:
