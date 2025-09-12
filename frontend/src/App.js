@@ -6339,6 +6339,94 @@ const SystemAdmin = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Conversation Detail Modal */}
+      {showConversationModal && selectedConversation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">
+                  Conversation Details - Session {selectedConversation.sessionId.slice(-8)}
+                </h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowConversationModal(false);
+                    setSelectedConversation(null);
+                  }}
+                >
+                  ✕ Close
+                </Button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                {selectedConversation.messages?.length || 0} messages • Created: {
+                  selectedConversation.created_at ? new Date(selectedConversation.created_at).toLocaleString() : 'Unknown'
+                }
+              </p>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              <div className="space-y-4">
+                {selectedConversation.messages?.map((message, index) => (
+                  <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[70%] p-4 rounded-lg ${
+                      message.role === 'user' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-medium">
+                          {message.role === 'user' ? '👤 User' : '🤖 Assistant'}
+                        </span>
+                        {message.timestamp && (
+                          <span className="text-xs opacity-75">
+                            {new Date(message.timestamp).toLocaleTimeString()}
+                          </span>
+                        )}
+                        {message.metadata?.response_time_seconds && (
+                          <span className="text-xs opacity-75">
+                            ⚡ {message.metadata.response_time_seconds}s
+                          </span>
+                        )}
+                      </div>
+                      
+                      {message.role === 'user' ? (
+                        <p className="text-sm">{message.content}</p>
+                      ) : (
+                        <div className="text-sm">
+                          {typeof message.content === 'object' ? (
+                            <div>
+                              <p className="font-medium mb-2">{message.content.summary}</p>
+                              {message.content.details && (
+                                <div className="text-xs space-y-1">
+                                  {message.content.details.requirements?.length > 0 && (
+                                    <div>
+                                      <strong>Requirements:</strong>
+                                      <ul className="list-disc list-inside ml-2">
+                                        {message.content.details.requirements.map((req, i) => (
+                                          <li key={i}>{req}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p>{message.content}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Permission Management Modal */}
       <PermissionModal
         isOpen={showPermissionModal}
