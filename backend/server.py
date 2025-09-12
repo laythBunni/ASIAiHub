@@ -4079,25 +4079,7 @@ async def get_ticket_audit_trail(ticket_id: str):
         logging.error(f"Error fetching audit trail: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch audit trail")
 
-# Beta Authentication System Models
-class BetaUser(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    email: str
-    name: Optional[str] = None  # Added name field
-    personal_code: str
-    role: str = "User"  # Admin, Manager, Agent, User
-    department: Optional[str] = None
-    is_active: bool = True
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    last_login: Optional[datetime] = None
-    access_token: Optional[str] = None
-
-class BetaSettings(BaseModel):
-    registration_code: str
-    admin_email: str = "layth.bunni@adamsmithinternational.com"
-    allowed_domain: str = "adamsmithinternational.com"
-    max_users: int = 20
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+# Beta Authentication System Models (moved above)
 
 class RegistrationRequest(BaseModel):
     name: str
