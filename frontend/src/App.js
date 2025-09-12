@@ -5011,6 +5011,8 @@ const SystemAdmin = () => {
   });
   const [chatAnalytics, setChatAnalytics] = useState(null);
   const [apiUsage, setApiUsage] = useState(null);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [showConversationModal, setShowConversationModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [showBusinessUnitModal, setShowBusinessUnitModal] = useState(false);
