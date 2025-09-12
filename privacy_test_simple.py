@@ -168,6 +168,7 @@ class ChatPrivacyTester:
                     test_user_email = create_response.get('email')
                     test_user_personal_code = create_response.get('personal_code')
                     print(f"   ✅ Created test user: {test_user_email}")
+                    print(f"   🔑 Personal code: {test_user_personal_code}")
                 else:
                     print("   ❌ Failed to create test user - stopping privacy tests")
                     return False
