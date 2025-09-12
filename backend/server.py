@@ -484,7 +484,7 @@ async def process_document_with_rag(document_data: Dict[str, Any]) -> None:
                 # Get collection stats with timeout
                 try:
                     async def get_stats_with_timeout():
-                        rag = get_rag_system(EMERGENT_LLM_KEY)
+                        rag = get_rag_system(os.environ.get('OPENAI_API_KEY'))
                         return rag.get_collection_stats()
                     
                     stats = await asyncio.wait_for(get_stats_with_timeout(), timeout=10.0)
