@@ -5970,9 +5970,16 @@ const SystemAdmin = () => {
               <CardContent>
                 <div className="space-y-2">
                   {chatAnalytics?.ticket_conversations?.slice(0, 8).map((conversation, index) => (
-                    <div key={index} className="p-3 bg-orange-50 border-l-4 border-orange-200 rounded">
+                    <div 
+                      key={index} 
+                      className="p-3 bg-orange-50 border-l-4 border-orange-200 rounded cursor-pointer hover:bg-orange-100 transition-colors"
+                      onClick={() => viewConversation(conversation.session_id)}
+                    >
                       <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-medium text-orange-800">Session: {conversation.session_id.slice(-8)}</span>
+                        <span className="text-sm font-medium text-orange-800">
+                          Session: {conversation.session_id.slice(-8)}
+                          <span className="ml-2 text-xs bg-orange-200 px-2 py-1 rounded">Click to view</span>
+                        </span>
                         <span className="text-xs text-gray-500">{new Date(conversation.timestamp).toLocaleDateString()}</span>
                       </div>
                       <span className="text-sm text-orange-700">{conversation.question}</span>
