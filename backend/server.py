@@ -2961,7 +2961,7 @@ async def send_chat_message(request: ChatRequest, current_user: BetaUser = Depen
         logger.error(f"Error in chat: {e}")
         raise HTTPException(status_code=500, detail="Failed to process chat message")
 
-async def send_chat_message_non_streaming(request: ChatRequest):
+async def send_chat_message_non_streaming(request: ChatRequest, current_user: BetaUser = None):
     """Original non-streaming chat message handler with response timing"""
     start_time = datetime.now(timezone.utc)
     
