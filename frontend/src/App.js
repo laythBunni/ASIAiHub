@@ -741,52 +741,44 @@ const Dashboard = () => {
         </Badge>
       </div>
 
-      {/* Enhanced Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-emerald-700">Total Tickets</CardTitle>
-            <Ticket className="h-4 w-4 text-emerald-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-900">{stats.totalTickets}</div>
-            <p className="text-xs text-emerald-600 mt-1">All support requests</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-700">Open Tickets</CardTitle>
-            <AlertCircle className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-900">{stats.openTickets}</div>
-            <p className="text-xs text-orange-600 mt-1">Awaiting resolution</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700">Documents</CardTitle>
-            <FileText className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{stats.totalDocuments}</div>
-            <p className="text-xs text-blue-600 mt-1">Knowledge base files</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-700">Overdue</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-900">{stats.overdue}</div>
-            <p className="text-xs text-red-600 mt-1">Past SLA deadline</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* ASI OS Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-emerald-600" />
+            ASI OS Actions
+          </CardTitle>
+          <CardDescription>Access your core ASI systems and workflows</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a href="https://asi.online/time_log_management?time_screens=time_management&type_log=input" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50">
+                <div className="w-6 h-6 text-emerald-600">📝</div>
+                <span className="text-sm font-medium">Submit Time Log</span>
+              </Button>
+            </a>
+            <a href="https://asi.online/expense_management?time_screens=expense_management" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50">
+                <div className="w-6 h-6 text-emerald-600">💰</div>
+                <span className="text-sm font-medium">Submit Expense</span>
+              </Button>
+            </a>
+            <a href="https://asi.online/time_log_approvals" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50">
+                <div className="w-6 h-6 text-emerald-600">✅</div>
+                <span className="text-sm font-medium">My Approvals</span>
+              </Button>
+            </a>
+            <a href="https://asi.online/project" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50">
+                <div className="w-6 h-6 text-emerald-600">📊</div>
+                <span className="text-sm font-medium">My Projects</span>
+              </Button>
+            </a>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <Card>
