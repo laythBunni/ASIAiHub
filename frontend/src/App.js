@@ -5506,7 +5506,7 @@ const SystemAdmin = () => {
       if (response && !response.error) {
         toast({
           title: "✅ Settings Saved Successfully!",
-          description: `AI Model: ${systemSettings.ai_model?.toUpperCase()}, Cache: ${systemSettings.response_cache_hours}h, Personal Key: Enabled`,
+          description: `AI Model: ${systemSettings.ai_model?.toUpperCase()}, Cache: ${systemSettings.response_cache_hours}h, Shared Key: ${systemSettings.openai_key_configured ? 'Active' : 'Not Configured'}`,
           duration: 5000,
         });
         
