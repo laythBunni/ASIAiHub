@@ -5437,6 +5437,17 @@ const SystemAdmin = () => {
     }
   };
 
+  const loadSystemKpis = async () => {
+    try {
+      const response = await apiCall('GET', '/admin/system-kpis');
+      if (response && !response.error) {
+        setSystemKpis(response);
+      }
+    } catch (error) {
+      console.error('Error loading system KPIs:', error);
+    }
+  };
+
   const viewConversation = async (sessionId) => {
     try {
       const response = await apiCall('GET', `/chat/sessions/${sessionId}/messages`);
