@@ -5435,6 +5435,26 @@ const SystemAdmin = () => {
     }
   };
 
+  const viewConversation = async (sessionId) => {
+    try {
+      const response = await apiCall('GET', `/chat/sessions/${sessionId}/messages`);
+      if (response && !response.error) {
+        setSelectedConversation({
+          sessionId,
+          messages: response
+        });
+        setShowConversationModal(true);
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      toast({
+        title: "❌ Error",
+        description: "Failed to load conversation details",
+        duration: 3000,
+      });
+    }
+  };
+
   const updateSystemSetting = (key, value) => {
     setSystemSettings(prev => ({
       ...prev,
