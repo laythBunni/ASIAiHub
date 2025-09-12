@@ -4994,6 +4994,7 @@ const BoostUnitModal = ({ isOpen, onClose, unit, onSave }) => {
 
 // System Admin Dashboard Component
 const SystemAdmin = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [businessUnits, setBusinessUnits] = useState([]);
