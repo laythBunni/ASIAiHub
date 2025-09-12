@@ -459,7 +459,7 @@ async def process_document_with_rag(document_data: Dict[str, Any]) -> None:
         try:
             async def rag_processing_with_timeout():
                 try:
-                    rag = get_rag_system(EMERGENT_LLM_KEY)
+                    rag = get_rag_system(os.environ.get('OPENAI_API_KEY'))
                     
                     # Add detailed logging
                     logger.info(f"🔥 RAG processing starting for document {document_data.get('id')}")
