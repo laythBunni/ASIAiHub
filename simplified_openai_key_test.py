@@ -284,6 +284,12 @@ class SimplifiedOpenAIKeyTester:
         print("\n🚀 TEST 3: Chat Send Endpoint - No Personal Key Required...")
         print("=" * 60)
         
+        if not hasattr(self, 'regular_user_token') or not self.regular_user_token:
+            print("❌ No regular user token - cannot test chat endpoint")
+            return False
+        
+        regular_headers = {'Authorization': f'Bearer {self.regular_user_token}'}
+        
         # Test multiple chat messages to ensure consistency
         test_messages = [
             "What are the IT support procedures?",
@@ -307,7 +313,8 @@ class SimplifiedOpenAIKeyTester:
                 "POST", 
                 "/chat/send", 
                 200, 
-                chat_data
+                chat_data,
+                headers=regular_headers
             )
             
             if success:
