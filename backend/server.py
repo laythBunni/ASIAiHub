@@ -2944,7 +2944,7 @@ async def get_rag_stats():
 
 # Chat Routes
 @api_router.post("/chat/send")
-async def send_chat_message(request: ChatRequest):
+async def send_chat_message(request: ChatRequest, current_user: BetaUser = Depends(get_current_user)):
     """Send a message to RAG chat system with optional streaming"""
     try:
         if request.stream:
