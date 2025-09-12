@@ -897,9 +897,23 @@ const ChatInterface = () => {
 
   const fetchMessages = async (sessionId) => {
     try {
+      console.log('Fetching messages for session:', sessionId);
       const data = await apiCall('GET', `/chat/sessions/${sessionId}/messages`);
+      console.log('Received messages data:', data);
+      
+      // Handle different response formats from backend
+      let messagesList = [];
+      if (Array.isArray(data)) {
+        messagesList = data;
+      } else if (data && data.messages && Array.isArray(data.messages)) {
+        messagesList = data.messages;
+      } else {
+        console.warn('Unexpected message data format:', data);
+        messagesList = [];
+      }
+      
       // Parse message content if it's JSON string (for structured responses)
-      const parsedMessages = data.map(message => {
+      const parsedMessages = messagesList.map(message => {
         if (message.role === 'assistant' && typeof message.content === 'string') {
           try {
             // Try to parse as JSON
@@ -913,9 +927,24 @@ const ChatInterface = () => {
         }
         return message;
       });
+      
+      console.log('Setting messages:', parsedMessages);
       setMessages(parsedMessages);
+      
+      if (parsedMessages.length === 0) {
+        toast({
+          title: "No Messages",
+          description: "This conversation has no messages.",
+          duration: 3000,
+        });
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
+      toast({
+        title: "Error Loading Messages",
+        description: "Failed to load conversation messages.",
+        duration: 3000,
+      });
     }
   };
 
