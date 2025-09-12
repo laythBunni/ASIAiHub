@@ -5864,25 +5864,21 @@ const SystemAdmin = () => {
                     <div className="border rounded-lg p-4 bg-blue-50">
                       <div className="mb-3">
                         <div>
-                          <Label className="text-base font-medium">Personal OpenAI API Key</Label>
-                          <p className="text-sm text-gray-600">Required - Direct access to OpenAI with your own billing</p>
+                          <Label className="text-base font-medium">OpenAI Integration Status</Label>
+                          <p className="text-sm text-gray-600">Shared OpenAI key managed by admin</p>
                         </div>
                       </div>
                       
-                      <div>
-                        <Label>OpenAI API Key</Label>
-                        <Input
-                          type="password"
-                          value={systemSettings.personal_openai_key}
-                          onChange={(e) => updateSystemSetting('personal_openai_key', e.target.value)}
-                          placeholder="sk-..."
-                          className="mt-1"
-                          required
-                        />
-                        <div className="mt-2 text-xs text-gray-600">
-                          <p>✅ <strong>Benefits:</strong> Latest models, faster responses, full control, direct billing</p>
-                          <p>🔗 Get your key at: <a href="https://platform.openai.com/api-keys" target="_blank" className="text-blue-600 underline">platform.openai.com/api-keys</a></p>
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${systemSettings.openai_key_configured ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                          <span className="text-sm font-medium">
+                            {systemSettings.openai_key_configured ? '✅ OpenAI API Key Configured' : '❌ OpenAI API Key Missing'}
+                          </span>
                         </div>
+                        <p className="text-xs text-gray-600 mt-2">
+                          All users share the same OpenAI API key configured by the administrator. No individual setup required.
+                        </p>
                       </div>
                     </div>
 
