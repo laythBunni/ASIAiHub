@@ -843,10 +843,12 @@ const ChatInterface = () => {
     fetchSessions();
     fetchDocumentsCount();
     loadChatSystemSettings();
-    
-    // Check for shared conversation link
-    checkForSharedSession();
   }, []);
+
+  // Watch for URL changes to handle session navigation
+  useEffect(() => {
+    checkForSharedSession();
+  }, [location.search]);
 
   const loadChatSystemSettings = async () => {
     try {
