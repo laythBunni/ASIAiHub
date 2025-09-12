@@ -5074,6 +5074,7 @@ const SystemAdmin = () => {
           loadSystemSettings(),
           loadChatAnalytics(),
           loadApiUsage(),
+          loadSystemKpis(),
         ]);
         // Finally fetch permissions with the users data
         await fetchPermissions(usersData);
