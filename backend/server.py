@@ -3089,9 +3089,9 @@ async def generate_streaming_response(request: ChatRequest):
         yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to process message'})}\n\n"
 
 @api_router.get("/chat/sessions", response_model=List[ChatSession])
-async def get_chat_sessions():
-    """Get all chat sessions"""
-    sessions = await db.chat_sessions.find().sort("updated_at", -1).to_list(100)
+async def get_chat_sessions(current_user: BetaUser = Depends(get_current_user)):
+    """Get chat sessions for the current user only"""
+    sessions = await db.chat_sessions.find({"user_email": current_user.email}).sort("updated_at", -1).to_list(100)
     return [ChatSession(**session) for session in sessions]
 
 @api_router.get("/chat/sessions/{session_id}/messages", response_model=List[ChatMessage])
