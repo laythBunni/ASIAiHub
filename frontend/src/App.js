@@ -5900,6 +5900,169 @@ const SystemAdmin = () => {
           </Card>
         </TabsContent>
 
+        {/* KPI Dashboard Tab */}
+        <TabsContent value="kpis" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Chat Performance */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">📊 Chat Sessions (30d)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{systemKpis?.chat_analytics?.total_sessions || 0}</p>
+                <p className="text-xs text-gray-500">{systemKpis?.chat_analytics?.sessions_per_day || 0}/day avg</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">⚡ Avg Response Time</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{systemKpis?.chat_analytics?.avg_response_time_seconds || 0}s</p>
+                <p className="text-xs text-gray-500">AI response speed</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">🎫 Open Tickets</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{systemKpis?.ticket_analytics?.total_open || 0}</p>
+                <p className="text-xs text-gray-500">Need attention</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">📄 Processing Success</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{systemKpis?.document_processing?.processing_success_rate || 0}%</p>
+                <p className="text-xs text-gray-500">Document processing</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Ticket Resolution Times by Priority */}
+          <Card>
+            <CardHeader>
+              <CardTitle>🎯 Ticket Resolution Performance</CardTitle>
+              <p className="text-sm text-gray-500">Average resolution times by priority level</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {Object.entries(systemKpis?.ticket_analytics?.by_priority || {}).map(([priority, stats], index) => (
+                  <div key={index} className={`p-4 rounded-lg border-l-4 ${
+                    priority === 'High' ? 'bg-red-50 border-red-400' :
+                    priority === 'Medium' ? 'bg-yellow-50 border-yellow-400' :
+                    'bg-green-50 border-green-400'
+                  }`}>
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-semibold text-lg">{priority} Priority</h3>
+                      <Badge variant={priority === 'High' ? 'destructive' : priority === 'Medium' ? 'default' : 'secondary'}>
+                        {stats.total} total
+                      </Badge>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Resolved:</span>
+                        <span className="font-medium text-green-600">{stats.resolved}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Open:</span>
+                        <span className="font-medium text-orange-600">{stats.open}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Avg Resolution:</span>
+                        <span className="font-medium">{stats.avg_resolution_hours}h</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div 
+                          className={`h-2 rounded-full ${
+                            priority === 'High' ? 'bg-red-500' :
+                            priority === 'Medium' ? 'bg-yellow-500' :
+                            'bg-green-500'
+                          }`}
+                          style={{ width: `${(stats.resolved / Math.max(stats.total, 1)) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {Math.round((stats.resolved / Math.max(stats.total, 1)) * 100)}% resolution rate
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* System Performance Overview */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>💬 Chat System Performance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+                    <span>Total Messages (30d)</span>
+                    <Badge variant="outline">{systemKpis?.chat_analytics?.total_messages || 0}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-green-50 rounded">
+                    <span>Response Time Target</span>
+                    <Badge variant={
+                      (systemKpis?.chat_analytics?.avg_response_time_seconds || 0) < 15 ? 'default' : 
+                      (systemKpis?.chat_analytics?.avg_response_time_seconds || 0) < 30 ? 'secondary' : 'destructive'
+                    }>
+                      {(systemKpis?.chat_analytics?.avg_response_time_seconds || 0) < 15 ? '✅ Excellent' : 
+                       (systemKpis?.chat_analytics?.avg_response_time_seconds || 0) < 30 ? '⚠️ Good' : '❌ Needs Improvement'}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
+                    <span>Daily Activity</span>
+                    <Badge variant="outline">{systemKpis?.chat_analytics?.sessions_per_day || 0} sessions/day</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>📄 Document Processing Health</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+                    <span>Documents Approved</span>
+                    <Badge variant="outline">{systemKpis?.document_processing?.documents_approved || 0}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-green-50 rounded">
+                    <span>Successfully Processed</span>
+                    <Badge variant="outline">{systemKpis?.document_processing?.documents_processed || 0}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
+                    <span>Success Rate</span>
+                    <Badge variant={
+                      (systemKpis?.document_processing?.processing_success_rate || 0) >= 95 ? 'default' : 
+                      (systemKpis?.document_processing?.processing_success_rate || 0) >= 80 ? 'secondary' : 'destructive'
+                    }>
+                      {systemKpis?.document_processing?.processing_success_rate || 0}%
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={loadSystemKpis} variant="outline">
+              🔄 Refresh KPIs
+            </Button>
+          </div>
+        </TabsContent>
+
         {/* Audit Logs Tab */}
         <TabsContent value="audit" className="space-y-4">
           <Card>
