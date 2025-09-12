@@ -824,19 +824,19 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-purple-300 bg-purple-50 hover:bg-purple-100 cursor-default transition-all duration-200">
-              <div className="w-6 h-6 text-purple-600">🎯</div>
-              <span className="text-sm font-medium text-purple-700">IR35 Assessor</span>
-              <span className="text-xs text-purple-500">Coming Soon</span>
+            <Button className="w-full h-20 flex flex-col gap-2 bg-purple-600 hover:bg-purple-700 cursor-default">
+              <div className="w-6 h-6">🎯</div>
+              <span>IR35 Assessor</span>
+              <span className="text-xs opacity-75">Coming Soon</span>
             </Button>
-            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-purple-200 bg-purple-25 hover:bg-purple-75 cursor-default transition-all duration-200">
-              <div className="w-6 h-6 text-purple-500">📋</div>
-              <span className="text-sm font-medium text-purple-600">Project Finance SOP Creator</span>
+            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-purple-200 hover:bg-purple-50 cursor-default">
+              <div className="w-6 h-6 text-purple-600">📋</div>
+              <span>Project Finance SOP Creator</span>
               <span className="text-xs text-purple-400">Coming Soon</span>
             </Button>
-            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-purple-200 bg-purple-25 hover:bg-purple-75 cursor-default transition-all duration-200">
-              <div className="w-6 h-6 text-purple-500">🔄</div>
-              <span className="text-sm font-medium text-purple-600">Many More Tools</span>
+            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-purple-200 hover:bg-purple-50 cursor-default">
+              <div className="w-6 h-6 text-purple-600">🔄</div>
+              <span>Many More Tools</span>
               <span className="text-xs text-purple-400">Coming Soon</span>
             </Button>
           </div>
