@@ -1124,7 +1124,6 @@ async def test_mongodb_rag_directly():
         
         # Cleanup test file
         try:
-            import os
             if os.path.exists(test_doc_data["file_path"]):
                 os.remove(test_doc_data["file_path"])
         except:
