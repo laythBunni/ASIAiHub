@@ -5450,19 +5450,13 @@ const SystemAdmin = () => {
 
   const viewConversation = async (sessionId) => {
     try {
-      const response = await apiCall('GET', `/chat/sessions/${sessionId}/messages`);
-      if (response && !response.error) {
-        setSelectedConversation({
-          sessionId,
-          messages: response
-        });
-        setShowConversationModal(true);
-      }
+      // Navigate to chat interface and load the conversation
+      window.location.href = `/chat?session=${sessionId}`;
     } catch (error) {
-      console.error('Error loading conversation:', error);
+      console.error('Error navigating to conversation:', error);
       toast({
         title: "❌ Error",
-        description: "Failed to load conversation details",
+        description: "Failed to load conversation",
         duration: 3000,
       });
     }
