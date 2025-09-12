@@ -824,10 +824,10 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button className="w-full h-20 flex flex-col gap-2 bg-red-100 hover:bg-red-200 text-white cursor-default">
-              <div className="w-6 h-6 text-white">🎯</div>
+            <Button className="w-full h-20 flex flex-col gap-2 bg-red-100 hover:bg-red-200 text-red-800 cursor-default">
+              <div className="w-6 h-6 text-red-700">🎯</div>
               <span>IR35 Assessor</span>
-              <span className="text-xs text-white opacity-75">Coming Soon</span>
+              <span className="text-xs text-red-600">Coming Soon</span>
             </Button>
             <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-red-200 hover:bg-red-50 cursor-default">
               <div className="w-6 h-6 text-red-600">📋</div>
