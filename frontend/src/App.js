@@ -5006,7 +5006,7 @@ const SystemAdmin = () => {
     require_document_approval: true,
     enable_audit_logging: true,
     response_cache_hours: 24,
-    use_personal_openai_key: false,
+    use_personal_openai_key: true,
     personal_openai_key: ''
   });
   const [chatAnalytics, setChatAnalytics] = useState(null);
