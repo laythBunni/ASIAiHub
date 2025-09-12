@@ -2996,6 +2996,7 @@ async def send_chat_message_non_streaming(request: ChatRequest, current_user: Be
     if not session_exists:
         session = ChatSession(
             id=request.session_id,
+            user_email=current_user.email if current_user else "unknown@example.com",
             title=request.message[:50] + "..." if len(request.message) > 50 else request.message,
             messages_count=2,
             created_at=start_time,
