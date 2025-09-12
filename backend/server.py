@@ -3024,7 +3024,7 @@ async def send_chat_message_non_streaming(request: ChatRequest, current_user: Be
         response_time_seconds=response_time
     )
 
-async def generate_streaming_response(request: ChatRequest):
+async def generate_streaming_response(request: ChatRequest, current_user: BetaUser = None):
     """Generate streaming response for chat messages"""
     try:
         # Save user message first
