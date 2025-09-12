@@ -6314,7 +6314,7 @@ const SystemAdmin = () => {
                 <div className="text-6xl mb-4">🔑</div>
                 <h3 className="text-xl font-semibold mb-2">Personal OpenAI Key Required</h3>
                 <p className="text-gray-600 mb-4">
-                  Enable "Use Personal OpenAI API Key" in System Settings to track your API usage and costs.
+                  Add your Personal OpenAI API Key in System Settings to track your API usage and costs.
                 </p>
                 <Button onClick={() => setActiveTab('system')} className="bg-blue-600 hover:bg-blue-700">
                   Go to System Settings
