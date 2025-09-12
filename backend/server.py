@@ -2906,7 +2906,7 @@ async def get_rag_stats():
         # Try to get RAG stats with timeout
         import asyncio
         async def get_stats_with_timeout():
-            rag = get_rag_system(EMERGENT_LLM_KEY)
+            rag = get_rag_system(os.environ.get('OPENAI_API_KEY'))
             return rag.get_collection_stats()
         
         # 5 second timeout for RAG operations
