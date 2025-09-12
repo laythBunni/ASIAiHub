@@ -753,27 +753,27 @@ const Dashboard = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <a href="https://asi.online/time_log_management?time_screens=time_management&type_log=input" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50">
-                <div className="w-6 h-6 text-emerald-600">📝</div>
-                <span className="text-sm font-medium">Submit Time Log</span>
+              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 transition-all duration-200">
+                <div className="w-6 h-6 text-blue-600">📝</div>
+                <span className="text-sm font-medium text-blue-700">Submit Time Log</span>
               </Button>
             </a>
             <a href="https://asi.online/expense_management?time_screens=expense_management" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50">
-                <div className="w-6 h-6 text-emerald-600">💰</div>
-                <span className="text-sm font-medium">Submit Expense</span>
+              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-blue-200 bg-blue-25 hover:bg-blue-75 hover:border-blue-300 transition-all duration-200">
+                <div className="w-6 h-6 text-blue-500">💰</div>
+                <span className="text-sm font-medium text-blue-600">Submit Expense</span>
               </Button>
             </a>
             <a href="https://asi.online/time_log_approvals" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50">
-                <div className="w-6 h-6 text-emerald-600">✅</div>
-                <span className="text-sm font-medium">My Approvals</span>
+              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-blue-200 bg-blue-25 hover:bg-blue-75 hover:border-blue-300 transition-all duration-200">
+                <div className="w-6 h-6 text-blue-500">✅</div>
+                <span className="text-sm font-medium text-blue-600">My Approvals</span>
               </Button>
             </a>
             <a href="https://asi.online/project" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-emerald-200 hover:bg-emerald-50">
-                <div className="w-6 h-6 text-emerald-600">📊</div>
-                <span className="text-sm font-medium">My Projects</span>
+              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 border-blue-200 bg-blue-25 hover:bg-blue-75 hover:border-blue-300 transition-all duration-200">
+                <div className="w-6 h-6 text-blue-500">📊</div>
+                <span className="text-sm font-medium text-blue-600">My Projects</span>
               </Button>
             </a>
           </div>
