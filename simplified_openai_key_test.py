@@ -37,6 +37,7 @@ class SimplifiedOpenAIKeyTester:
         self.tests_passed = 0
         self.session_id = f"openai-key-test-{int(time.time())}"
         self.auth_token = None
+        self.regular_user_token = None
         
         print(f"🔧 Testing against: {self.api_url}")
         print(f"🔧 Session ID: {self.session_id}")
