@@ -862,7 +862,7 @@ const ChatInterface = () => {
   };
 
   const checkForSharedSession = () => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.search);
     const sessionId = urlParams.get('session');
     
     if (sessionId) {
@@ -870,9 +870,9 @@ const ChatInterface = () => {
       setCurrentSession(sessionId);
       fetchMessages(sessionId);
       toast({
-        title: "Shared Conversation Loaded",
-        description: "You're viewing a shared conversation from a support ticket.",
-        duration: 4000,
+        title: "Conversation Loaded",
+        description: `Loading conversation: ${sessionId.slice(-8)}`,
+        duration: 3000,
       });
     }
   };
