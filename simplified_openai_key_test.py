@@ -524,7 +524,7 @@ class SimplifiedOpenAIKeyTester:
                 "GET", 
                 f"/chat/sessions/{chat_data['session_id']}/messages", 
                 200,
-                headers=regular_headers
+                headers=auth_headers
             )
             
             if session_success:
