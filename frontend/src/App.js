@@ -826,6 +826,7 @@ const Dashboard = () => {
 
 // RAG Chat Component
 const ChatInterface = () => {
+  const location = useLocation();
   const [sessions, setSessions] = useState([]);
   const [currentSession, setCurrentSession] = useState(null);
   const [messages, setMessages] = useState([]);
