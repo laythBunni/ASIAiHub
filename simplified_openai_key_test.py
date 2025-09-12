@@ -174,33 +174,149 @@ class SimplifiedOpenAIKeyTester:
         """Authenticate as a regular user (non-admin)"""
         print("\n👤 Authenticating Regular User...")
         
-        # Create a regular user login
-        regular_login_data = {
-            "email": "regular.user@example.com",
-            "personal_code": "ASI2025"  # This should create a Manager user
-        }
+        # First, let's get the list of users to find a regular user
+        if not self.auth_token:
+            print("❌ No admin token - cannot get user list")
+            return False
+        
+        auth_headers = {'Authorization': f'Bearer {self.auth_token}'}
         
         success, response = self.run_test(
-            "Regular User Login", 
-            "POST", 
-            "/auth/login", 
-            200, 
-            regular_login_data
+            "Get Users List", 
+            "GET", 
+            "/admin/users", 
+            200,
+            headers=auth_headers
         )
         
-        if success:
-            user_data = response.get('user', {})
-            token = response.get('access_token') or response.get('token')
+        if success and isinstance(response, list):
+            # Find a non-admin user
+            regular_user = None
+            for user in response:
+                if user.get('role') != 'Admin' and user.get('email') != 'layth.bunni@adamsmithinternational.com':
+                    regular_user = user
+                    break
             
-            print(f"   ✅ Regular user login successful")
-            print(f"   👤 User: {user_data.get('email')}")
-            print(f"   👑 Role: {user_data.get('role')}")
-            print(f"   🔑 Token: {token[:20] if token else 'None'}...")
-            
-            self.regular_user_token = token
-            return True
+            if regular_user:
+                print(f"   📋 Found regular user: {regular_user.get('email')} (Role: {regular_user.get('role')})")
+                
+                # Try to login with this user - we need their personal code
+                # Since we don't know their personal code, let's create a test user
+                print(f"   📝 Creating test regular user for chat testing...")
+                
+                # Create a test user
+                test_user_data = {
+                    "email": f"test.regular.{int(time.time())}@example.com",
+                    "name": "Test Regular User",
+                    "role": "Manager",
+                    "department": "IT",
+                    "is_active": True,
+                    "personal_code": "123456"  # Set a known personal code
+                }
+                
+                create_success, create_response = self.run_test(
+                    "Create Test Regular User", 
+                    "POST", 
+                    "/admin/users", 
+                    200, 
+                    test_user_data,
+                    headers=auth_headers
+                )
+                
+                if create_success:
+                    created_user = create_response
+                    print(f"   ✅ Test user created: {created_user.get('email')}")
+                    
+                    # Now try to login with the created user
+                    login_data = {
+                        "email": created_user.get('email'),
+                        "personal_code": "123456"
+                    }
+                    
+                    login_success, login_response = self.run_test(
+                        "Test Regular User Login", 
+                        "POST", 
+                        "/auth/login", 
+                        200, 
+                        login_data
+                    )
+                    
+                    if login_success:
+                        user_data = login_response.get('user', {})
+                        token = login_response.get('access_token') or login_response.get('token')
+                        
+                        print(f"   ✅ Regular user login successful")
+                        print(f"   👤 User: {user_data.get('email')}")
+                        print(f"   👑 Role: {user_data.get('role')}")
+                        print(f"   🔑 Token: {token[:20] if token else 'None'}...")
+                        
+                        self.regular_user_token = token
+                        self.regular_user_email = user_data.get('email')
+                        return True
+                    else:
+                        print(f"   ❌ Test user login failed")
+                        return False
+                else:
+                    print(f"   ❌ Failed to create test user")
+                    return False
+            else:
+                print(f"   ⚠️  No regular users found, will create one")
+                # Create a test user as above
+                test_user_data = {
+                    "email": f"test.regular.{int(time.time())}@example.com",
+                    "name": "Test Regular User",
+                    "role": "Manager",
+                    "department": "IT",
+                    "is_active": True,
+                    "personal_code": "123456"
+                }
+                
+                create_success, create_response = self.run_test(
+                    "Create Test Regular User", 
+                    "POST", 
+                    "/admin/users", 
+                    200, 
+                    test_user_data,
+                    headers=auth_headers
+                )
+                
+                if create_success:
+                    created_user = create_response
+                    print(f"   ✅ Test user created: {created_user.get('email')}")
+                    
+                    # Login with created user
+                    login_data = {
+                        "email": created_user.get('email'),
+                        "personal_code": "123456"
+                    }
+                    
+                    login_success, login_response = self.run_test(
+                        "Test Regular User Login", 
+                        "POST", 
+                        "/auth/login", 
+                        200, 
+                        login_data
+                    )
+                    
+                    if login_success:
+                        user_data = login_response.get('user', {})
+                        token = login_response.get('access_token') or login_response.get('token')
+                        
+                        print(f"   ✅ Regular user login successful")
+                        print(f"   👤 User: {user_data.get('email')}")
+                        print(f"   👑 Role: {user_data.get('role')}")
+                        
+                        self.regular_user_token = token
+                        self.regular_user_email = user_data.get('email')
+                        return True
+                    else:
+                        print(f"   ❌ Test user login failed")
+                        return False
+                else:
+                    print(f"   ❌ Failed to create test user")
+                    return False
         else:
-            print(f"   ❌ Regular user authentication failed")
+            print(f"   ❌ Failed to get users list")
             return False
 
     def test_regular_user_chat_functionality(self):
