@@ -76,8 +76,8 @@
         comment: "IMPLEMENTED CHAT NAVIGATION FIX: Modified viewConversation function to redirect to '/chat?session=${sessionId}' instead of opening modal. Removed conversation modal state variables and modal component. Now when users click on conversations in Chat Analytics, they will be redirected to the main chat interface with the conversation loaded. Need to test functionality."
 
   - task: "Remove System Key Toggle"
-    implemented: false
-    working: false
+    implemented: true
+    working: "unknown"
     file: "/app/frontend/src/App.js, /app/backend/server.py"
     stuck_count: 0
     priority: "high"
@@ -86,6 +86,9 @@
       - working: false
         agent: "user"
         comment: "USER REQUEST: Remove the system key toggle and make the application exclusively use the user's personal OpenAI key. Currently there's a toggle between system key and personal OpenAI key in the System Settings admin panel."
+      - working: "unknown"
+        agent: "main"
+        comment: "IMPLEMENTED SYSTEM KEY REMOVAL: FRONTEND: Removed toggle UI, changed label from 'Use Personal OpenAI API Key' to 'Personal OpenAI API Key - Required', made API key field always visible and required, updated chat interface to always show 'Personal Key', changed default settings to use_personal_openai_key: true, updated success messages and API usage requirements. BACKEND: Changed default settings to use_personal_openai_key: True, modified logic to always prioritize personal keys when available, updated system settings response. Need to test functionality."
 
 # Protocol Guidelines for Main agent
 #
