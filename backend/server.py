@@ -2942,6 +2942,62 @@ async def get_rag_stats():
             "status": "RAG system unavailable"
         }
 
+# Authentication Helper Functions
+security = HTTPBearer()
+
+def generate_access_token(user_id: str, email: str) -> str:
+    """Generate a simple access token"""
+    # Generate a consistent token based on user data and a secret
+    token_data = f"{user_id}:{email}:beta_auth_secret"
+    return hashlib.sha256(token_data.encode()).hexdigest()
+
+def validate_email_domain(email: str) -> bool:
+    """Validate email domain"""
+    domain = email.split('@')[-1].lower()
+    return domain == "adamsmithinternational.com"
+
+def validate_email_format(email: str) -> bool:
+    """Validate email format"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> BetaUser:
+    """Get current user from token"""
+    try:
+        token = credentials.credentials
+        
+        # Find user by token in both collections
+        user_data = await db.beta_users.find_one({"access_token": token})
+        if not user_data:
+            user_data = await db.simple_users.find_one({"access_token": token})
+        
+        if user_data:
+            # Remove MongoDB _id field to avoid ObjectId serialization issues
+            if '_id' in user_data:
+                del user_data['_id']
+            return BetaUser(**user_data)
+        
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token"
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token"
+        )
+
+async def require_admin(current_user: BetaUser = Depends(get_current_user)) -> BetaUser:
+    """Require admin role"""
+    if current_user.role != "Admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
+
 # Chat Routes
 @api_router.post("/chat/send")
 async def send_chat_message(request: ChatRequest, current_user: BetaUser = Depends(get_current_user)):
