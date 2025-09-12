@@ -5830,35 +5830,28 @@ const SystemAdmin = () => {
                     </div>
 
                     <div className="border rounded-lg p-4 bg-blue-50">
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="mb-3">
                         <div>
-                          <Label className="text-base font-medium">Use Personal OpenAI API Key</Label>
-                          <p className="text-sm text-gray-600">Direct access to OpenAI with your own billing</p>
+                          <Label className="text-base font-medium">Personal OpenAI API Key</Label>
+                          <p className="text-sm text-gray-600">Required - Direct access to OpenAI with your own billing</p>
                         </div>
-                        <input 
-                          type="checkbox" 
-                          className="toggle" 
-                          checked={systemSettings.use_personal_openai_key}
-                          onChange={(e) => updateSystemSetting('use_personal_openai_key', e.target.checked)}
-                        />
                       </div>
                       
-                      {systemSettings.use_personal_openai_key && (
-                        <div>
-                          <Label>OpenAI API Key</Label>
-                          <Input
-                            type="password"
-                            value={systemSettings.personal_openai_key}
-                            onChange={(e) => updateSystemSetting('personal_openai_key', e.target.value)}
-                            placeholder="sk-..."
-                            className="mt-1"
-                          />
-                          <div className="mt-2 text-xs text-gray-600">
-                            <p>✅ <strong>Benefits:</strong> Latest models, faster responses, full control, direct billing</p>
-                            <p>🔗 Get your key at: <a href="https://platform.openai.com/api-keys" target="_blank" className="text-blue-600 underline">platform.openai.com/api-keys</a></p>
-                          </div>
+                      <div>
+                        <Label>OpenAI API Key</Label>
+                        <Input
+                          type="password"
+                          value={systemSettings.personal_openai_key}
+                          onChange={(e) => updateSystemSetting('personal_openai_key', e.target.value)}
+                          placeholder="sk-..."
+                          className="mt-1"
+                          required
+                        />
+                        <div className="mt-2 text-xs text-gray-600">
+                          <p>✅ <strong>Benefits:</strong> Latest models, faster responses, full control, direct billing</p>
+                          <p>🔗 Get your key at: <a href="https://platform.openai.com/api-keys" target="_blank" className="text-blue-600 underline">platform.openai.com/api-keys</a></p>
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     <div>
