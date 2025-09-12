@@ -1175,7 +1175,7 @@ const ChatInterface = () => {
                       🤖 {systemSettings?.ai_model?.toUpperCase() || 'GPT-5'}
                     </span>
                     <span className="text-xs text-gray-600">
-                      {systemSettings?.use_personal_openai_key ? '🔑 Personal Key' : '⚡ System Key'}
+                      🔑 Personal Key
                     </span>
                     <span className="text-xs text-gray-600">
                       📚 {documentsCount} docs
